@@ -1,4 +1,7 @@
 XDIR:=/u/cs452/public/xdev
+
+-include config.mk
+
 ARCH=cortex-a72
 TRIPLE=aarch64-none-elf
 XBINDIR:=$(XDIR)/bin
@@ -23,17 +26,17 @@ OBJECTS := $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(SOURCES)))
 DEPENDS := $(patsubst %.c, %.d, $(patsubst %.S, %.d, $(SOURCES)))
 
 # The first rule is the default, ie. "make", "make all" and "make kernel8.img" mean the same
-all: iotest.img
+all: trainos.img
 
 clean:
-	rm -f $(OBJECTS) $(DEPENDS) iotest.elf iotest.img
+	rm -f $(OBJECTS) $(DEPENDS) trainos.elf trainos.img
 
-iotest.img: iotest.elf
+trainos.img: trainos.elf
 	$(OBJCOPY) $< -O binary $@
 
-iotest.elf: $(OBJECTS) linker.ld
+trainos.elf: $(OBJECTS) linker.ld
 	$(CC) $(CFLAGS) $(filter-out %.ld, $^) -o $@ $(LDFLAGS)
-	@$(OBJDUMP) -d iotest.elf | fgrep -q q0 && printf "\n***** WARNING: SIMD INSTRUCTIONS DETECTED! *****\n\n" || true
+	@$(OBJDUMP) -d trainos.elf | fgrep -q q0 && printf "\n***** WARNING: SIMD INSTRUCTIONS DETECTED! *****\n\n" || true
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@
