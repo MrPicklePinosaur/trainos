@@ -1,9 +1,8 @@
-#ifndef _rpi_h_
-#define _rpi_h_ 1
+#ifndef __RPI_H__
+#define __RPI_H__
 
 #include <stdint.h>
 #include <stddef.h>
-
 
 void uart_putc(size_t line, unsigned char c);
 unsigned char uart_getc(size_t line);
@@ -13,4 +12,4 @@ void uart_printf(size_t line, char *fmt, ...);
 void uart_config_and_enable(size_t line, uint32_t baudrate);
 void uart_init();
 
-#endif /* rpi.h */
+#endif // __RPI_H__

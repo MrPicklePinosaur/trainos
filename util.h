@@ -1,5 +1,5 @@
-#ifndef _util_h_
-#define _util_h_ 1
+#ifndef __UTIL_H__
+#define __UTIL_H__
 
 #include <stddef.h>
 
@@ -13,4 +13,4 @@ void i2a( int num, char *bf );
 void *memset(void *s, int c, size_t n);
 void* memcpy(void* restrict dest, const void* restrict src, size_t n);
 
-#endif /* util.h */
+#endif // __UTIL_H__
