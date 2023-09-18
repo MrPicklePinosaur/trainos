@@ -4,6 +4,24 @@
 
 static char* const  MMIO_BASE = (char*)           0xFE000000;
 
+/*********** TIMER CONFIGURATION ********************************/
+
+static char* const TIMER_BASE = (char*)(MMIO_BASE + 0x00003000);
+
+// Timer offsets
+static const uint32_t TIMER_CS  =   0x00; // status
+static const uint32_t TIMER_CLO =   0x04; // counter low
+static const uint32_t TIMER_CHI =   0x08; // counter high
+
+#define TIMER_REG(offset) (*(volatile uint32_t*)(TIMER_BASE + offset))
+
+uint64_t timer_get(void) {
+  uint64_t time;
+  time = TIMER_REG(TIMER_CLO);
+  time |= (uint64_t)TIMER_REG(TIMER_CHI) << 32;
+  return(time);
+}
+
 /*********** GPIO CONFIGURATION ********************************/
 
 static char* const GPIO_BASE = (char*)(MMIO_BASE + 0x200000);
@@ -102,7 +120,7 @@ static const uint32_t UARTCLK = 48000000;
 
 // Configure the line properties (e.g, parity, baud rate) of a UART
 // and ensure that it is enabled
-void uart_config_and_enable(size_t line, uint32_t baudrate) {
+void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t control) {
   uint32_t cr_state;
   // to avoid floating point, this computes 64 times the required baud divisor
   uint32_t baud_divisor = (uint32_t)((((uint64_t)UARTCLK)*4)/baudrate);
@@ -110,8 +128,10 @@ void uart_config_and_enable(size_t line, uint32_t baudrate) {
   // line control registers should not be changed while the UART is enabled, so disable it
   cr_state = UART_REG(line, UART_CR);
   UART_REG(line, UART_CR) = cr_state & ~UART_CR_UARTEN;
+
   // set the line control registers: 8 bit, no parity, 1 stop bit, FIFOs enabled
-  UART_REG(line, UART_LCRH) = UART_LCRH_WLEN_HIGH | UART_LCRH_WLEN_LOW | UART_LCRH_FEN;
+  UART_REG(line, UART_LCRH) = control;
+
   // set the baud rate
   UART_REG(line, UART_IBRD) = baud_divisor >> 6;
   UART_REG(line, UART_FBRD) = baud_divisor & 0x3f;
@@ -128,10 +148,28 @@ unsigned char uart_getc(size_t line) {
   return(ch);
 }
 
+// Poll for input, return status is 1 if no data, 0 if data
+int
+uart_getc_poll(size_t line, unsigned char* data) {
+
+  // return immediately if no data
+  if (UART_REG(line, UART_FR) & UART_FR_RXFE) return (1);
+
+  *data = UART_REG(line, UART_DR);
+  return(0);
+}
+
 void uart_putc(size_t line, unsigned char c) {
   // make sure there is room to write more data
   while(UART_REG(line, UART_FR) & UART_FR_TXFF);
   UART_REG(line, UART_DR) = c;
+}
+
+// Return status 1 if byte was not written, 0 is successfully written
+int uart_try_putc(size_t line, unsigned char c) {
+  if (UART_REG(line, UART_FR) & UART_FR_TXFF) return (1);
+  UART_REG(line, UART_DR) = c;
+  return (0);
 }
 
 void uart_putl(size_t line, const char* buf, size_t blen) {
@@ -146,6 +184,10 @@ void uart_puts(size_t line, const char* buf) {
     uart_putc(line, *buf);
     buf++;
   }
+}
+
+bool uart_busy(size_t line) {
+  return UART_REG(line, UART_FR) & UART_FR_TXFF;
 }
 
 // printf-style printing, with limited format support

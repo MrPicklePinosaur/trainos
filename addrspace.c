@@ -21,7 +21,7 @@ pagetable_createpage(void)
             Address base = USER_BASE + USER_ADDRSPACE_SIZE * i;
             return (Addrspace) {
                 .base = base,
-                .stackbase = base + 0x0, // TODO we may want to offset the stackbase in future
+                .stackbase = base + 0x0, // stack starts at bottom (high) of addrspace
             };
         }
     }
