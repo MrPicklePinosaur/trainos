@@ -11,3 +11,6 @@ Give text segment 1mb for now
 Task memory address size: 1mb = 2^20 = 0x0010 0000
 
 
+# Tasks
+
+Task id 1 is the parent task

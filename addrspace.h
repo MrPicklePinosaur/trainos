@@ -11,9 +11,9 @@ static const uint64_t USER_ADDRSPACE_SIZE = 0x01000000; // 1mb
 
 #define MAX_PAGES 1024
 
-typedef struct {
-    /* list of all ARM registers we need to save */
-} Trapframe;
+/* typedef struct { */
+/*     /1* list of all ARM registers we need to save *1/ */
+/* } Trapframe; */
 
 typedef struct {
     Address base;

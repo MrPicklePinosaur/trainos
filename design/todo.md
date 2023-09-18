@@ -2,6 +2,7 @@
 # research
 
 - memory layout for img file (where is the stack?)
+- good way of handling errors in c (return codes? panic?)
 
 # implementation
 
