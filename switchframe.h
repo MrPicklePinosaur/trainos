@@ -20,7 +20,7 @@ typedef struct {
 
 SwitchFrame switchframe_new(void);
 
-extern void switchframe_switch(uint64_t* from_sp, uint64_t* to_sp);
+extern void switchframe_switch(Address* from_sp, Address* to_sp);
 
 // Initalize the switchframe for a task
 void switchframe_init(Task* task, void (*entrypoint)());

@@ -18,7 +18,8 @@ switchframe_switch:
     str x28, [sp, #72]
     str x30, [sp, #80]
 
-    str x0, [sp, #0]
+    mov x2, sp
+    str x2, [x0, #0]
 
     ldr x1, [sp, #0]
 

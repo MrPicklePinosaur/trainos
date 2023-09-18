@@ -14,7 +14,7 @@ typedef struct {
     Addrspace addrspace;
 
     // The value of sp before context switch
-    uint64_t saved_sp;
+    Address saved_sp;
 } Task;
 
 typedef struct {

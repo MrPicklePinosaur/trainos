@@ -9,7 +9,7 @@ tasktable_init(void)
 {
     current_task = 1; // uninitalized
     tasktable = (TaskTable) {
-        .next_tid = 0
+        .next_tid = 1
     };
 }
 
