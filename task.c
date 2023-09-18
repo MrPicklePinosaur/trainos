@@ -7,7 +7,7 @@ static Tid current_task;
 void
 tasktable_init(void)
 {
-    current_task = 0; // uninitalized
+    current_task = 1; // uninitalized
     tasktable = (TaskTable) {
         .next_tid = 0
     };
@@ -29,4 +29,23 @@ tasktable_create_task(uint32_t priority)
     tasktable.tasks[new_task_id] = new_task;
 
     return new_task_id;
+}
+
+Task*
+tasktable_get_task(Tid tid)
+{
+    // TODO check if task actually exists
+    return &tasktable.tasks[tid];
+}
+
+void
+tasktable_set_current_task(Tid task)
+{
+    current_task = task;
+}
+
+Tid
+tasktable_current_task(void)
+{
+    return current_task;
 }

@@ -19,6 +19,7 @@ void mytask() {
 
         if (timer_value - yield_timer > 3000000) {
             yield_timer = timer_value;
+            Yield();
         }
     }
 }
@@ -27,8 +28,8 @@ int kmain() {
     
     kern_init();
 
-    Tid task0 = tasktable_create_task(0);
     Tid task1 = tasktable_create_task(0);
+    Tid task2 = tasktable_create_task(0);
 
     // initialize both console and marklin uarts
     uart_init();

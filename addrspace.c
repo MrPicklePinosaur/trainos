@@ -2,6 +2,15 @@
 
 static PageTable pagetable;
 
+Addrspace
+addrspace_new(Address base)
+{
+    return (Addrspace) {
+        .base = base,
+        .stackbase = base + USER_ADDRSPACE_SIZE, // stack starts at bottom (high) of addrspace
+    };
+}
+
 void
 pagetable_init(void)
 {
@@ -19,10 +28,8 @@ pagetable_createpage(void)
             pagetable.entries[i] &= PTE_ALLOCATED;
 
             Address base = USER_BASE + USER_ADDRSPACE_SIZE * i;
-            return (Addrspace) {
-                .base = base,
-                .stackbase = base + 0x0, // stack starts at bottom (high) of addrspace
-            };
+            addrspace_new(base);
+
         }
     }
     // TODO return error

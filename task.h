@@ -12,6 +12,9 @@ typedef struct {
     Tid tid;
     uint32_t priority;
     Addrspace addrspace;
+
+    // The value of sp before context switch
+    uint64_t saved_sp;
 } Task;
 
 typedef struct {
@@ -21,5 +24,9 @@ typedef struct {
 
 void tasktable_init(void);
 Tid tasktable_create_task(uint32_t priority);
+Task* tasktable_get_task(Tid tid);
+
+void tasktable_set_current_task(Tid task);
+Tid tasktable_current_task(void);
 
 #endif // __TASK_H__

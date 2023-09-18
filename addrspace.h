@@ -17,7 +17,7 @@ static const uint64_t USER_ADDRSPACE_SIZE = 0x01000000; // 1mb
 
 typedef struct {
     Address base;
-    Address stackbase;
+    Address stackbase; // the bottom of the stack
 } Addrspace;
 
 // bit mask for page table state
