@@ -1,4 +1,5 @@
 #include "addrspace.h"
+#include "rpi.h"
 
 static PageTable pagetable;
 
@@ -28,7 +29,8 @@ pagetable_createpage(void)
             pagetable.entries[i] &= PTE_ALLOCATED;
 
             Address base = USER_BASE + USER_ADDRSPACE_SIZE * i;
-            addrspace_new(base);
+            uart_printf(CONSOLE, "base %x\r\n", (unsigned char*)base);
+            return addrspace_new(base);
 
         }
     }

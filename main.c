@@ -14,7 +14,7 @@ void mytask() {
 
         if (timer_value - print_timer > 1000000) {
             print_timer = timer_value;
-            uart_printf(CONSOLE, "Hello from task");
+            uart_printf(CONSOLE, "Hello from task %d\r\n", MyTid());
         }
 
         if (timer_value - yield_timer > 3000000) {
@@ -28,9 +28,6 @@ int kmain() {
     
     kern_init();
 
-    Tid task1 = tasktable_create_task(0);
-    Tid task2 = tasktable_create_task(0);
-
     // initialize both console and marklin uarts
     uart_init();
 
@@ -40,6 +37,11 @@ int kmain() {
 
 
     uart_printf(CONSOLE, "Welcome to TrainOS\r\n");
+
+
+    /* Tid task1 = tasktable_create_task(0); */
+    /* Tid task2 = tasktable_create_task(0); */
+    Create(0, mytask);
 
     char c = ' ';
     while (c != 'q') {

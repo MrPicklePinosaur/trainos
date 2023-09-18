@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 
-typedef uint64_t Address;
+typedef unsigned char* Address;
 
-static const Address KERN_BASE = 0x00200000;
-static const Address USER_BASE = 0x01000000;
-static const uint64_t USER_ADDRSPACE_SIZE = 0x01000000; // 1mb
+static unsigned char* KERN_BASE = (unsigned char*)0x00100000;
+static unsigned char* USER_BASE = (unsigned char*)0x00120000;
+static unsigned int USER_ADDRSPACE_SIZE = 0x00010000; // 1mb (in number of words)
 
 #define MAX_PAGES 1024
 

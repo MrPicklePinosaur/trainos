@@ -1,4 +1,5 @@
 #include "switchframe.h"
+#include "rpi.h"
 
 SwitchFrame
 switchframe_new(void)
@@ -23,7 +24,13 @@ switchframe_init(Task* task, void (*entrypoint)())
 {
     Address base = task->addrspace.stackbase;
 
+    uart_printf(CONSOLE, "addr %x\r\n", base);
+    uart_printf(CONSOLE, "data %x\r\n", *base);
+
     SwitchFrame* switchframe = ((SwitchFrame*)base)-1;
+    // align to word
+    /* switchframe = (SwitchFrame*)((uint64_t)switchframe - (((uint64_t)switchframe) % 16)); */
+    uart_printf(CONSOLE, "switch frame addr %x\r\n", switchframe);
 
     // zero out the data
     *switchframe = switchframe_new();
