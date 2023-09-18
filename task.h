@@ -2,10 +2,10 @@
 #define __TASK_H__
 
 #include <stdint.h>
+#include "addrspace.h"
 
 #define MAX_TASK_COUNT 128
 
-typedef uint32_t Address;
 
 typedef uint32_t Tid;
 
@@ -13,7 +13,7 @@ typedef struct {
     Tid tid;
     uint32_t priority;
     
-    Address addrspace_start;
+    Addrspace addrspace;
 } Task;
 
 typedef struct {
@@ -21,8 +21,8 @@ typedef struct {
     Task tasks[MAX_TASK_COUNT];
 } TaskTable;
 
-TaskTable tasktable_new(void);
-void tasktable_create_task(TaskTable* this, uint32_t priority);
+void tasktable_init(void);
+void tasktable_create_task(uint32_t priority);
 
 int Create(int priority, void (*function)());
 int MyTid(void);

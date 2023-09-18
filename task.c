@@ -1,24 +1,30 @@
 #include "task.h"
+#include "addrspace.h"
 
-TaskTable
-tasktable_new(void)
+static TaskTable tasktable;
+
+void
+tasktable_init(void)
 {
-    return (TaskTable) {
+    tasktable = (TaskTable) {
         .next_tid = 0
     };
 }
 
 // TODO should introduce error codes
 void
-tasktable_create_task(TaskTable* this, uint32_t priority)
+tasktable_create_task(uint32_t priority)
 {
-    Task new_task = (Task) {
-        .tid = this->next_tid,
-        .priority = priority
-    };
-    this->tasks[this->next_tid] = new_task;
+    Addrspace addrspace = pagetable_createpage();
 
-    ++(this->next_tid);
+    Task new_task = (Task) {
+        .tid = tasktable.next_tid,
+        .priority = priority,
+        .addrspace = addrspace,
+    };
+    tasktable.tasks[tasktable.next_tid] = new_task;
+
+    ++(tasktable.next_tid);
 }
 
 int
