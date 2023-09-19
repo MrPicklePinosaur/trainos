@@ -114,6 +114,8 @@ void uart_init() {
   setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
   setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
   setup_gpio(7, GPIO_ALTFN4, GPIO_NONE);
+  setup_gpio(14, GPIO_ALTFN0, GPIO_NONE);
+  setup_gpio(15, GPIO_ALTFN0, GPIO_NONE);
 }
 
 static const uint32_t UARTCLK = 48000000;
