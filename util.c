@@ -50,3 +50,9 @@ void* memcpy(void* restrict dest, const void* restrict src, size_t n) {
     for (size_t i = 0; i < n; ++i) *(cdest++) = *(sit++);
     return dest;
 }
+
+void
+panic(void)
+{
+    // access some invalid memory to induce a panic
+}

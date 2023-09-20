@@ -7,7 +7,15 @@
 #include "switchframe.h"
 #include "task.h"
 
+
 // Serial line 1 on the RPi hat is used for the console
+void myprinttask() {
+    LOG_DEBUG("hello i am in new task");
+
+    for(;;) {
+        // just loop forever
+    }
+}
 
 void mytask1() {
 
@@ -76,10 +84,10 @@ int kmain() {
     LOG_INFO("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     LOG_INFO("                                                                              ");
 
-    Tid tid1 = Create(0, &mytask1);
-    Tid tid2 = Create(0, &mytask2);
+    Tid tid1 = Create(0, &myprinttask);
+    /* Tid tid2 = Create(0, &mytask2); */
 
-    LOG_DEBUG("task1 = %x, task2 = %x", &mytask1, &mytask2);
+    /* LOG_DEBUG("task1 = %x, task2 = %x", &mytask1, &mytask2); */
 
     LOG_DEBUG("privledge level %d", priviledge_level());
 

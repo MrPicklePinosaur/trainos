@@ -61,9 +61,14 @@ asm_enter_usermode:
 
     add sp, sp, #80
 
-    br x30
-    ; msr ELR_EL1, x30
-    ; eret
+    msr ELR_EL1, x30
+
+    mov x2, sp
+    msr SP_EL0, x2
+
+    msr SPSR_EL1, xzr
+
+    eret
 
 .text
 .align 2

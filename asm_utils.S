@@ -3,8 +3,9 @@
 .global	priviledge_level
 .type priviledge_level, %function
 priviledge_level:
-    mrs x1, CurrentEL
-    ubfx x0, x1, #2, #2
+    mrs x0, CurrentEL
+    and x0, x0, #0xC
+    asr x0, x0, #2
     br x30
 
 .text

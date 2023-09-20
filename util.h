@@ -18,4 +18,6 @@ extern int priviledge_level(void);
 // Get the value in ELR register
 extern int reg_elr(void);
 
+void panic(void);
+
 #endif // __UTIL_H__
