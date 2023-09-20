@@ -11,10 +11,6 @@ static unsigned int USER_ADDRSPACE_SIZE = 0x00010000; // 1mb (in number of words
 
 #define MAX_PAGES 1024
 
-/* typedef struct { */
-/*     /1* list of all ARM registers we need to save *1/ */
-/* } Trapframe; */
-
 typedef struct {
     Address base;
     Address stackbase; // the bottom of the stack
