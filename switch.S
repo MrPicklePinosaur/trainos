@@ -37,7 +37,7 @@ switchframe_switch:
 
     add sp, sp, #80
 
-    ret
+    br x30
 
 
 .text

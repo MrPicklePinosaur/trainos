@@ -2,6 +2,8 @@
 #include "kern.h"
 #include "task.h"
 #include "std.h"
+#include "util.h"
+#include "log.h"
 
 // Serial line 1 on the RPi hat is used for the console
 
@@ -45,6 +47,7 @@ void mytask2() {
     }
 }
 
+
 int kmain() {
     
     kern_init();
@@ -56,22 +59,35 @@ int kmain() {
     // but we'll configure the line anyways, so we know what state it is in
     uart_config_and_enable(CONSOLE, 115200, 0x70);
 
-    uart_printf(CONSOLE, "Welcome to TrainOS\r\n");
+    set_log_level(LOG_LEVEL_DEBUG);
 
-    uart_printf(CONSOLE, "task1 = %x, task2 = %x\r\n", &mytask1, &mytask2);
+    // print the banner
+    LOG_INFO("\r\n");
+    LOG_INFO(".___________..______          ___       __  .__   __.   ______        _______.\r\n");
+    LOG_INFO("|           ||   _  \\        /   \\     |  | |  \\ |  |  /  __  \\      /       |\r\n");
+    LOG_INFO("`---|  |----`|  |_)  |      /  ^  \\    |  | |   \\|  | |  |  |  |    |   (----`\r\n");
+    LOG_INFO("    |  |     |      /      /  /_\\  \\   |  | |  . `  | |  |  |  |     \\   \\    \r\n");
+    LOG_INFO("    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   \r\n");
+    LOG_INFO("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    \r\n");
+    LOG_INFO("                                                                              \r\n");
 
     /* Tid task1 = tasktable_create_task(0); */
     /* Tid task2 = tasktable_create_task(0); */
     Create(0, &mytask1);
     Create(0, &mytask2);
 
-    mytask1();
+    LOG_DEBUG("a: %d, b: %d, c: %d", 1, 2, 3);
+
+    LOG_DEBUG("task1 = %x, task2 = %x", &mytask1, &mytask2);
+
+    LOG_DEBUG("privledge level %d", priviledge_level());
+
+    /* mytask1(); */
 
     char c = ' ';
     while (c != 'q') {
     c = uart_getc(CONSOLE);
         if (c == '\r') {
-            uart_printf(CONSOLE, "asm_adder %d\r\n", asm_adder(21, 21));
             /* uart_printf(CONSOLE, "task0 %d\r\n", task0); */
             /* uart_printf(CONSOLE, "task1 %d\r\n", task1); */
         } else {

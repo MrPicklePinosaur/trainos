@@ -5,4 +5,5 @@
 priviledge_level:
     mrs x1, CurrentEL
     ubfx x0, x1, #2, #2
+    br x30
 
