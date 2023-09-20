@@ -8,6 +8,10 @@ void scheduler_init() {
     pqueue_size = 0;
 }
 
+uint32_t scheduler_count() {
+    return pqueue_size;
+}
+
 void scheduler_insert(Task* task) {
     if (pqueue_size >= MAX_TASK_COUNT) {
         // TODO error message
