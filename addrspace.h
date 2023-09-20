@@ -24,7 +24,7 @@ void pagetable_init(void);
 
 // Uses linear search to find the next free page
 Addrspace pagetable_createpage(void);
-void pagetable_deletepage(Address base);
+void pagetable_deletepage(Addrspace* addrspace);
 
 
 #endif // __ADDRSPACE_H__

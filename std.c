@@ -57,5 +57,4 @@ Yield(void)
 void
 Exit(void)
 {
-
 }

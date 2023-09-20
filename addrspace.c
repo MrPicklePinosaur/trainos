@@ -1,5 +1,8 @@
+#include <stddef.h>
+
 #include "addrspace.h"
 #include "rpi.h"
+#include "log.h"
 
 typedef struct PageTable PageTable;
 
@@ -41,4 +44,12 @@ pagetable_createpage(void)
         }
     }
     // TODO return error
+    LOG_ERROR("Out of space in page table");
+}
+
+void
+pagetable_deletepage(Addrspace* addrspace)
+{
+    size_t index = ((uint64_t)addrspace->base - (uint64_t)&pagetable)/USER_ADDRSPACE_SIZE;
+    pagetable.entries[index] &= (~PTE_ALLOCATED);
 }
