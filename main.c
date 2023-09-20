@@ -4,10 +4,15 @@
 #include "std.h"
 #include "util.h"
 #include "log.h"
+#include "switchframe.h"
+#include "task.h"
 
 // Serial line 1 on the RPi hat is used for the console
 
 void mytask1() {
+
+    LOG_DEBUG("entered task 1");
+
     uint64_t timer_value = 0;
     uint64_t print_timer = 0;
     uint64_t yield_timer = 0;
@@ -62,25 +67,24 @@ int kmain() {
     set_log_level(LOG_LEVEL_DEBUG);
 
     // print the banner
-    LOG_INFO("\r\n");
-    LOG_INFO(".___________..______          ___       __  .__   __.   ______        _______.\r\n");
-    LOG_INFO("|           ||   _  \\        /   \\     |  | |  \\ |  |  /  __  \\      /       |\r\n");
-    LOG_INFO("`---|  |----`|  |_)  |      /  ^  \\    |  | |   \\|  | |  |  |  |    |   (----`\r\n");
-    LOG_INFO("    |  |     |      /      /  /_\\  \\   |  | |  . `  | |  |  |  |     \\   \\    \r\n");
-    LOG_INFO("    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   \r\n");
-    LOG_INFO("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    \r\n");
-    LOG_INFO("                                                                              \r\n");
+    LOG_INFO("");
+    LOG_INFO(".___________..______          ___       __  .__   __.   ______        _______.");
+    LOG_INFO("|           ||   _  \\        /   \\     |  | |  \\ |  |  /  __  \\      /       |");
+    LOG_INFO("`---|  |----`|  |_)  |      /  ^  \\    |  | |   \\|  | |  |  |  |    |   (----`");
+    LOG_INFO("    |  |     |      /      /  /_\\  \\   |  | |  . `  | |  |  |  |     \\   \\    ");
+    LOG_INFO("    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   ");
+    LOG_INFO("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
+    LOG_INFO("                                                                              ");
 
-    /* Tid task1 = tasktable_create_task(0); */
-    /* Tid task2 = tasktable_create_task(0); */
-    Create(0, &mytask1);
-    Create(0, &mytask2);
-
-    LOG_DEBUG("a: %d, b: %d, c: %d", 1, 2, 3);
+    Tid tid1 = Create(0, &mytask1);
+    Tid tid2 = Create(0, &mytask2);
 
     LOG_DEBUG("task1 = %x, task2 = %x", &mytask1, &mytask2);
 
     LOG_DEBUG("privledge level %d", priviledge_level());
+
+    Task* task1 = tasktable_get_task(tid1);
+    asm_enter_usermode(task1->saved_sp);
 
     /* mytask1(); */
 

@@ -15,5 +15,7 @@ void* memcpy(void* restrict dest, const void* restrict src, size_t n);
 
 // Get the current privledge level fro the cpu
 extern int priviledge_level(void);
+// Get the value in ELR register
+extern int reg_elr(void);
 
 #endif // __UTIL_H__

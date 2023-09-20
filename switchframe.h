@@ -22,6 +22,8 @@ SwitchFrame switchframe_new(void);
 
 extern void switchframe_switch(Address* from_sp, Address* to_sp);
 
+extern void asm_enter_usermode(Address sp);
+
 // Initalize the switchframe for a task
 void switchframe_init(Task* task, void (*entrypoint)());
 

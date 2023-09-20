@@ -16,6 +16,7 @@ Create(int priority, void (*function)())
     // setup switchframe on the stack
     switchframe_init(new_task, function);
 
+    return tid;
 }
 
 int

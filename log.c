@@ -12,7 +12,7 @@ set_log_level(LogLevel level)
 void
 _log(LogLevel level, char* format, ...)
 {
-    if (level >= log_level) {
+    if (level <= log_level) {
         va_list args;
         va_start(args, format);
 
