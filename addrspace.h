@@ -20,14 +20,11 @@ typedef struct {
 typedef uint16_t PageTableEntry;
 #define PTE_ALLOCATED 0x1
 
-typedef struct {
-    PageTableEntry entries[MAX_PAGES]; 
-} PageTable;
-
 void pagetable_init(void);
 
 // Uses linear search to find the next free page
 Addrspace pagetable_createpage(void);
+void pagetable_deletepage(Address base);
 
 
 #endif // __ADDRSPACE_H__

@@ -1,15 +1,25 @@
 #include "task.h"
 #include "addrspace.h"
+#include "alloc.h"
+#include "log.h"
+
+typedef struct TaskTable TaskTable;
 
 static TaskTable tasktable;
 static Tid current_task;
+
+struct TaskTable {
+    uint32_t next_tid;
+    Task* tasks[MAX_TASK_COUNT];
+};
 
 void
 tasktable_init(void)
 {
     current_task = 1; // uninitalized
     tasktable = (TaskTable) {
-        .next_tid = 1
+        .next_tid = 1,
+        .tasks = {0}
     };
 }
 
@@ -21,11 +31,13 @@ tasktable_create_task(uint32_t priority)
 
     Tid new_task_id = (tasktable.next_tid)++;
 
-    Task new_task = (Task) {
+    Task* new_task = arena_alloc(sizeof(Task));
+    *new_task = (Task) {
         .tid = new_task_id,
         .priority = priority,
         .addrspace = addrspace,
     };
+
     tasktable.tasks[new_task_id] = new_task;
 
     return new_task_id;
@@ -35,7 +47,9 @@ Task*
 tasktable_get_task(Tid tid)
 {
     // TODO check if task actually exists
-    return &tasktable.tasks[tid];
+    if (tasktable.tasks[tid] == nullptr) LOG_WARN("getting invalid tid %d", tid);
+
+    return tasktable.tasks[tid];
 }
 
 void
@@ -48,4 +62,11 @@ Tid
 tasktable_current_task(void)
 {
     return current_task;
+}
+
+void
+tasktable_delete_task(Tid tid)
+{
+    arena_free(&tasktable.tasks[tid]);
+    tasktable.tasks[tid] = nullptr;
 }

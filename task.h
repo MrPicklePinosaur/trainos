@@ -17,16 +17,12 @@ typedef struct {
     Address saved_sp;
 } Task;
 
-typedef struct {
-    uint32_t next_tid;
-    Task tasks[MAX_TASK_COUNT];
-} TaskTable;
-
 void tasktable_init(void);
 Tid tasktable_create_task(uint32_t priority);
 Task* tasktable_get_task(Tid tid);
 
 void tasktable_set_current_task(Tid task);
 Tid tasktable_current_task(void);
+void tasktable_delete_task(Tid tid);
 
 #endif // __TASK_H__

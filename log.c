@@ -10,12 +10,13 @@ set_log_level(LogLevel level)
 }
 
 void
-_log(LogLevel level, char* format, ...)
+_log(LogLevel level, char* prefix, char* format, ...)
 {
     if (level <= log_level) {
         va_list args;
         va_start(args, format);
 
+        uart_printf(CONSOLE, prefix);
         uart_format_print(CONSOLE, format, args);
         uart_printf(CONSOLE, "\r\n");
 

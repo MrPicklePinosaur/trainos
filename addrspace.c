@@ -1,7 +1,13 @@
 #include "addrspace.h"
 #include "rpi.h"
 
+typedef struct PageTable PageTable;
+
 static PageTable pagetable;
+
+struct PageTable {
+    PageTableEntry entries[MAX_PAGES]; 
+};
 
 Addrspace
 addrspace_new(Address base)

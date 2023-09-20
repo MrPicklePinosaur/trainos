@@ -6,6 +6,7 @@
 #include "log.h"
 #include "switchframe.h"
 #include "task.h"
+#include "alloc.h"
 
 
 // Serial line 1 on the RPi hat is used for the console
@@ -64,6 +65,7 @@ void mytask2() {
 int kmain() {
     
     kern_init();
+    arena_init();
 
     // initialize both console and marklin uarts
     uart_init();
@@ -75,14 +77,14 @@ int kmain() {
     set_log_level(LOG_LEVEL_DEBUG);
 
     // print the banner
-    LOG_INFO("");
-    LOG_INFO(".___________..______          ___       __  .__   __.   ______        _______.");
-    LOG_INFO("|           ||   _  \\        /   \\     |  | |  \\ |  |  /  __  \\      /       |");
-    LOG_INFO("`---|  |----`|  |_)  |      /  ^  \\    |  | |   \\|  | |  |  |  |    |   (----`");
-    LOG_INFO("    |  |     |      /      /  /_\\  \\   |  | |  . `  | |  |  |  |     \\   \\    ");
-    LOG_INFO("    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   ");
-    LOG_INFO("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
-    LOG_INFO("                                                                              ");
+    PRINT("");
+    PRINT(".___________..______          ___       __  .__   __.   ______        _______.");
+    PRINT("|           ||   _  \\        /   \\     |  | |  \\ |  |  /  __  \\      /       |");
+    PRINT("`---|  |----`|  |_)  |      /  ^  \\    |  | |   \\|  | |  |  |  |    |   (----`");
+    PRINT("    |  |     |      /      /  /_\\  \\   |  | |  . `  | |  |  |  |     \\   \\    ");
+    PRINT("    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   ");
+    PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
+    PRINT("                                                                              ");
 
     Tid tid1 = Create(0, &myprinttask);
     /* Tid tid2 = Create(0, &mytask2); */
