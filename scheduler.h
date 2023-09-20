@@ -3,10 +3,10 @@
 
 #include "task.h"
 
-void scheduler_init();
-uint32_t scheduler_count();
+void scheduler_init(void);
+uint32_t scheduler_count(void);
 void scheduler_insert(Task* task);
-Task* scheduler_top();
-Task* scheduler_pop();
+Task* scheduler_top(void);
+Task* scheduler_pop(void);
 
 #endif // __SCHEDULER_H__

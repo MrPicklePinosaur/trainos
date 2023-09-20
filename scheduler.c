@@ -4,15 +4,21 @@
 Task* pqueue[MAX_TASK_COUNT];
 uint32_t pqueue_size;
 
-void scheduler_init() {
+void
+scheduler_init(void)
+{
     pqueue_size = 0;
 }
 
-uint32_t scheduler_count() {
+uint32_t
+scheduler_count(void)
+{
     return pqueue_size;
 }
 
-void scheduler_insert(Task* task) {
+void
+scheduler_insert(Task* task)
+{
     if (pqueue_size >= MAX_TASK_COUNT) {
         // TODO error message
         return;
@@ -34,7 +40,9 @@ void scheduler_insert(Task* task) {
     pqueue_size++;
 }
 
-Task* scheduler_top() {
+Task*
+scheduler_top(void)
+{
     if (pqueue_size == 0) {
         // TODO error message
         return 0;
@@ -42,7 +50,8 @@ Task* scheduler_top() {
     return pqueue[0];
 }
 
-Task* scheduler_pop() {
+Task* scheduler_pop(void)
+{
     if (pqueue_size == 0) {
         // TODO error message
         return 0;
