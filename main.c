@@ -29,11 +29,11 @@ void mytask1() {
 
         if (timer_value - print_timer > 1000000) {
             print_timer = timer_value;
-            LOG_DEBUG("[Task 1] Timer");
+            PRINT("%s[Task 1] Timer%s", ANSI_RED, ANSI_RESET);
         }
 
         if (timer_value - yield_timer > 3000000) {
-            LOG_DEBUG("[Task 1] Yielding");
+            PRINT("%s[Task 1] Yielding%s", ANSI_RED, ANSI_RESET);
             yield_timer = timer_value;
             Yield();
         }
@@ -51,11 +51,11 @@ void mytask2() {
 
         if (timer_value - print_timer > 1000000) {
             print_timer = timer_value;
-            LOG_DEBUG("[Task 2] Timer");
+            PRINT("%s[Task 2] Timer%s", ANSI_CYAN, ANSI_RESET);
         }
 
         if (timer_value - yield_timer > 3000000) {
-            LOG_DEBUG("[Task 2] Yielding");
+            PRINT("%s[Task 2] Yielding%s", ANSI_CYAN, ANSI_RESET);
             yield_timer = timer_value;
             Yield();
         }

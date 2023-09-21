@@ -18,7 +18,7 @@ handle_svc(void)
 {
     LOG_DEBUG("jumped to vector table handler");
 
-    LOG_DEBUG("current task = %x", tasktable_current_task());
+    /* LOG_DEBUG("current task = %x", tasktable_current_task()); */
 
     // save special registers for the current task
     Tid current_tid = tasktable_current_task();
@@ -61,8 +61,8 @@ handle_svc(void)
         Task* from_task = tasktable_get_task(from_tid);
         Task* to_task = tasktable_get_task(to_tid);
 
-        LOG_DEBUG("from_task: sp = %x, x30 = %x", from_task->saved_sp, from_task->saved_x30);
-        LOG_DEBUG("to_task: sp = %x, x30 = %x", to_task->saved_sp, to_task->saved_x30);
+        /* LOG_DEBUG("from_task: sp = %x, x30 = %x", from_task->saved_sp, from_task->saved_x30); */
+        /* LOG_DEBUG("to_task: sp = %x, x30 = %x", to_task->saved_sp, to_task->saved_x30); */
 
         asm_enter_usermode(to_task->saved_sp, to_task->saved_x30);
 
