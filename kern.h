@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include "addrspace.h"
+#include "switchframe.h"
+#include "task.h"
 
 static const uint32_t OPCODE_CREATE = 0;
 static const uint32_t OPCODE_MY_TID = 1;
@@ -16,6 +18,7 @@ void kern_init(void);
 // Handle a call from svc
 extern void vector_table_init(void);
 void handle_svc(void);
+Tid handle_svc_create(uint32_t priority, void (*entrypoint)());
 extern int return_from_svc(int);
 extern int pop_stack(void);
 

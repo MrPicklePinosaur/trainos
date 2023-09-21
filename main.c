@@ -88,8 +88,8 @@ int kmain() {
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
 
-    Tid tid1 = tasktable_create_task(0, &mytask1);
-    Tid tid2 = tasktable_create_task(0, &mytask2);
+    Tid tid1 = handle_svc_create(0, &mytask1);
+    Tid tid2 = handle_svc_create(0, &mytask2);
 
     LOG_DEBUG("task1 = %x, task2 = %x", tid1, tid2);
 

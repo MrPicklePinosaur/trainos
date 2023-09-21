@@ -1,5 +1,6 @@
 #include "scheduler.h"
 #include "rpi.h"
+#include "log.h"
 
 Task* pqueue[MAX_TASK_COUNT];
 uint32_t pqueue_size;
@@ -19,6 +20,8 @@ scheduler_count(void)
 void
 scheduler_insert(Task* task)
 {
+
+    LOG_DEBUG("inserting task %x, with pqueue_size = %d", task, pqueue_size);
     if (pqueue_size >= MAX_TASK_COUNT) {
         // TODO error message
         return;
@@ -52,6 +55,7 @@ scheduler_top(void)
 
 Task* scheduler_pop(void)
 {
+    LOG_DEBUG("popping task %x, with pqueue_size = %d", scheduler_top(), pqueue_size);
     if (pqueue_size == 0) {
         // TODO error message
         return 0;
