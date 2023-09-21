@@ -29,11 +29,11 @@ void mytask1() {
 
         if (timer_value - print_timer > 1000000) {
             print_timer = timer_value;
-            uart_printf(CONSOLE, "Hello from task %d\r\n", MyTid());
+            LOG_DEBUG("[Task 1] Timer");
         }
 
         if (timer_value - yield_timer > 3000000) {
-            uart_printf(CONSOLE, "yielding from task %d\r\n", MyTid());
+            LOG_DEBUG("[Task 1] Yielding");
             yield_timer = timer_value;
             Yield();
         }
@@ -41,6 +41,8 @@ void mytask1() {
 }
 
 void mytask2() {
+
+    LOG_DEBUG("entered task 2");
     uint64_t timer_value = 0;
     uint64_t print_timer = 0;
     uint64_t yield_timer = 0;
@@ -49,11 +51,11 @@ void mytask2() {
 
         if (timer_value - print_timer > 1000000) {
             print_timer = timer_value;
-            uart_printf(CONSOLE, "====== Hello from task %d\r\n", MyTid());
+            LOG_DEBUG("[Task 2] Timer");
         }
 
         if (timer_value - yield_timer > 3000000) {
-            uart_printf(CONSOLE, "===== yielding from task %d\r\n", MyTid());
+            LOG_DEBUG("[Task 2] Yielding");
             yield_timer = timer_value;
             Yield();
         }
@@ -85,10 +87,10 @@ int kmain() {
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
 
-    Tid tid1 = Create(0, &myprinttask);
-    /* Tid tid2 = Create(0, &mytask2); */
+    Tid tid1 = Create(0, &mytask1);
+    Tid tid2 = Create(0, &mytask2);
 
-    /* LOG_DEBUG("task1 = %x, task2 = %x", &mytask1, &mytask2); */
+    LOG_DEBUG("task1 = %x, task2 = %x", tid1, tid2);
 
     LOG_DEBUG("privledge level %d", priviledge_level());
 

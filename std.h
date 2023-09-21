@@ -6,7 +6,7 @@
 int Create(int priority, void (*function)());
 extern int MyTid(void);
 int MyParentTid(void);
-void Yield(void);
+extern void Yield(void);
 void Exit(void);
 
 #endif // __STD_H__

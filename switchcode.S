@@ -30,6 +30,28 @@ MyTid:
 
     br x30
 
+.global Yield
+.type Yield, %function
+Yield:
+    
+    sub sp, sp, #80
+
+    str x19, [sp, #0]
+    str x20, [sp, #8]
+    str x21, [sp, #16]
+    str x22, [sp, #24]
+    str x23, [sp, #32]
+    str x24, [sp, #40]
+    str x25, [sp, #48]
+    str x26, [sp, #56]
+    str x27, [sp, #64]
+    str x28, [sp, #72]
+    str x30, [sp, #80]
+
+    svc 0x3
+
+    br x30
+
 
 // vector table from https://developer.arm.com/documentation/100933/0100/AArch64-exception-vector-table
 .balign 0x800

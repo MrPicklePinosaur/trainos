@@ -35,7 +35,7 @@ pagetable_createpage(void)
 {
     for (unsigned int i = 0; i < MAX_PAGES; ++i) {
         if ((pagetable.entries[i] & PTE_ALLOCATED) == 0) {
-            pagetable.entries[i] &= PTE_ALLOCATED;
+            pagetable.entries[i] |= PTE_ALLOCATED;
 
             Address base = USER_BASE + USER_ADDRSPACE_SIZE * i;
             uart_printf(CONSOLE, "base %x\r\n", (unsigned char*)base);

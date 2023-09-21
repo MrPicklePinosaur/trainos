@@ -18,6 +18,8 @@ handle_svc(void)
 {
     LOG_DEBUG("jumped to vector table handler");
 
+    LOG_DEBUG("current task = %x", tasktable_current_task());
+
     // save special registers for the current task
     Tid current_tid = tasktable_current_task();
     Task* current_task = tasktable_get_task(current_tid);
@@ -37,18 +39,38 @@ handle_svc(void)
     }
     else if (opcode == OPCODE_MY_TID) {
         LOG_DEBUG("MyTid %u", tasktable_current_task());
+
+        asm_enter_usermode(current_task->saved_sp, current_task->saved_x30);
     }
     else if (opcode == OPCODE_MY_PARENT_TID) {
 
     }
     else if (opcode == OPCODE_YIELD) {
 
+        Tid from_tid = current_tid;
+        Tid to_tid;
+
+        // TODO: run scheduler to determine next task to run (this is just dumb schedule that toggles between two tasks)
+        if (from_tid == 1) to_tid = 2; 
+        else to_tid = 1; 
+
+        LOG_DEBUG("context switch task_id from = %d to = %d", from_tid, to_tid);
+
+        tasktable_set_current_task(to_tid);
+
+        Task* from_task = tasktable_get_task(from_tid);
+        Task* to_task = tasktable_get_task(to_tid);
+
+        LOG_DEBUG("from_task: sp = %x, x30 = %x", from_task->saved_sp, from_task->saved_x30);
+        LOG_DEBUG("to_task: sp = %x, x30 = %x", to_task->saved_sp, to_task->saved_x30);
+
+        asm_enter_usermode(to_task->saved_sp, to_task->saved_x30);
+
+        // switchframe_switch(&to_task->saved_sp, &to_task->saved_sp);
+
     }
     else if (opcode == OPCODE_EXIT) {
 
     }
 
-    Tid tid = 1;
-    Task* task = tasktable_get_task(tid);
-    asm_enter_usermode(task->saved_sp, task->saved_x30);
 }
