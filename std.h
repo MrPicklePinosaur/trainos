@@ -3,11 +3,10 @@
 
 /* Programmer interface */
 
-int Create(int priority, void (*function)());
-extern int CreateTest(int priority, void (*function)());
+extern int Create(int priority, void (*function)());
 extern int MyTid(void);
-int MyParentTid(void);
+extern int MyParentTid(void);
 extern void Yield(void);
-void Exit(void);
+extern void Exit(void);
 
 #endif // __STD_H__

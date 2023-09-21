@@ -19,11 +19,7 @@ void myprinttask() {
 
 void mytask1() {
 
-    LOG_DEBUG("entered task 1");
-
-    CreateTest(0x69, 0x6969);
-
-    return;
+    LOG_DEBUG("entered task tid = %d, parent_tid = %d", MyTid(), MyParentTid());
 
     uint64_t timer_value = 0;
     uint64_t print_timer = 0;
@@ -46,7 +42,8 @@ void mytask1() {
 
 void mytask2() {
 
-    LOG_DEBUG("entered task 2");
+    LOG_DEBUG("entered task tid = %d, parent_tid = %d", MyTid(), MyParentTid());
+
     uint64_t timer_value = 0;
     uint64_t print_timer = 0;
     uint64_t yield_timer = 0;
@@ -91,8 +88,8 @@ int kmain() {
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
 
-    Tid tid1 = Create(0, &mytask1);
-    Tid tid2 = Create(0, &mytask2);
+    Tid tid1 = tasktable_create_task(0, &mytask1);
+    Tid tid2 = tasktable_create_task(0, &mytask2);
 
     LOG_DEBUG("task1 = %x, task2 = %x", tid1, tid2);
 

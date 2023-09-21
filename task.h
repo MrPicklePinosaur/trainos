@@ -15,6 +15,7 @@ typedef struct {
     SwitchFrame* sf;
 
     Tid tid;
+    Tid parent_tid;
     uint32_t priority;
     Addrspace addrspace;
 
