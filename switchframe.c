@@ -15,7 +15,7 @@ switchframe_new(void)
         .x26 = 0,
         .x27 = 0,
         .x28 = 0,
-        .x30 = 0
+        .x30 = 0,
     };
 }
 
@@ -32,7 +32,7 @@ switchframe_init(Task* task, void (*entrypoint)())
     *switchframe = switchframe_new();
 
     // set the ra register so when we return from switchframe we go to entrypoint
-    switchframe->x30 = (uint64_t)entrypoint;
+    task->saved_x30 = (Address)entrypoint;
 
     // Also save the new value of stack pointer to the task
     task->saved_sp = (Address)switchframe;

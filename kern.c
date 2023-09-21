@@ -1,5 +1,6 @@
 #include "kern.h"
 #include "addrspace.h"
+#include "switchframe.h"
 #include "task.h"
 #include "log.h"
 #include "util.h"
@@ -16,6 +17,13 @@ void
 handle_svc(void)
 {
     LOG_DEBUG("jumped to vector table handler");
+
+    // save special registers for the current task
+    Tid current_tid = tasktable_current_task();
+    Task* current_task = tasktable_get_task(current_tid);
+    current_task->saved_x30 = (Address)asm_elr_el1();
+    current_task->saved_sp = (Address)asm_sp_el0();
+    
     
     uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
 
@@ -39,4 +47,8 @@ handle_svc(void)
     else if (opcode == OPCODE_EXIT) {
 
     }
+
+    Tid tid = 1;
+    Task* task = tasktable_get_task(tid);
+    asm_enter_usermode(task->saved_sp, task->saved_x30);
 }

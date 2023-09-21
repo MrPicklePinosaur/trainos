@@ -13,6 +13,8 @@ void myprinttask() {
     LOG_DEBUG("hello i am in new task");
 
     MyTid();
+
+    LOG_DEBUG("i am back from the kernel");
 }
 
 void mytask1() {
@@ -93,7 +95,7 @@ int kmain() {
     LOG_DEBUG("vbar value %x", vbar_value());
 
     Task* task1 = tasktable_get_task(tid1);
-    asm_enter_usermode(task1->saved_sp);
+    asm_enter_usermode(task1->saved_sp, task1->saved_x30);
 
     /* mytask1(); */
 

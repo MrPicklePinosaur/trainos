@@ -1,70 +1,27 @@
 
 .text
 .align 2
-.global	switchframe_switch
-.type switchframe_switch, %function
-switchframe_switch:
-    sub sp, sp, #80
-
-    str x19, [sp, #0]
-    str x20, [sp, #8]
-    str x21, [sp, #16]
-    str x22, [sp, #24]
-    str x23, [sp, #32]
-    str x24, [sp, #40]
-    str x25, [sp, #48]
-    str x26, [sp, #56]
-    str x27, [sp, #64]
-    str x28, [sp, #72]
-    str x30, [sp, #80]
-
-    str x0, [sp, #0]
-
-    ldr x2, [x1, #0]
-    mov sp, x2
-
-    ldr x19, [sp, #0]
-    ldr x20, [sp, #8]
-    ldr x21, [sp, #16]
-    ldr x22, [sp, #24]
-    ldr x23, [sp, #32]
-    ldr x24, [sp, #40]
-    ldr x25, [sp, #48]
-    ldr x26, [sp, #56]
-    ldr x27, [sp, #64]
-    ldr x28, [sp, #72]
-    ldr x30, [sp, #80]
-
-    add sp, sp, #80
-
-    br x30
-
-.text
-.align 2
 .global	asm_enter_usermode
 .type asm_enter_usermode, %function
 asm_enter_usermode:
 
-    mov sp, x0
+    ldr x19, [x0, #0]
+    ldr x20, [x0, #8]
+    ldr x21, [x0, #16]
+    ldr x22, [x0, #24]
+    ldr x23, [x0, #32]
+    ldr x24, [x0, #40]
+    ldr x25, [x0, #48]
+    ldr x26, [x0, #56]
+    ldr x27, [x0, #64]
+    ldr x28, [x0, #72]
+    ldr x30, [x0, #80]
 
-    ldr x19, [sp, #0]
-    ldr x20, [sp, #8]
-    ldr x21, [sp, #16]
-    ldr x22, [sp, #24]
-    ldr x23, [sp, #32]
-    ldr x24, [sp, #40]
-    ldr x25, [sp, #48]
-    ldr x26, [sp, #56]
-    ldr x27, [sp, #64]
-    ldr x28, [sp, #72]
-    ldr x30, [sp, #80]
+    add x0, x0, #80
 
-    add sp, sp, #80
+    msr ELR_EL1, x1
 
-    msr ELR_EL1, x30
-
-    mov x2, sp
-    msr SP_EL0, x2
+    msr SP_EL0, x0
 
     msr SPSR_EL1, xzr
 

@@ -15,6 +15,7 @@ typedef struct {
 
     // The value of sp before context switch
     Address saved_sp;
+    Address saved_x30;
 } Task;
 
 void tasktable_init(void);

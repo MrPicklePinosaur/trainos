@@ -23,5 +23,7 @@ void panic(void);
 int vbar_value(void);
 
 extern uint32_t asm_esr_el1(void);
+extern uint32_t asm_elr_el1(void);
+extern uint32_t asm_sp_el0(void);
 
 #endif // __UTIL_H__

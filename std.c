@@ -44,7 +44,7 @@ Yield(void)
 
     uart_printf(CONSOLE, "context switch stack ptr from = %x to = %x\r\n", from_task->saved_sp, to_task->saved_sp);
 
-    switchframe_switch(&to_task->saved_sp, &to_task->saved_sp);
+    // switchframe_switch(&to_task->saved_sp, &to_task->saved_sp);
 
 }
 

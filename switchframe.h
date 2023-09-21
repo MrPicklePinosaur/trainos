@@ -20,9 +20,9 @@ typedef struct {
 
 SwitchFrame switchframe_new(void);
 
-extern void switchframe_switch(Address* from_sp, Address* to_sp);
+/* extern void switchframe_switch(Address* from_sp, Address* to_sp); */
 
-extern void asm_enter_usermode(Address sp);
+extern void asm_enter_usermode(Address sp, Address x30);
 
 // Initalize the switchframe for a task
 void switchframe_init(Task* task, void (*entrypoint)());
