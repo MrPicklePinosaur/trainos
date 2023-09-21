@@ -4,7 +4,7 @@
 /* Programmer interface */
 
 int Create(int priority, void (*function)());
-int MyTid(void);
+extern int MyTid(void);
 int MyParentTid(void);
 void Yield(void);
 void Exit(void);

@@ -13,9 +13,7 @@
 void myprinttask() {
     LOG_DEBUG("hello i am in new task");
 
-    for(;;) {
-        // just loop forever
-    }
+    LOG_DEBUG("%u\r\n", MyTid());
 }
 
 void mytask1() {

@@ -20,12 +20,6 @@ Create(int priority, void (*function)())
 }
 
 int
-MyTid(void)
-{
-    return (int)tasktable_current_task();
-}
-
-int
 MyParentTid(void)
 {
 
