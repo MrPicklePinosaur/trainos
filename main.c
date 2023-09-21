@@ -87,6 +87,15 @@ int kmain() {
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
 
+    LOG_DEBUG("testin_task = %x", &myprinttask);
+
+    Tid testing_task = Create(0, &myprinttask);
+    SwitchFrame* sf = tasktable_get_task(testing_task)->sf;
+    switchframe_debug(sf);
+    asm_enter_usermode(sf);
+
+
+#if 0
     Tid tid1 = Create(0, &mytask1);
     Tid tid2 = Create(0, &mytask2);
 
@@ -97,7 +106,8 @@ int kmain() {
     LOG_DEBUG("vbar value %x", vbar_value());
 
     Task* task1 = tasktable_get_task(tid1);
-    asm_enter_usermode(task1->saved_sp, task1->saved_x30);
+    asm_enter_usermode(task1->sf);
+#endif
 
     /* mytask1(); */
 

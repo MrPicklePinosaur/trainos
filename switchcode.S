@@ -12,21 +12,7 @@ vector_table_init:
 .type MyTid, %function
 MyTid:
     
-    sub sp, sp, #80
-
-    str x19, [sp, #0]
-    str x20, [sp, #8]
-    str x21, [sp, #16]
-    str x22, [sp, #24]
-    str x23, [sp, #32]
-    str x24, [sp, #40]
-    str x25, [sp, #48]
-    str x26, [sp, #56]
-    str x27, [sp, #64]
-    str x28, [sp, #72]
-    str x30, [sp, #80]
-
-    svc 0x1
+    svc 0xFF
 
     br x30
 
@@ -95,7 +81,7 @@ curr_el_spx_serror:      // The exception handler for a System Error
 .balign 0x80
 lower_el_aarch64_sync:   // The exception handler for a synchronous 
                          // exception from a lower EL (AArch64).
-    b handle_svc
+    b asm_enter_kernelmode
 
 .balign 0x80
 lower_el_aarch64_irq:    // The exception handler for an IRQ from a lower EL

@@ -25,17 +25,21 @@ tasktable_init(void)
 
 // TODO should introduce error codes
 Tid
-tasktable_create_task(uint32_t priority)
+tasktable_create_task(uint32_t priority, void (*entrypoint)())
 {
     Addrspace addrspace = pagetable_createpage();
 
     Tid new_task_id = (tasktable.next_tid)++;
 
     Task* new_task = arena_alloc(sizeof(Task));
+    SwitchFrame* sf = arena_alloc(sizeof(SwitchFrame));
+    *sf = switchframe_new(addrspace.stackbase, entrypoint);
+
     *new_task = (Task) {
         .tid = new_task_id,
         .priority = priority,
         .addrspace = addrspace,
+        .sf = sf
     };
 
     tasktable.tasks[new_task_id] = new_task;
@@ -67,6 +71,8 @@ tasktable_current_task(void)
 void
 tasktable_delete_task(Tid tid)
 {
-    arena_free(&tasktable.tasks[tid]);
+    Task* task = tasktable_get_task(tid);
+    arena_free(task->sf);
+    arena_free(task);
     tasktable.tasks[tid] = nullptr;
 }

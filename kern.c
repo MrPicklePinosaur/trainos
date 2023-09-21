@@ -16,18 +16,19 @@ kern_init(void)
 void
 handle_svc(void)
 {
-    LOG_DEBUG("jumped to vector table handler");
+    Tid current_tid = tasktable_current_task();
+    Task* current_task = tasktable_get_task(current_tid);
+    SwitchFrame* sf = current_task->sf;
+
+    uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
+    LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode);
 
     /* LOG_DEBUG("current task = %x", tasktable_current_task()); */
 
     // save special registers for the current task
-    Tid current_tid = tasktable_current_task();
-    Task* current_task = tasktable_get_task(current_tid);
-    current_task->saved_x30 = (Address)asm_elr_el1();
-    current_task->saved_sp = (Address)asm_sp_el0();
+    /* current_task->saved_x30 = (Address)asm_elr_el1(); */
+    /* current_task->saved_sp = (Address)asm_sp_el0(); */
     
-    
-    uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
 
     /* uint32_t sp_el0 = pop_stack(); */
     /* uint32_t spsr_el1 = pop_stack(); */
@@ -40,7 +41,7 @@ handle_svc(void)
     else if (opcode == OPCODE_MY_TID) {
         LOG_DEBUG("MyTid %u", tasktable_current_task());
 
-        asm_enter_usermode(current_task->saved_sp, current_task->saved_x30);
+        asm_enter_usermode(current_task->sf);
     }
     else if (opcode == OPCODE_MY_PARENT_TID) {
 
@@ -64,7 +65,7 @@ handle_svc(void)
         /* LOG_DEBUG("from_task: sp = %x, x30 = %x", from_task->saved_sp, from_task->saved_x30); */
         /* LOG_DEBUG("to_task: sp = %x, x30 = %x", to_task->saved_sp, to_task->saved_x30); */
 
-        asm_enter_usermode(to_task->saved_sp, to_task->saved_x30);
+        asm_enter_usermode(to_task->sf);
 
         // switchframe_switch(&to_task->saved_sp, &to_task->saved_sp);
 

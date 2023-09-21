@@ -7,14 +7,11 @@
 int
 Create(int priority, void (*function)())
 {
-    Tid tid = tasktable_create_task(priority);
+    Tid tid = tasktable_create_task(priority, function);
 
     uart_printf(CONSOLE, "created new task %d\r\n", tid);
     
     Task* new_task = tasktable_get_task(tid);
-
-    // setup switchframe on the stack
-    switchframe_init(new_task, function);
 
     return tid;
 }
