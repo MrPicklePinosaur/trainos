@@ -13,9 +13,6 @@ static const uint32_t OPCODE_EXIT = 4;
 // Initalize kernel data structurea
 void kern_init(void);
 
-// simple test for running assembly
-extern int asm_adder(int, int);
-
 // Handle a call from svc
 extern void vector_table_init(void);
 void handle_svc(void);

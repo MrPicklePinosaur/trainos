@@ -26,12 +26,3 @@ asm_enter_usermode:
     msr SPSR_EL1, xzr
 
     eret
-
-.text
-.align 2
-.global	asm_adder
-.type asm_adder, %function
-asm_adder:
-    add x2, x1, x0
-    mov x0, x2
-    br x30
