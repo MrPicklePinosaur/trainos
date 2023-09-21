@@ -51,7 +51,7 @@ Task*
 tasktable_get_task(Tid tid)
 {
     // TODO check if task actually exists
-    if (tasktable.tasks[tid] == nullptr) LOG_WARN("getting invalid tid %d", tid);
+    /* if (tasktable.tasks[tid] == nullptr) LOG_WARN("getting invalid tid %d", tid); */
 
     return tasktable.tasks[tid];
 }

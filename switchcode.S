@@ -12,7 +12,7 @@ vector_table_init:
 .type MyTid, %function
 MyTid:
     
-    svc 0xFF
+    svc 0x1
 
     br x30
 

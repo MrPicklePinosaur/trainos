@@ -12,11 +12,17 @@ asm_enter_kernelmode:
     str x0, [sp, #0]
     str x1, [sp, #8]
 
+    sub sp, sp, #8
+    str x30, [sp, #0]
+
     # x0 = tasktable_current_task()
     bl tasktable_current_task 
 
     # x0 = tasktable_get_task(x0)
     bl tasktable_get_task
+
+    ldr x30, [sp, #0]
+    add sp, sp, #8
 
     # x0 = task->sf
     ldr x0, [x0, #0]
@@ -86,16 +92,16 @@ asm_enter_usermode:
     ldp x28, x30, [x0, #224]
 
     # load stack ptr
-    ldr x0, [x0, #240]
-    msr SP_EL0, x0
+    ldr x1, [x0, #240]
+    msr SP_EL0, x1
 
     # load return value
-    ldr x0, [x0, #248]
-    msr ELR_EL1, x0
+    ldr x1, [x0, #248]
+    msr ELR_EL1, x1
 
     # load state reg
-    ldr x0, [x0, #256]
-    msr SPSR_EL1, x0
+    ldr x1, [x0, #256]
+    msr SPSR_EL1, x1
 
     ldp x0, x1, [x0, #0]
 
