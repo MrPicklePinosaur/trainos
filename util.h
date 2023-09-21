@@ -2,6 +2,7 @@
 #define __UTIL_H__
 
 #include <stddef.h>
+#include <stdint.h>
 
 // conversions
 int a2d(char ch);
@@ -20,5 +21,7 @@ extern int reg_elr(void);
 
 void panic(void);
 int vbar_value(void);
+
+extern uint32_t asm_esr_el1(void);
 
 #endif // __UTIL_H__

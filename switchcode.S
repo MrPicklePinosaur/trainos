@@ -30,7 +30,7 @@ MyTid:
     ; stp x26, x27, [sp, #208]
     ; stp x28, x30, [sp, #224]
     
-    svc #1
+    svc 0x1
 
     br x30
 
@@ -78,7 +78,7 @@ curr_el_spx_serror:      // The exception handler for a System Error
 .balign 0x80
 lower_el_aarch64_sync:   // The exception handler for a synchronous 
                          // exception from a lower EL (AArch64).
-    b vectortable_handler
+    b handle_svc
 
 .balign 0x80
 lower_el_aarch64_irq:    // The exception handler for an IRQ from a lower EL
@@ -112,27 +112,26 @@ lower_el_aarch32_serror: // The exception handler for a System Error
                          // exception from a lower EL(AArch32).
     nop
 
-.global handle_svc
-vector_table:
-    mrs x0, esr_el1
-    str x0, [sp, #0]
-    mrs x0, elr_el1
-    str x0, [sp, #8]
-    mrs x0, spsr_el1
-    str x0, [sp, #16]
-    mrs x0, sp_el0
-    str x0, [sp, #24]
+; vector_table:
+;     mrs x0, esr_el1
+;     str x0, [sp, #0]
+;     mrs x0, elr_el1
+;     str x0, [sp, #8]
+;     mrs x0, spsr_el1
+;     str x0, [sp, #16]
+;     mrs x0, sp_el0
+;     str x0, [sp, #24]
+; 
+;     sub sp, sp, #24
+; 
+;     b handle_svc
 
-    sub sp, sp, #24
-
-    b handle_svc
-
-.align 2
-.global pop_stack
-pop_stack:
-    ldr x0, [sp, #0]
-    add sp, sp, #8
-    br x30
+; .align 2
+; .global pop_stack
+; pop_stack:
+;     ldr x0, [sp, #0]
+;     add sp, sp, #8
+;     br x30
 
 .global return_from_svc
 .type return_from_svc, %function

@@ -8,10 +8,6 @@
 #include "task.h"
 #include "alloc.h"
 
-void vectortable_handler() {
-    LOG_DEBUG("jumped to vector table handler");
-}
-
 // Serial line 1 on the RPi hat is used for the console
 void myprinttask() {
     LOG_DEBUG("hello i am in new task");

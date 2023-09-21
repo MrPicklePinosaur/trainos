@@ -22,3 +22,9 @@ exception_return_loc:
 vbar_value:
     mrs x0, VBAR_EL1
     br x30
+
+.global	asm_esr_el1
+.type asm_esr_el1, %function
+asm_esr_el1:
+    mrs x0, ESR_EL1
+    br x30
