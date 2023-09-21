@@ -7,13 +7,13 @@ asm_enter_kernelmode:
     # Grab current task switchframe and save necessary registers
     # WARNING: this procedure clobbers x1
 
-    # push x0 and x1
-    sub sp, sp, #16
+    # frame to call tasktable functions
+    sub sp, sp, #32
     str x0, [sp, #0]
     str x1, [sp, #8]
-
-    sub sp, sp, #8
-    str x30, [sp, #0]
+    str x2, [sp, #16]
+    str x3, [sp, #24]
+    str x30, [sp, #32]
 
     # x0 = tasktable_current_task()
     bl tasktable_current_task 
@@ -21,19 +21,21 @@ asm_enter_kernelmode:
     # x0 = tasktable_get_task(x0)
     bl tasktable_get_task
 
-    ldr x30, [sp, #0]
-    add sp, sp, #8
-
     # x0 = task->sf
     ldr x0, [x0, #0]
-
-    # save x1
-    str x1, [x0, #8]
 
     # save x0 (by grabbing it from top of stack)
     ldr x1, [sp, #0]
     str x1, [x0, #0]
 
+    # notice that we don't load x0
+    ldr x1, [sp, #8]
+    ldr x2, [sp, #16]
+    ldr x3, [sp, #24]
+    ldr x30, [sp, #32]
+    add sp, sp, #32
+
+    str x1, [x0, #8]
     stp x2, x3, [x0, #16]
     stp x4, x5, [x0, #32]
     stp x6, x7, [x0, #48]
@@ -60,11 +62,6 @@ asm_enter_kernelmode:
     # load state reg
     mrs x1, SPSR_EL1
     str x1, [x0, #256]
-
-    # pop x0 and x1
-    ldr x0, [sp, #0]
-    ldr x1, [sp, #8]
-    add sp, sp, #16
 
     b handle_svc
 

@@ -22,12 +22,6 @@ MyParentTid(void)
 
 }
 
-/* void */
-/* Yield(void) */
-/* { */
-
-/* } */
-
 void
 Exit(void)
 {

@@ -20,6 +20,8 @@ handle_svc(void)
     Task* current_task = tasktable_get_task(current_tid);
     SwitchFrame* sf = current_task->sf;
 
+    switchframe_debug(sf);
+
     uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
     LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode);
 

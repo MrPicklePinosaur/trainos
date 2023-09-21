@@ -16,6 +16,14 @@ MyTid:
 
     br x30
 
+.global CreateTest
+.type CreateTest, %function
+CreateTest:
+    
+    svc 0x0
+
+    br x30
+
 .global Yield
 .type Yield, %function
 Yield:

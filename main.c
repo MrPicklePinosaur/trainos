@@ -21,6 +21,10 @@ void mytask1() {
 
     LOG_DEBUG("entered task 1");
 
+    CreateTest(0x69, 0x6969);
+
+    return;
+
     uint64_t timer_value = 0;
     uint64_t print_timer = 0;
     uint64_t yield_timer = 0;
