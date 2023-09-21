@@ -8,12 +8,15 @@
 #include "task.h"
 #include "alloc.h"
 
+void vectortable_handler() {
+    LOG_DEBUG("jumped to vector table handler");
+}
 
 // Serial line 1 on the RPi hat is used for the console
 void myprinttask() {
     LOG_DEBUG("hello i am in new task");
 
-    LOG_DEBUG("%u\r\n", MyTid());
+    MyTid();
 }
 
 void mytask1() {
@@ -90,6 +93,8 @@ int kmain() {
     /* LOG_DEBUG("task1 = %x, task2 = %x", &mytask1, &mytask2); */
 
     LOG_DEBUG("privledge level %d", priviledge_level());
+
+    LOG_DEBUG("vbar value %x", vbar_value());
 
     Task* task1 = tasktable_get_task(tid1);
     asm_enter_usermode(task1->saved_sp);

@@ -16,3 +16,9 @@ exception_return_loc:
     mrs x1, ELR_EL1
     ubfx x0, x1, #2, #2
     br x30
+
+.global	vbar_value
+.type vbar_value, %function
+vbar_value:
+    mrs x0, VBAR_EL1
+    br x30

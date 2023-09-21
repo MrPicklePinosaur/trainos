@@ -19,5 +19,6 @@ extern int priviledge_level(void);
 extern int reg_elr(void);
 
 void panic(void);
+int vbar_value(void);
 
 #endif // __UTIL_H__

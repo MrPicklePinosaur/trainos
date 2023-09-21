@@ -5,8 +5,8 @@
 
 typedef unsigned char* Address;
 
-static unsigned char* KERN_BASE = (unsigned char*)0x00100000;
-static unsigned char* USER_BASE = (unsigned char*)0x00120000;
+static unsigned char* KERN_BASE = (unsigned char*)0x00200000;
+static unsigned char* USER_BASE = (unsigned char*)0x00220000;
 static unsigned int USER_ADDRSPACE_SIZE = 0x00010000; // 1mb (in number of words)
 
 #define MAX_PAGES 1024
