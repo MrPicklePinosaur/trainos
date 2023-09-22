@@ -82,7 +82,7 @@ handle_svc(void)
 
         // TODO: run scheduler to determine next task to run (this is just dumb schedule that toggles between two tasks)
 
-        LOG_DEBUG("context switch task_id from = %d to = %d", current_tid, to_task->tid);
+        LOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
 
         tasktable_set_current_task(next_tid);
 
@@ -99,10 +99,21 @@ handle_svc(void)
 
         // NOTE: maybe don't allow task 1 to be deleted?
 
+        scheduler_remove(current_tid);
         tasktable_delete_task(current_tid);
 
-        // find next task
+        Tid next_tid = scheduler_next();
+        if (next_tid == 0) {
+            for (;;) {
+                LOG_DEBUG("No more tasks");
+            }
+            // Somehow return to kmain
+        }
 
+        LOG_DEBUG("exit context switch task_id from = %d to = %d", current_tid, next_tid);
+
+        tasktable_set_current_task(next_tid);
+        asm_enter_usermode(tasktable_get_task(next_tid)->sf);
     }
 
     LOG_WARN("Uncaught syscall with opcode %x", opcode);

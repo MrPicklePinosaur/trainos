@@ -114,7 +114,7 @@ int kmain() {
     PRINT("                                                                              ");
 
     // need to create first task using kernel primitives since we are in kernel mode right here
-    Tid tid1 = handle_svc_create(0, &firstUserTask);
+    Tid tid1 = handle_svc_create(4, &firstUserTask);
     Task* task1 = tasktable_get_task(tid1);
     asm_enter_usermode(task1->sf);
 
