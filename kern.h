@@ -19,7 +19,5 @@ void kern_init(void);
 extern void vector_table_init(void);
 void handle_svc(void);
 Tid handle_svc_create(uint32_t priority, void (*entrypoint)());
-extern int return_from_svc(int);
-extern int pop_stack(void);
 
 #endif // __KERN_H__
