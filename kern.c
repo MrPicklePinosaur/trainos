@@ -19,7 +19,6 @@ Tid
 handle_svc_create(uint32_t priority, void (*entrypoint)())
 {
     Tid current_tid = tasktable_current_task();
-    Task* current_task = tasktable_get_task(current_tid);
 
     Tid new_tid = tasktable_create_task(priority, entrypoint);
     Task* new_task = tasktable_get_task(new_tid);
