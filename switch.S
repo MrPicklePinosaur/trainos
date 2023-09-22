@@ -67,8 +67,6 @@ asm_enter_kernelmode:
 
 
 
-.text
-.align 2
 .global	asm_enter_usermode
 .type asm_enter_usermode, %function
 asm_enter_usermode:
