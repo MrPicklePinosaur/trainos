@@ -38,6 +38,7 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
     *new_task = (Task) {
         .tid = new_task_id,
         .parent_tid = 0,
+        .state = TASKSTATE_READY,
         .priority = priority,
         .addrspace = addrspace,
         .sf = sf
@@ -58,9 +59,13 @@ tasktable_get_task(Tid tid)
 }
 
 void
-tasktable_set_current_task(Tid task)
+tasktable_set_current_task(Tid tid)
 {
-    current_task = task;
+    // make old current task ready
+    tasktable_get_task(current_task)->state = TASKSTATE_READY;
+
+    tasktable_get_task(tid)->state = TASKSTATE_ACTIVE;
+    current_task = tid;
 }
 
 Tid
@@ -73,7 +78,11 @@ void
 tasktable_delete_task(Tid tid)
 {
     Task* task = tasktable_get_task(tid);
+    task->state = TASKSTATE_EXITED;
+    // don't free it for now
+    /*
     arena_free(task->sf);
     arena_free(task);
     tasktable.tasks[tid] = nullptr;
+    */
 }

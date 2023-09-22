@@ -9,6 +9,12 @@
 
 typedef uint32_t Tid;
 
+typedef enum {
+    TASKSTATE_ACTIVE,
+    TASKSTATE_READY,
+    TASKSTATE_EXITED
+} TaskState;
+
 typedef struct {
 
     // switchframe is at beginning of struct for easy access
@@ -16,6 +22,7 @@ typedef struct {
 
     Tid tid;
     Tid parent_tid;
+    TaskState state;
     uint32_t priority;
     Addrspace addrspace;
 
@@ -29,7 +36,8 @@ void tasktable_init(void);
 Tid tasktable_create_task(uint32_t priority, void (*entrypoint)());
 Task* tasktable_get_task(Tid tid);
 
-void tasktable_set_current_task(Tid task);
+// Update the current active tasks. If a task was active before, it will be made into ready
+void tasktable_set_current_task(Tid tid);
 Tid tasktable_current_task(void);
 void tasktable_delete_task(Tid tid);
 

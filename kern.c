@@ -63,7 +63,6 @@ handle_svc(void)
         LOG_DEBUG("[SYSCALL] MyParentTid");
 
         sf->x0 = current_task->parent_tid;
-
         asm_enter_usermode(current_task->sf);
 
     }
@@ -96,7 +95,7 @@ handle_svc(void)
     else if (opcode == OPCODE_EXIT) {
         LOG_DEBUG("[SYSCALL] Exit");
 
-        // don't allow task 1 to be deleted?
+        // NOTE: maybe don't allow task 1 to be deleted?
 
         tasktable_delete_task(current_tid);
 
@@ -105,5 +104,7 @@ handle_svc(void)
     }
 
     LOG_WARN("Uncaught syscall with opcode %x", opcode);
+
+    asm_enter_usermode(current_task->sf);
 
 }
