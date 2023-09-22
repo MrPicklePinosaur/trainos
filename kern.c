@@ -47,11 +47,10 @@ handle_svc(void)
     SwitchFrame* sf = current_task->sf;
 
     /* switchframe_debug(sf); */
+    /* LOG_DEBUG("current task tid = %d", current_tid); */
 
     uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
     LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode);
-
-    /* LOG_DEBUG("current task = %x", tasktable_current_task()); */
 
     if (opcode == OPCODE_CREATE) {
         sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
@@ -80,19 +79,10 @@ handle_svc(void)
             return; // TODO have better error state
         }
 
-        // TODO: run scheduler to determine next task to run (this is just dumb schedule that toggles between two tasks)
-
         LOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
 
         tasktable_set_current_task(next_tid);
-
-        /* LOG_DEBUG("from_task: sp = %x, x30 = %x", from_task->saved_sp, from_task->saved_x30); */
-        /* LOG_DEBUG("to_task: sp = %x, x30 = %x", to_task->saved_sp, to_task->saved_x30); */
-
         asm_enter_usermode(tasktable_get_task(next_tid)->sf);
-
-        // switchframe_switch(&to_task->saved_sp, &to_task->saved_sp);
-
     }
     else if (opcode == OPCODE_EXIT) {
         LOG_DEBUG("[SYSCALL] Exit");
