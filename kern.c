@@ -50,7 +50,7 @@ handle_svc(void)
     /* LOG_DEBUG("current task = %x", tasktable_current_task()); */
 
     if (opcode == OPCODE_CREATE) {
-        sf->x0 = handle_svc_create(sf->x0, sf->x1);
+        sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
         asm_enter_usermode(current_task->sf);
     }
     else if (opcode == OPCODE_MY_TID) {
