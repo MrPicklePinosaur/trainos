@@ -5,10 +5,14 @@
 #include "log.h"
 #include "util.h"
 #include "scheduler.h"
+#include "alloc.h"
+#include "rpi.h"
 
 void
 kern_init(void)
 {
+    uart_init();
+    arena_init();
     pagetable_init();
     tasktable_init();
     vector_table_init();

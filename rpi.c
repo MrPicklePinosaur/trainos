@@ -110,12 +110,18 @@ static const uint32_t UART_LCRH_WLEN_HIGH = 0x40;
 // For UART3 (line 2 on the RPi hat), we need to configure the GPIO to route
 // the uart control and data signals to the GPIO pins expected by the hat
 void uart_init() {
-  setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
-  setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
-  setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
-  setup_gpio(7, GPIO_ALTFN4, GPIO_NONE);
-  setup_gpio(14, GPIO_ALTFN0, GPIO_NONE);
-  setup_gpio(15, GPIO_ALTFN0, GPIO_NONE);
+    setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
+    setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
+    setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
+    setup_gpio(7, GPIO_ALTFN4, GPIO_NONE);
+    setup_gpio(14, GPIO_ALTFN0, GPIO_NONE);
+    setup_gpio(15, GPIO_ALTFN0, GPIO_NONE);
+
+    // not strictly necessary, since line 1 is configured during boot
+    // but we'll configure the line anyways, so we know what state it is in
+    uart_config_and_enable(CONSOLE, 115200, 0x70);
+
+    // TODO configure marklin uart
 }
 
 static const uint32_t UARTCLK = 48000000;

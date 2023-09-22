@@ -17,9 +17,14 @@ void myprinttask() {
     LOG_DEBUG("i am back from the kernel");
 }
 
+void mytask1();
+void mytask2();
+
 void mytask1() {
 
     LOG_DEBUG("entered task tid = %d, parent_tid = %d", MyTid(), MyParentTid());
+
+    Tid tid2 = Create(0, &mytask2);
 
     uint64_t timer_value = 0;
     uint64_t print_timer = 0;
@@ -63,18 +68,38 @@ void mytask2() {
     }
 }
 
+void firstUserTask();
+void secondUserTask();
+
+void
+firstUserTask()
+{
+    Tid t1 = Create(5, &secondUserTask);
+    PRINT("Created: %d", t1);
+    Tid t2 = Create(5, &secondUserTask);
+    PRINT("Created: %d", t2);
+
+    Tid t3 = Create(3, &secondUserTask);
+    PRINT("Created: %d", t3);
+    Tid t4 = Create(3, &secondUserTask);
+    PRINT("Created: %d", t4);
+
+    PRINT("FirstUserTask: exiting");
+    Exit();
+}
+
+void
+secondUserTask()
+{
+    PRINT("MyTid = %d, MyParentTid = %d", MyTid(), MyParentTid());
+    Yield();
+    PRINT("MyTid = %d, MyParentTid = %d", MyTid(), MyParentTid());
+    Exit();
+}
 
 int kmain() {
     
     kern_init();
-    arena_init();
-
-    // initialize both console and marklin uarts
-    uart_init();
-
-    // not strictly necessary, since line 1 is configured during boot
-    // but we'll configure the line anyways, so we know what state it is in
-    uart_config_and_enable(CONSOLE, 115200, 0x70);
 
     set_log_level(LOG_LEVEL_DEBUG);
 
@@ -88,31 +113,10 @@ int kmain() {
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
 
-    Tid tid1 = handle_svc_create(0, &mytask1);
-    Tid tid2 = handle_svc_create(0, &mytask2);
-
-    LOG_DEBUG("task1 = %x, task2 = %x", tid1, tid2);
-
-    LOG_DEBUG("privledge level %d", priviledge_level());
-
-    LOG_DEBUG("vbar value %x", vbar_value());
-
+    // need to create first task using kernel primitives since we are in kernel mode right here
+    Tid tid1 = handle_svc_create(0, &firstUserTask);
     Task* task1 = tasktable_get_task(tid1);
     asm_enter_usermode(task1->sf);
 
-    /* mytask1(); */
-
-    char c = ' ';
-    while (c != 'q') {
-    c = uart_getc(CONSOLE);
-        if (c == '\r') {
-            /* uart_printf(CONSOLE, "task0 %d\r\n", task0); */
-            /* uart_printf(CONSOLE, "task1 %d\r\n", task1); */
-        } else {
-            uart_putc(CONSOLE, c);
-        }
-    }
-
-    // U-Boot displays the return value from main - might be handy for debugging
     return 0;
 }
