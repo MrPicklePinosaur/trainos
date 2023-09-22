@@ -37,7 +37,7 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
 
     *new_task = (Task) {
         .tid = new_task_id,
-       .parent_tid = 0,
+        .parent_tid = 0,
         .priority = priority,
         .addrspace = addrspace,
         .sf = sf
