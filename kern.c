@@ -33,7 +33,7 @@ handle_svc_create(uint32_t priority, void (*entrypoint)())
 
     LOG_DEBUG("[SYSCALL] Created new task %d", new_tid);
 
-    scheduler_insert(new_task);
+    scheduler_insert(new_tid, priority);
 
     return new_tid;
 
@@ -73,25 +73,23 @@ handle_svc(void)
     else if (opcode == OPCODE_YIELD) {
         LOG_DEBUG("[SYSCALL] Yield");
 
-        Task* to_task = scheduler_pop();
+        Tid next_tid = scheduler_next();
 
-        if (to_task == 0) {
+        if (next_tid == 0) {
             LOG_ERROR("No tasks left");
             return; // TODO have better error state
         }
-
-        scheduler_insert(to_task); // put it back into scheduler
 
         // TODO: run scheduler to determine next task to run (this is just dumb schedule that toggles between two tasks)
 
         LOG_DEBUG("context switch task_id from = %d to = %d", current_tid, to_task->tid);
 
-        tasktable_set_current_task(to_task->tid);
+        tasktable_set_current_task(next_tid);
 
         /* LOG_DEBUG("from_task: sp = %x, x30 = %x", from_task->saved_sp, from_task->saved_x30); */
         /* LOG_DEBUG("to_task: sp = %x, x30 = %x", to_task->saved_sp, to_task->saved_x30); */
 
-        asm_enter_usermode(to_task->sf);
+        asm_enter_usermode(tasktable_get_task(next_tid)->sf);
 
         // switchframe_switch(&to_task->saved_sp, &to_task->saved_sp);
 
