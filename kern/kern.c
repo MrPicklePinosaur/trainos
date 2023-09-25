@@ -53,7 +53,13 @@ handle_svc(void)
     LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode);
 
     if (opcode == OPCODE_CREATE) {
-        sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
+        if (!scheduler_valid_priority(sf->x0)) {
+            LOG_DEBUG("Invalid task priority %d", sf->x0);
+            sf->x0 = -1;
+        }
+        else {
+            sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
+        }
         asm_enter_usermode(current_task->sf);
     }
     else if (opcode == OPCODE_MY_TID) {

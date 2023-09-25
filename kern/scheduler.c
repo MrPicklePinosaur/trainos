@@ -21,6 +21,10 @@ scheduler_count(void)
     return task_count;
 }
 
+uint32_t scheduler_valid_priority(uint32_t priority) {
+    return priority < NUM_PRIORITY_LEVELS;
+}
+
 void
 do_scheduler_insert(Tid tid, uint32_t priority)
 {
@@ -45,21 +49,19 @@ do_scheduler_insert(Tid tid, uint32_t priority)
     }
 }
 
-int
+void
 scheduler_insert(Tid tid, uint32_t priority)
 {
     LOG_DEBUG("inserting task id %d, with priority %d, previous task_count = %d", tid, priority, task_count);
 
     if (priority >= NUM_PRIORITY_LEVELS) {
         LOG_DEBUG("invalid priority");
-        return -1;
+        return;
     }
 
     do_scheduler_insert(tid, priority);
 
     task_count++;
-
-    return 0;
 }
 
 Tid
