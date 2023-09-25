@@ -3,6 +3,10 @@
 
 /* System call interface */
 
+#include <stdint.h>
+
+typedef uint32_t Tid;
+
 extern int Create(int priority, void (*function)());
 extern int MyTid(void);
 extern int MyParentTid(void);
