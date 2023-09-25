@@ -10,7 +10,7 @@ static Tid current_task;
 
 struct TaskTable {
     uint32_t next_tid;
-    Task* tasks[MAX_TASK_COUNT];
+    Task* tasks[MAX_TASK_COUNT+1];  // We index into this array with Tid, and first Tid is 1, so to make it accurate MAX_TASK_COUNT+1 should be the first invalid Tid
 };
 
 void
@@ -47,6 +47,12 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
     tasktable.tasks[new_task_id] = new_task;
 
     return new_task_id;
+}
+
+uint32_t
+tasktable_has_space()
+{
+    return tasktable.next_tid <= MAX_TASK_COUNT;  // First Tid is 1, so MAX_TASK_COUNT is the last valid Tid
 }
 
 Task*

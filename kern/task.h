@@ -34,6 +34,7 @@ typedef struct {
 
 void tasktable_init(void);
 Tid tasktable_create_task(uint32_t priority, void (*entrypoint)());
+uint32_t tasktable_has_space(void);  // Returns 0 if no space, 1 otherwise
 Task* tasktable_get_task(Tid tid);
 
 // Update the current active tasks. If a task was active before, it will be made into ready
