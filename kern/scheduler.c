@@ -3,7 +3,7 @@
 #include "log.h"
 #include "alloc.h"
 
-SchedulerNode* mlq[16];
+SchedulerNode* mlq[NUM_PRIORITY_LEVELS];
 uint32_t task_count;
 
 void

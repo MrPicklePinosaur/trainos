@@ -3,14 +3,14 @@
 
 #include "task.h"
 
+#define NUM_PRIORITY_LEVELS 16
+
 typedef struct SchedulerNode SchedulerNode;
 struct SchedulerNode {
     Tid tid;
     uint32_t priority;
     SchedulerNode* next;
 };
-
-static const uint32_t NUM_PRIORITY_LEVELS = 16;
 
 void scheduler_init(void);
 uint32_t scheduler_count(void);
