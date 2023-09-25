@@ -1,7 +1,7 @@
 #include "rpi.h"
 #include "kern.h"
 #include "task.h"
-#include "syscall.h"
+#include "trainsys.h"
 #include "util.h"
 #include "log.h"
 #include "switchframe.h"

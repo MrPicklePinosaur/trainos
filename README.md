@@ -28,3 +28,10 @@ dhcp
 tftpboot 0x80000 129.97.167.60:images/<user>.img
 go 0x80000
 ```
+
+## Directory Structure
+
+`kern`: kernel code
+`user`: user programs
+`lib`: library implmentation
+`include`: header files for libraries
