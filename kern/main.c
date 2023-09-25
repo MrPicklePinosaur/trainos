@@ -7,7 +7,7 @@
 #include "task.h"
 #include "alloc.h"
 
-#include "user/k1.h"
+#include "user/usertasks.h"
 
 int kmain() {
     
@@ -26,9 +26,10 @@ int kmain() {
     PRINT("                                                                              ");
 
     // need to create first task using kernel primitives since we are in kernel mode right here
-    Tid tid1 = handle_svc_create(4, &firstUserTask);
-    Task* task1 = tasktable_get_task(tid1);
-    asm_enter_usermode(task1->sf);
+    Tid init_tid = handle_svc_create(4, &firstUserTask);
+    /* Tid init_tid = handle_svc_create(4, &graphicsTask); */
+    Task* init_task = tasktable_get_task(init_tid);
+    asm_enter_usermode(init_task->sf);
 
     return 0;
 }

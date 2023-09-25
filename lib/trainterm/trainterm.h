@@ -5,7 +5,6 @@
 
 /* Library for manipulating the terminal */
 
-/*
 #define ANSI_CLEAR "\033[2J"
 #define ANSI_HIDE "\033[?25l"
 #define ANSI_ORIGIN "\033[H"
@@ -22,15 +21,25 @@
 #define ANSI_WHITE "\033[37m"
 
 #define ANSI_RESET "\033[0m"
-*/
 
-// initialize screen
-void tcurses_init(void);
+typedef struct {
+    size_t x;
+    size_t y;
+    size_t w;
+    size_t h;
+} Window;
+
+// initialize screen for tui mode
+void term_init(void);
 
 // clear the screen
-void tterm_clear(void);
+void term_clear(void);
+
+// render the screen
+void term_render(void);
 
 // window commands
-void trainterm_win_new(size_t x, size_t y, size_t w, size_t h);
+Window win_init(size_t x, size_t y, size_t w, size_t h);
+void win_draw(Window* win);
 
 #endif // __TRAINTERM_H__
