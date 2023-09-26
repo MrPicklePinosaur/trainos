@@ -11,7 +11,7 @@ scheduler_init(void)
 {
     task_count = 0;
     for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        mlq[i] = 0;
+        mlq[i] = nullptr;
     }
 }
 
@@ -31,16 +31,16 @@ do_scheduler_insert(Tid tid, uint32_t priority)
     SchedulerNode* node = arena_alloc(sizeof(SchedulerNode));
     node->tid = tid;
     node-> priority = priority;
-    node->next = 0;
+    node->next = nullptr;
 
     // Reach the end of the linked list and insert the task there
-    if (mlq[priority] == 0) {
+    if (mlq[priority] == nullptr) {
         mlq[priority] = node;
     }
     else {
         SchedulerNode* current = mlq[priority];
         for (;;) {
-            if (current->next == 0) {
+            if (current->next == nullptr) {
                 current->next = node;
                 break;
             }
@@ -68,7 +68,7 @@ Tid
 scheduler_next(void)
 {
     for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        if (mlq[i] != 0) {
+        if (mlq[i] != nullptr) {
             SchedulerNode* queue_top = mlq[i];
             mlq[i] = mlq[i]->next;
             do_scheduler_insert(queue_top->tid, queue_top->priority);
@@ -89,9 +89,9 @@ scheduler_remove(Tid tid)
     }
 
     for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        SchedulerNode* previous = 0;
+        SchedulerNode* previous = nullptr;
         SchedulerNode* current = mlq[i];
-        for (; current != 0;) {
+        for (; current != nullptr;) {
             if (current->tid == tid) {
                 if (previous) {
                     previous->next = current->next;
