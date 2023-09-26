@@ -10,7 +10,7 @@ static Tid current_task;
 
 struct TaskTable {
     uint32_t next_tid;
-    Task* tasks[MAX_TASK_COUNT+1];  // We index into this array with Tid, and first Tid is 1, so to make it accurate MAX_TASK_COUNT+1 should be the first invalid Tid
+    TaskNode* task_nodes[TASK_TABLE_SIZE];
 };
 
 void
@@ -18,9 +18,11 @@ tasktable_init(void)
 {
     current_task = 1; // uninitalized
     tasktable = (TaskTable) {
-        .next_tid = 1,
-        .tasks = {0}
+        .next_tid = 1
     };
+    for (uint32_t i = 0; i < TASK_TABLE_SIZE; i++) {
+        tasktable.task_nodes[i] = nullptr;
+    }
 }
 
 // TODO should introduce error codes
@@ -44,24 +46,39 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
         .sf = sf
     };
 
-    tasktable.tasks[new_task_id] = new_task;
+    TaskNode* new_task_node = arena_alloc(sizeof(TaskNode));
+    new_task_node->task = new_task;
+    new_task_node->next = nullptr;
+
+    uint32_t index = new_task_id % TASK_TABLE_SIZE;
+    if (!tasktable.task_nodes[index]) {
+        tasktable.task_nodes[index] = new_task_node;
+    }
+    else {
+        TaskNode* current = tasktable.task_nodes[index];
+        for (;;) {
+            if (current->next == nullptr) {
+                current->next = new_task_node;
+                break;
+            }
+            current = current->next;
+        }
+    }
 
     return new_task_id;
-}
-
-uint32_t
-tasktable_has_space()
-{
-    return tasktable.next_tid <= MAX_TASK_COUNT;  // First Tid is 1, so MAX_TASK_COUNT is the last valid Tid
 }
 
 Task*
 tasktable_get_task(Tid tid)
 {
-    // TODO check if task actually exists
-    /* if (tasktable.tasks[tid] == nullptr) LOG_WARN("getting invalid tid %d", tid); */
-
-    return tasktable.tasks[tid];
+    uint32_t index = tid % TASK_TABLE_SIZE;
+    for (TaskNode* current = tasktable.task_nodes[index]; current != nullptr; current = current->next) {
+        if (current->task->tid == tid) {
+            return current->task;
+        }
+    }
+    LOG_WARN("getting invalid tid %d", tid);
+    return nullptr;
 }
 
 void

@@ -5,7 +5,7 @@
 #include "addrspace.h"
 #include "switchframe.h"
 
-#define MAX_TASK_COUNT 128
+#define TASK_TABLE_SIZE 128
 
 typedef uint32_t Tid;
 
@@ -32,9 +32,15 @@ typedef struct {
     Address saved_x30;
 } Task;
 
+// Nodes for a linked list
+typedef struct TaskNode TaskNode;
+struct TaskNode {
+    Task* task;
+    TaskNode* next;
+};
+
 void tasktable_init(void);
 Tid tasktable_create_task(uint32_t priority, void (*entrypoint)());
-uint32_t tasktable_has_space(void);  // Returns 0 if no space, 1 otherwise
 Task* tasktable_get_task(Tid tid);
 
 // Update the current active tasks. If a task was active before, it will be made into ready

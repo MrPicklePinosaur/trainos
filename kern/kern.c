@@ -57,10 +57,6 @@ handle_svc(void)
             LOG_DEBUG("Invalid task priority %d", sf->x0);
             sf->x0 = -1;
         }
-        else if (!tasktable_has_space()) {
-            LOG_DEBUG("Out of space in tasktable");
-            sf->x0 = -2;
-        }
         else {
             sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
         }
