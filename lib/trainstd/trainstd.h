@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "list.h"
+
 void println(char* format, ...);
 void print(char* format, ...);
 
