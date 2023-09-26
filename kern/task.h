@@ -12,7 +12,10 @@ typedef uint32_t Tid;
 typedef enum {
     TASKSTATE_ACTIVE,
     TASKSTATE_READY,
-    TASKSTATE_EXITED
+    TASKSTATE_EXITED,
+    TASKSTATE_SEND_WAIT,
+    TASKSTATE_RECEIVE_WAIT,
+    TASKSTATE_REPLY_WAIT,
 } TaskState;
 
 typedef struct {
@@ -26,10 +29,6 @@ typedef struct {
     uint32_t priority;
     Addrspace addrspace;
 
-    // The value of sp before context switch
-
-    Address saved_sp;
-    Address saved_x30;
 } Task;
 
 // Nodes for a linked list

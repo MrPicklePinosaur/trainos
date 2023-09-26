@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "alloc.h"
 #include "rpi.h"
+#include "util.h"
 
 void
 kern_init(void)
@@ -37,6 +38,37 @@ handle_svc_create(uint32_t priority, void (*entrypoint)())
 
     return new_tid;
 
+}
+
+int
+handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
+{
+    Tid current_tid = tasktable_current_task();
+    Task* current_task = tasktable_get_task(current_tid);
+
+    // TODO: disallow sending to self?
+
+    // Find the task in question
+    Task* target_task = tasktable_get_task(tid);
+    if (target_task == 0) {
+        LOG_DEBUG("Invalid task priority %d", tid);
+        return -1;
+    }
+    
+    // Check task state
+    if (target_task->state == TASKSTATE_RECEIVE_WAIT) {
+        // RECEIVE_WAIT tasks exists, directly copy message
+        current_task->state = TASKSTATE_REPLY_WAIT;
+
+    }
+    // TODO handle exited case
+    else {
+        // RECEIVE_WAIT task does not exist, add sending task to recieving tasks' recieve queue 
+        current_task->state = TASKSTATE_SEND_WAIT;
+
+    }
+
+    return 0;
 }
 
 void
@@ -112,19 +144,8 @@ handle_svc(void)
     } else if (opcode == OPCODE_SEND) {
 
         LOG_DEBUG("[SYSCALL] SEND");
-        switchframe_debug(sf);
 
-        // Find the task in question
-        Tid target_tid = (Tid)sf->x0;
-        Task* target_task = tasktable_get_task(target_tid);
-        if (target_task == 0) {
-            LOG_DEBUG("Invalid task priority %d", sf->x0);
-            sf->x0 = -1;
-            // TODO break and return
-        }
-        
-        // Check task state
-
+        sf->x0 = handle_svc_send(sf->x0, (const char*)sf->x1, sf->x2, (char*)sf->x3, sf->x4);
 
         Tid next_tid = scheduler_next();
         // TODO error state
