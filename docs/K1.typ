@@ -41,11 +41,64 @@ To be added
 
 = Kernel Features
 
+If you run the kernel, it will run the first user task as described on the assignment page, and then hangs.
+There is currently no way to start with any other task without modifying the code.
+
+Our kernel implements the five syscalls described on the assignment page with no modifications to their signatures:
+
+```c
+int Create(int priority, void (*function)())
+```
+
+```c
+int MyTid()
+```
+
+```c
+int MyParentTid()
+```
+
+```c
+void Yield()
+```
+
+```c
+void Exit()
+```
+
+The first task created has a TID of 1.
+No task can have a TID of 0.
+A TID of 0 is only used for functions that should return a TID but cannot for some reason.
+
+Our kernel properly schedules tasks, using a round robin algorithm to cycle through all tasks of the highest priority.
+
+Our kernel theoretically allows for the creation of an arbitrary amount of tasks, though this will not work due to our fake heap allocator.
+
+When there are no more tasks in the scheduler, our program simply hangs.
+
 = Kernel Implementation
+
+== Memory Layout
+
+We allocate 2MB for the kernel stack, and each task gets a 1MB page to use as a stack.
+The maximum amount of tasks is 1028 so that we take up at most 1GB (+ 2MB for the kernel) of memory.
+We currently do not reclaim pages.
+Thus, we can only create 1028 tasks over the lifespan of the kernel.
+If this limit is reached, the kernel prevents the creation of new tasks.
+
+We currently have a fake heap allocator implemented, which is actually 2048 bytes of static memory.
+This will be improved into an actual heap allocator at a later point in time.
+Unfortunately, this means that we run out of memory on the sixth task created.
+Fortunately, the assignment only requires five.
 
 == Task Table
 
-Tasks are stored in a simple array that can hold 128 items.
+Task metadata is stored in a hash table, which is implemented with an array of 128 linked lists.
+We use linked lists so that we can store multiple tasks with the same hash.
+The hash of a task is simply its TID modulo 128.
+Adding a task inserts it into the corresponding linked list.
+When we need to retrieve a task, we search for it inside the correspoding linked list.
+This potentially operates slowly if many tasks are run, but for our use cases, there are enough hash keys that speed shouldn't be a problem.
 
 == Scheduler
 
@@ -58,11 +111,40 @@ When scheduler_insert() inserts a task, it is inserted into the queue correspond
 
 scheduler_next() finds the next task to run.
 It returns the next task in the highest priority non-empty queue.
-This task will then be moved to the end of that queue, to provide fairness between all tasks of the highest priority.
+This task will then be moved to the end of that queue, so that all tasks with the highest priority eventually get to run.
 
 scheduler_delete() will remove a task from the scheduler.
-It simply searches through all of the tasks, and deletes one if their ids match.
+It simply searches through all of the tasks, and deletes one if their TIDs match.
 
 The multilevel queue is implemented as an array of linked lists.
 Whenever an item is inserted into a linked list, the list whole list is traversed.
 Thus, if $n$ is the number of tasks currently scheduled, scheduler_insert() and scheduler_next() are $O(n)$ algorithms.
+
+= Program Output
+
+The program produces the following output:
+
+```
+Created: 2
+Created: 3
+Created: 4
+Created: 5
+FirstUserTask: exiting
+MyTid = 4, MyParentTid = 1
+MyTid = 5, MyParentTid = 1
+MyTid = 4, MyParentTid = 1
+MyTid = 5, MyParentTid = 1
+MyTid = 2, MyParentTid = 1
+MyTid = 3, MyParentTid = 1
+MyTid = 2, MyParentTid = 1
+MyTid = 3, MyParentTid = 1
+```
+
+Our program starts with task 1, which has a priority of 4.
+Task 1 creates tasks 2 and 3, of priority 5, and tasks 4 and 5, of priority 3 (recall that lower numbers mean higher priorities).
+
+The reason the output is in this specific order is because tasks 4 and 5 have higher priorities than task 2 and 3.
+This means that they will run first, and only when both of them have exited (or both of them get blocked) do the lower priority tasks run.
+
+The scheduler alternates between tasks 4 and 5 (and later between tasks 2 and 3) because it employs a round robin algorithm that cycles between all tasks of the highest priority.
+This is to ensure that a task of the highest priority does not get starved.
