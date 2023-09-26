@@ -4,11 +4,10 @@
 #include <stddef.h>
 
 #include "list.h"
+#include "mem.h"
+#include "cbuf.h"
 
 void println(char* format, ...);
 void print(char* format, ...);
-
-void* alloc(size_t size);
-void free(void* ptr);
 
 #endif // __TRAINSTD_H__
