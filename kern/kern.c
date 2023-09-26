@@ -46,6 +46,8 @@ handle_svc(void)
     Task* current_task = tasktable_get_task(current_tid);
     SwitchFrame* sf = current_task->sf;
 
+    Task* next_task;
+
     /* switchframe_debug(sf); */
     /* LOG_DEBUG("current task tid = %d", current_tid); */
 
@@ -60,20 +62,19 @@ handle_svc(void)
         else {
             sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
         }
-        asm_enter_usermode(current_task->sf);
+        next_task = current_task;
     }
     else if (opcode == OPCODE_MY_TID) {
         LOG_DEBUG("[SYSCALL] MyTid");
 
         sf->x0 = tasktable_current_task();
-        asm_enter_usermode(current_task->sf);
+        next_task = current_task;
     }
     else if (opcode == OPCODE_MY_PARENT_TID) {
         LOG_DEBUG("[SYSCALL] MyParentTid");
 
         sf->x0 = current_task->parent_tid;
-        asm_enter_usermode(current_task->sf);
-
+        next_task = current_task;
     }
     else if (opcode == OPCODE_YIELD) {
         LOG_DEBUG("[SYSCALL] Yield");
@@ -87,8 +88,7 @@ handle_svc(void)
 
         LOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
 
-        tasktable_set_current_task(next_tid);
-        asm_enter_usermode(tasktable_get_task(next_tid)->sf);
+        next_task = tasktable_get_task(next_tid);
     }
     else if (opcode == OPCODE_EXIT) {
         LOG_DEBUG("[SYSCALL] Exit");
@@ -108,12 +108,31 @@ handle_svc(void)
 
         LOG_DEBUG("exit context switch task_id from = %d to = %d", current_tid, next_tid);
 
-        tasktable_set_current_task(next_tid);
-        asm_enter_usermode(tasktable_get_task(next_tid)->sf);
+        next_task = tasktable_get_task(next_tid);
+    } else if (opcode == OPCODE_SEND) {
+
+        LOG_DEBUG("[SYSCALL] SEND");
+        switchframe_debug(sf);
+
+        // Find the task in question
+        Tid target_tid = (Tid)sf->x0;
+        Task* target_task = tasktable_get_task(target_tid);
+        if (target_task == 0) {
+            LOG_DEBUG("Invalid task priority %d", sf->x0);
+            sf->x0 = -1;
+            // TODO break and return
+        }
+        
+        // Check task state
+
+
+        Tid next_tid = scheduler_next();
+        // TODO error state
+        next_task = tasktable_get_task(next_tid);
     }
 
     LOG_WARN("Uncaught syscall with opcode %x", opcode);
 
-    asm_enter_usermode(current_task->sf);
+    asm_enter_usermode(next_task->sf);
 
 }

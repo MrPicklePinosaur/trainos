@@ -8,6 +8,9 @@ void initTask();
 void firstUserTask();
 void secondUserTask();
 
+// K2
+void K2();
+
 // Other
 void graphicsTask();
 

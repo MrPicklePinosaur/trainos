@@ -6,11 +6,16 @@
 #include "switchframe.h"
 #include "task.h"
 
-static const uint32_t OPCODE_CREATE = 0;
-static const uint32_t OPCODE_MY_TID = 1;
-static const uint32_t OPCODE_MY_PARENT_TID = 2;
-static const uint32_t OPCODE_YIELD = 3;
-static const uint32_t OPCODE_EXIT = 4;
+typedef enum {
+    OPCODE_CREATE = 0,
+    OPCODE_MY_TID = 1,
+    OPCODE_MY_PARENT_TID = 2,
+    OPCODE_YIELD = 3,
+    OPCODE_EXIT = 4,
+    OPCODE_SEND = 5,
+    OPCODE_RECEIVE = 6,
+    OPCODE_REPLY = 7,
+} OpCode;
 
 // Initalize kernel data structurea
 void kern_init(void);

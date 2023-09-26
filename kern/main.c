@@ -13,7 +13,7 @@ int kmain() {
     
     kern_init();
 
-    set_log_level(LOG_LEVEL_WARN);
+    set_log_level(LOG_LEVEL_DEBUG);
 
     // print the banner
     PRINT("");
@@ -26,8 +26,8 @@ int kmain() {
     PRINT("                                                                              ");
 
     // need to create first task using kernel primitives since we are in kernel mode right here
-    Tid init_tid = handle_svc_create(4, &firstUserTask);
-    /* Tid init_tid = handle_svc_create(4, &graphicsTask); */
+    /* Tid init_tid = handle_svc_create(4, &firstUserTask); */
+    Tid init_tid = handle_svc_create(4, &K2);
     Task* init_task = tasktable_get_task(init_tid);
     asm_enter_usermode(init_task->sf);
 

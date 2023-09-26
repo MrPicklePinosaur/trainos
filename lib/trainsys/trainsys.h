@@ -12,6 +12,9 @@ extern int MyTid(void);
 extern int MyParentTid(void);
 extern void Yield(void);
 extern void Exit(void);
+extern int Send(int tid, const char* msg, int msglen, char* reply, int rplen);
+extern int Receive(int* tid, char* msg, int msglen);
+extern int Reply(int tid, const char* reply, int rplen);
 
 
 #endif // __TRAINSYS_H__
