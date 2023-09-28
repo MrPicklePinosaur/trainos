@@ -13,5 +13,6 @@ void K2();
 
 // Other
 void graphicsTask();
+void testHarness();
 
 #endif // __USERTASKS_H__
