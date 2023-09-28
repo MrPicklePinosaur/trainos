@@ -29,8 +29,8 @@ int kmain() {
     gacha_print_roll();
 
     // need to create first task using kernel primitives since we are in kernel mode right here
-    /* Tid init_tid = handle_svc_create(4, &firstUserTask); */
-    Tid init_tid = handle_svc_create(4, &K2);
+    Tid init_tid = handle_svc_create(1, &firstUserTask);
+    /* Tid init_tid = handle_svc_create(4, &K2); */
     Task* init_task = tasktable_get_task(init_tid);
     asm_enter_usermode(init_task->sf);
 
