@@ -152,10 +152,9 @@ handle_svc(void)
         Tid next_tid = scheduler_next();
         // TODO error state
         next_task = tasktable_get_task(next_tid);
+    } else {
+        LOG_WARN("Uncaught syscall with opcode %x", opcode);
     }
 
-    LOG_WARN("Uncaught syscall with opcode %x", opcode);
-
     asm_enter_usermode(next_task->sf);
-
 }
