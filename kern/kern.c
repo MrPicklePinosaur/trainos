@@ -8,6 +8,7 @@
 #include "alloc.h"
 #include "rpi.h"
 #include "util.h"
+#include "gacha.h"
 
 void
 kern_init(void)
@@ -18,6 +19,7 @@ kern_init(void)
     tasktable_init();
     vector_table_init();
     scheduler_init();
+    gacha_init();
 }
 
 Tid

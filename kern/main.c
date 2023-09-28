@@ -6,6 +6,7 @@
 #include "switchframe.h"
 #include "task.h"
 #include "alloc.h"
+#include "gacha.h"
 
 #include "user/usertasks.h"
 
@@ -24,6 +25,8 @@ int kmain() {
     PRINT("    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   ");
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
+
+    gacha_print_roll();
 
     // need to create first task using kernel primitives since we are in kernel mode right here
     /* Tid init_tid = handle_svc_create(4, &firstUserTask); */
