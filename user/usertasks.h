@@ -10,6 +10,13 @@ void secondUserTask();
 
 // K2
 void K2();
+void sendReceiveReplyTestTask();
+
+// Nameserver
+void initNameserverTask();
+
+int RegisterAs(const char *name);
+int WhoIs(const char *name);
 
 // Other
 void graphicsTask();

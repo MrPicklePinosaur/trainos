@@ -30,11 +30,18 @@ receiverTask()
 }
 
 void
-K2()
+sendReceiveReplyTestTask()
 {
     receive_tid = Create(1, &receiverTask);
     sender_tid = Create(1, &senderTask);
     Yield();
     Exit(); 
+}
+
+void
+K2()
+{
+    RegisterAs("firstTask");
+    Exit();
 }
 

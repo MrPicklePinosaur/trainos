@@ -18,11 +18,14 @@ initTask()
     TaskMenuEntry* task_menu[11] = {
         &(TaskMenuEntry){ "K1", &firstUserTask },
         &(TaskMenuEntry){ "K2", &K2 },
+        &(TaskMenuEntry){ "sendReceiveReplyTest", &sendReceiveReplyTestTask },
         &(TaskMenuEntry){ "graphics", &graphicsTask },
         &(TaskMenuEntry){ "test", &testHarness },
         0
     };
 
+    // spawn init tasks
+    initNameserverTask();
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
