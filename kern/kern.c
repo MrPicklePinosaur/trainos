@@ -120,15 +120,20 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         int copylen = min(msglen, target_task->receive_buf->buf_len); 
         memcpy(target_task->receive_buf->buf, msg, copylen);
         
-        // delete receive_buf
-        arena_free(target_task->receive_buf);
-        target_task->receive_buf = 0;
-
         // can unblock target task now
         set_task_state(target_task, TASKSTATE_READY);
 
         // set the return value for receive for the receive caller
         target_task->sf->x0 = copylen;
+
+        // set sender tid for receive call
+        /* LOG_DEBUG("buffer for sender tid %x", target_task->receive_buf->sender_tid); */
+        *(target_task->receive_buf->sender_tid) = current_tid;
+
+        // delete receive_buf
+        arena_free(target_task->receive_buf);
+        target_task->receive_buf = 0;
+
     }
     else {
 
@@ -167,7 +172,8 @@ handle_svc_receive(int *tid, char *msg, int msglen)
         ReceiveBuf* receive_buf = arena_alloc(sizeof(ReceiveBuf));
         *receive_buf = (ReceiveBuf) {
             .buf = msg,
-            .buf_len = msglen
+            .buf_len = msglen,
+            .sender_tid = tid 
         };
         current_task->receive_buf = receive_buf;
         LOG_DEBUG("empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
@@ -198,6 +204,9 @@ handle_svc_receive(int *tid, char *msg, int msglen)
 
         // set message length for receieve
         current_task->sf->x0 = copylen;
+
+        // set the sender tid
+        *tid = sender_tid;
     }
 }
 
@@ -257,7 +266,7 @@ handle_svc(void)
 
     uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
     /* LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode); */
-    LOG_DEBUG("[SYSCALL] In task %d", current_tid);
+    LOG_INFO("[SYSCALL] In task %d", current_tid);
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {

@@ -34,6 +34,8 @@ typedef struct {
 typedef struct {
     char* buf; // receive buffer
     size_t buf_len;
+
+    int* sender_tid; // the memory location to copy the sender's tid into
 } ReceiveBuf;
 
 typedef struct {

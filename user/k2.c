@@ -19,9 +19,10 @@ senderTask()
 void
 receiverTask()
 {
+    int from_tid;
     char receive_buf[32];
-    int msglen = Receive((int*)&sender_tid, (char*)receive_buf, 32);
-    println("got data: %s, with len %d", (char*)receive_buf, msglen);
+    int msglen = Receive((int*)&from_tid, (char*)receive_buf, 32);
+    println("got message from %d: from  %s, with len %d", from_tid, (char*)receive_buf, msglen);
 
     const char* reply_msg = "goodbye world";
     Reply(sender_tid, reply_msg, strlen(reply_msg)+1);
@@ -42,6 +43,9 @@ void
 K2()
 {
     RegisterAs("firstTask");
+    WhoIs("firstTask");
+
+    for (;;) {}
     Exit();
 }
 

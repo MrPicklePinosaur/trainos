@@ -33,7 +33,7 @@ typedef struct {
         struct {
             Tid tid;
         } who_is;
-    };
+    } data;
 } NameserverResp;
 
 void nameserverTask();
@@ -68,9 +68,27 @@ nameserverTask()
 
         if (msg_buf.type == NS_REGISTER_AS) {
             println("Got register as request from %d", from_tid);
+
+            reply_buf = (NameserverResp) {
+                .type = NS_REGISTER_AS,
+                .data = {
+                    .register_as = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(NameserverResp));
         }
         else if (msg_buf.type == NS_WHO_IS) {
             println("Got whois request from %d", from_tid);
+
+            reply_buf = (NameserverResp) {
+                .type = NS_WHO_IS,
+                .data = {
+                    .who_is = {
+                        .tid = 69
+                    }
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(NameserverResp));
         }
     }
 }
@@ -114,7 +132,7 @@ WhoIs(const char *name)
 
     if (resp_buf.type != NS_WHO_IS) return -1;
 
-    println("who is result is %d", resp_buf.who_is.tid); 
+    println("who is result is %d", resp_buf.data.who_is.tid); 
 
-    return resp_buf.who_is.tid;
+    return resp_buf.data.who_is.tid;
 }
