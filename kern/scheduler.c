@@ -21,6 +21,18 @@ scheduler_count(void)
     return task_count;
 }
 
+// Return task coutn for a given level of the queue
+uint32_t
+scheduler_count_level(SchedulerNode* node)
+{
+    uint32_t count = 0;
+    while (node != nullptr) {
+        ++count;
+        node = node->next;
+    }
+    return count;
+}
+
 uint32_t scheduler_valid_priority(uint32_t priority) {
     return priority < NUM_PRIORITY_LEVELS;
 }
@@ -68,11 +80,14 @@ Tid
 scheduler_next(void)
 {
     for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        if (mlq[i] != nullptr) {
+        for (uint32_t j = 0; j < scheduler_count_level(mlq[i]); ++j) {
             SchedulerNode* queue_top = mlq[i];
             mlq[i] = mlq[i]->next;
             do_scheduler_insert(queue_top->tid, queue_top->priority);
-            return queue_top->tid;
+            TaskState state = tasktable_get_task(queue_top->tid)->state;
+            if (state == TASKSTATE_READY || state == TASKSTATE_ACTIVE) {
+                return queue_top->tid;
+            }
         }
     }
     LOG_DEBUG("no next task because scheduler is empty");

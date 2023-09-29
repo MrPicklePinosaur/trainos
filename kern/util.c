@@ -52,9 +52,10 @@ void* memcpy(void* restrict dest, const void* restrict src, size_t n) {
 }
 
 void
-panic(void)
+_panic(void)
 {
-    // access some invalid memory to induce a panic
+    // make kernel block forever
+    for (;;) {}
 }
 
 int

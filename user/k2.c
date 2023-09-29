@@ -32,8 +32,8 @@ receiverTask()
 void
 K2()
 {
-    sender_tid = Create(1, &senderTask);
     receive_tid = Create(1, &receiverTask);
+    sender_tid = Create(1, &senderTask);
     Yield();
     Exit(); 
 }

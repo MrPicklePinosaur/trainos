@@ -23,5 +23,4 @@ void _log(LogLevel level, char* prefix, char* format, ...);
 
 #define PRINT(str, ...) _log(LOG_LEVEL_ALWAYS, "", (str), ##__VA_ARGS__)
 
-
 #endif // __LOG_H__

@@ -114,8 +114,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
 
         // copy message to buffer
         if (target_task->receive_buf == NULL) {
-            LOG_ERROR("receiving task doesn't have initalized receive buffer");
-            return -1; // TODO better error code
+            PANIC("receiving task doesn't have initalized receive buffer");
         }
 
         int copylen = min(msglen, target_task->receive_buf->buf_len); 
@@ -131,7 +130,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         // set the return value for receive for the receive caller
         target_task->sf->x0 = copylen;
     }
-    else if (target_task->state == TASKSTATE_READY) {
+    else {
 
         /* preconditions
          * - the target task is not waiting to receive
@@ -145,9 +144,6 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         // also buffer the data we are trying to send
         current_task->send_buf->send_buf = (char*)msg;
         current_task->send_buf->send_buf_len = msglen;
-
-    } else {
-        LOG_WARN("Task %d is not available to receive since it is in state %d", tid, target_task->state);
     }
 
     return 0;
@@ -191,8 +187,7 @@ handle_svc_receive(int *tid, char *msg, int msglen)
         // copy sender's message
         if (sender_task->send_buf == 0) {
             // this should not happen (hopefully)
-            LOG_ERROR("send buf is not initalized: panicking kernel");
-            for (;;) {}
+            PANIC("send buf is not initalized");
         }
 
         int copylen = min(sender_task->send_buf->send_buf_len, msglen); 
@@ -219,8 +214,7 @@ handle_svc_reply(int tid, const char *reply, int rplen)
     }
 
     if (target_task->send_buf == 0) {
-        LOG_ERROR("sender's reply buf is not initalized");
-        return -1; // fake return code
+        PANIC("sender's reply buf is not initalized");
     }
 
     int copylen = min(rplen, target_task->send_buf->reply_buf_len); 
@@ -229,6 +223,9 @@ handle_svc_reply(int tid, const char *reply, int rplen)
     // free the sender's buf
     free(target_task->send_buf);
     target_task->send_buf = 0;
+
+    // make sender ready again
+    set_task_state(target_task, TASKSTATE_READY);
 
     // set the return value for the sender's Send() call
     target_task->sf->x0 = copylen;
@@ -241,8 +238,7 @@ find_next_task(void)
 {
     Tid next_tid = scheduler_next();
     if (next_tid == 0) {
-        LOG_DEBUG("No more tasks: blocking..");
-        for (;;) { }
+        PANIC("No more tasks to run");
     }
     return next_tid;
 }
@@ -319,7 +315,6 @@ handle_svc(void)
             sf->x0 = ret;
             next_tid = current_tid;
         } else {
-
             next_tid = find_next_task();
         }
 
