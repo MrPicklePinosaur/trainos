@@ -25,6 +25,7 @@ arena_init(void)
 void*
 arena_alloc(size_t size)
 {
+    LOG_DEBUG("alloc %d", size);
     // bounds check
     if (alloc.cursor + size >= ARENA_ALLOCATOR_SIZE) {
         LOG_WARN("arena allocator is out of memory");

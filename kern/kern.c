@@ -22,6 +22,35 @@ kern_init(void)
     gacha_init();
 }
 
+void
+set_task_state(Task* task, TaskState state)
+{
+    /*
+    Tid tid = task->tid;
+    switch (state) {
+        case TASKSTATE_ACTIVE: {
+            scheduler_remove(tid);
+            break;
+        }
+        case TASKSTATE_READY: {
+            scheduler_insert(tid, task->priority);
+            break;
+        }
+        case TASKSTATE_EXITED: {
+            scheduler_remove(tid);
+            break;
+        }
+        case TASKSTATE_SEND_WAIT:
+        case TASKSTATE_RECEIVE_WAIT:
+        case TASKSTATE_REPLY_WAIT: {
+            scheduler_remove(tid);
+            break;
+        }
+    };
+    */
+    task->state = state;
+}
+
 Tid
 handle_svc_create(uint32_t priority, void (*entrypoint)())
 {
@@ -37,6 +66,7 @@ handle_svc_create(uint32_t priority, void (*entrypoint)())
     LOG_INFO("[SYSCALL] Created new task %d", new_tid);
 
     scheduler_insert(new_tid, priority);
+    set_task_state(new_task, TASKSTATE_READY);
 
     return new_tid;
 
@@ -72,8 +102,13 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
     // Check task state
     if (target_task->state == TASKSTATE_RECEIVE_WAIT) {
 
+        /* preconditions
+         * - the target task is waiting for a message (in RECEIVE_WAIT state)
+         * - the target task has an initalized receive buffer 
+         */
+
         // RECEIVE_WAIT tasks exists, directly copy message
-        current_task->state = TASKSTATE_REPLY_WAIT;
+        set_task_state(current_task, TASKSTATE_REPLY_WAIT);
 
         LOG_DEBUG("Sending message to task %d, in RECEIVE_WAIT", tid);
 
@@ -91,16 +126,20 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         target_task->receive_buf = 0;
 
         // can unblock target task now
-        target_task->state = TASKSTATE_READY;
+        set_task_state(target_task, TASKSTATE_READY);
 
         // set the return value for receive for the receive caller
         target_task->sf->x0 = copylen;
     }
     else if (target_task->state == TASKSTATE_READY) {
 
+        /* preconditions
+         * - the target task is not waiting to receive
+         */
+
         // task is not in RECEIVE_WAIT, add sending task to recieving tasks' recieve queue 
         LOG_DEBUG("Sending message to task %d, not in RECEIVE_WAIT", tid);
-        current_task->state = TASKSTATE_SEND_WAIT;
+        set_task_state(current_task, TASKSTATE_SEND_WAIT);
         cbuf_push_front(target_task->receive_queue, (uint8_t)current_tid);
 
         // also buffer the data we are trying to send
@@ -123,8 +162,12 @@ handle_svc_receive(int *tid, char *msg, int msglen)
     // check in receive queue for any pending messages
     if (cbuf_len(current_task->receive_queue) == 0) {
 
+        /* preconditions
+         * none
+         */
+
         // if no pending messages, go into RECEIVE_WAIT
-        current_task->state = TASKSTATE_RECEIVE_WAIT;        
+        set_task_state(current_task, TASKSTATE_RECEIVE_WAIT);
         ReceiveBuf* receive_buf = arena_alloc(sizeof(ReceiveBuf));
         *receive_buf = (ReceiveBuf) {
             .buf = msg,
@@ -156,11 +199,41 @@ handle_svc_receive(int *tid, char *msg, int msglen)
         memcpy(msg, sender_task->send_buf->send_buf, copylen);
 
         // set sender to REPLY_WAIT
-        sender_task->state = TASKSTATE_REPLY_WAIT;
+        set_task_state(sender_task, TASKSTATE_REPLY_WAIT);
 
         // set message length for receieve
         current_task->sf->x0 = copylen;
     }
+}
+
+int
+handle_svc_reply(int tid, const char *reply, int rplen)
+{
+    Task* target_task = tasktable_get_task(tid);
+    if (target_task == 0) {
+        return -1;
+    }
+
+    if (target_task->state != TASKSTATE_REPLY_WAIT) {
+        return -2;
+    }
+
+    if (target_task->send_buf == 0) {
+        LOG_ERROR("sender's reply buf is not initalized");
+        return -1; // fake return code
+    }
+
+    int copylen = min(rplen, target_task->send_buf->reply_buf_len); 
+    memcpy(target_task->send_buf->reply_buf, reply, copylen);
+
+    // free the sender's buf
+    free(target_task->send_buf);
+    target_task->send_buf = 0;
+
+    // set the return value for the sender's Send() call
+    target_task->sf->x0 = copylen;
+
+    return copylen;
 }
 
 Tid
@@ -217,7 +290,7 @@ handle_svc(void)
 
         next_tid = find_next_task();
 
-        current_task->state = TASKSTATE_READY;
+        set_task_state(current_task, TASKSTATE_READY);
         LOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
     }
     else if (opcode == OPCODE_EXIT) {
@@ -229,6 +302,7 @@ handle_svc(void)
         }
 
         scheduler_remove(current_tid);
+        set_task_state(current_task, TASKSTATE_EXITED);
         tasktable_delete_task(current_tid);
 
         next_tid = find_next_task();
@@ -255,6 +329,14 @@ handle_svc(void)
         LOG_INFO("[SYSCALL] RECEIVE");
 
         handle_svc_receive((int*)sf->x0, (char*)sf->x1, sf->x2);
+
+        next_tid = find_next_task();
+
+    } else if (opcode == OPCODE_REPLY) {
+
+        LOG_INFO("[SYSCALL] REPLY");
+
+        sf->x0 = handle_svc_reply((int)sf->x0, (const char*)sf->x1, sf->x2);
 
         next_tid = find_next_task();
 

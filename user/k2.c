@@ -9,20 +9,23 @@ static Tid sender_tid;
 void
 senderTask()
 {
-    const char* msg = "hello world"; // bug where null byte is not being copied
+    const char* msg = "hello world";
     const char reply_buf[32];
-    int res = Send((Tid)receive_tid, msg, strlen(msg), (char*)reply_buf, 32);
+    int replylen = Send((Tid)receive_tid, msg, strlen(msg)+1, (char*)reply_buf, 32);
+    println("got reply: %s, with len %d", (char*)reply_buf, replylen);
     Exit();
 }
 
 void
 receiverTask()
 {
-    Tid sender_tid;
     char receive_buf[32];
     int msglen = Receive((int*)&sender_tid, (char*)receive_buf, 32);
-    receive_buf[msglen] = 0; // hack
     println("got data: %s, with len %d", (char*)receive_buf, msglen);
+
+    const char* reply_msg = "goodbye world";
+    Reply(sender_tid, reply_msg, strlen(reply_msg)+1);
+
     Exit();
 }
 
