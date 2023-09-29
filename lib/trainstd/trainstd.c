@@ -28,3 +28,8 @@ print(char* format, ...)
     va_end(args);
 }
 
+char
+getc(void)
+{
+    return uart_getc(CONSOLE);
+}

@@ -9,5 +9,6 @@
 
 void println(char* format, ...);
 void print(char* format, ...);
+char getc(void);
 
 #endif // __TRAINSTD_H__

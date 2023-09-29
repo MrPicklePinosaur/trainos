@@ -132,6 +132,9 @@ handle_svc(void)
         LOG_DEBUG("[SYSCALL] Exit");
 
         // NOTE: maybe don't allow task 1 to be deleted?
+        if (current_tid == 1) {
+            LOG_WARN("Attempting to delete task 1");
+        }
 
         scheduler_remove(current_tid);
         tasktable_delete_task(current_tid);
