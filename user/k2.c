@@ -1,8 +1,21 @@
 #include "usertasks.h"
-#include "trainsys.h"
+#include <string.h>
+#include <trainsys.h>
+
+
+void
+receiverTask()
+{
+    Exit();
+}
 
 void
 K2()
 {
-    Send((Tid)0x1111, (const char*)0x2222, 0x3333, (char*)0x4444, 0x5555);
+    Tid receive_tid = Create(1, &receiverTask);
+    const char* msg = "hello world";
+    const char reply_buf[32];
+    int res = Send((Tid)receive_tid, msg, strlen(msg), (char*)reply_buf, 32);
+    Exit(); 
 }
+

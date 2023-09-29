@@ -1,3 +1,5 @@
+#include <trainstd.h>
+
 #include "cbuf.h"
 #include "mem.h"
 
@@ -103,4 +105,27 @@ uint32_t
 cbuf_len(CBuf* cbuf)
 {
     return cbuf->len;
+}
+
+uint8_t
+cbuf_get(CBuf* cbuf, size_t index)
+{
+    if (index >= cbuf->len) return 0;
+    return cbuf->data[(cbuf->front_ptr+index) % cbuf->max_len];
+}
+
+void
+cbuf_clear(CBuf* cbuf)
+{
+    cbuf->len = 0;
+    cbuf->front_ptr = 0;
+    cbuf->back_ptr = 0;
+}
+
+void
+cbuf_debug(CBuf* cbuf)
+{
+    for (unsigned int i = 0; i < cbuf_len(cbuf); ++i)
+        print("%d ", cbuf_get(cbuf, i));
+    print("\n");
 }

@@ -63,11 +63,13 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         current_task->state = TASKSTATE_REPLY_WAIT;
 
     }
-    // TODO handle exited case
-    else {
-        // RECEIVE_WAIT task does not exist, add sending task to recieving tasks' recieve queue 
+    else if (target_task->state == TASKSTATE_READY) {
+        // task is not in RECEIVE_WAIT, add sending task to recieving tasks' recieve queue 
         current_task->state = TASKSTATE_SEND_WAIT;
-
+        /* target_task */
+        cbuf_push_back(target_task->receive_queue, (uint8_t)current_tid);
+    } else {
+        LOG_WARN("Task %d is not available to receive since it is in state %d", tid, target_task->state);
     }
 
     return 0;

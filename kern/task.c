@@ -3,6 +3,8 @@
 #include "alloc.h"
 #include "log.h"
 
+#define RECEIVE_QUEUE_MAX_LEN 32
+
 typedef struct TaskTable TaskTable;
 
 static TaskTable tasktable;
@@ -43,7 +45,8 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
         .state = TASKSTATE_READY,
         .priority = priority,
         .addrspace = addrspace,
-        .sf = sf
+        .sf = sf,
+        .receive_queue = cbuf_new(RECEIVE_QUEUE_MAX_LEN) 
     };
 
     TaskNode* new_task_node = arena_alloc(sizeof(TaskNode));

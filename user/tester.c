@@ -46,5 +46,19 @@ testCbuf()
     assert(cbuf_len(out_stream) == 2);
     assert(val == 0x42);
 
+    cbuf_clear(out_stream);
+    assert(cbuf_len(out_stream) == 0);
+
+    cbuf_push_back(out_stream, 0);
+    cbuf_push_back(out_stream, 1);
+    cbuf_push_back(out_stream, 2);
+    cbuf_push_back(out_stream, 3);
+
+    assert(cbuf_len(out_stream) == 4);
+    assert(cbuf_get(out_stream, 0) == 0);
+    assert(cbuf_get(out_stream, 1) == 1);
+    assert(cbuf_get(out_stream, 2) == 2);
+    assert(cbuf_get(out_stream, 3) == 3);
+
     Exit();
 }

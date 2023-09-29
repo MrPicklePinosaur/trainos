@@ -2,6 +2,7 @@
 #define __TASK_H__
 
 #include <stdint.h>
+#include <trainstd.h>
 #include "addrspace.h"
 #include "switchframe.h"
 
@@ -28,6 +29,8 @@ typedef struct {
     TaskState state;
     uint32_t priority;
     Addrspace addrspace;
+
+    CBuf* receive_queue;
 
 } Task;
 
