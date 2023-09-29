@@ -121,11 +121,18 @@ The multilevel queue is implemented as an array of linked lists.
 Whenever an item is inserted into a linked list, the whole list is traversed.
 Thus, if $n$ is the number of tasks currently scheduled, scheduler_insert() and scheduler_next() are $O(n)$ in the worst case.
 
-== Heap allocator
+== Heap Allocator
 
 Our heap allocator is currently just 2048 bytes of static memory.
 Memory is never freed, so we run out of memory really fast.
 Thankfully, this is enough bytes to complete this assignment with.
+
+== Context Switching
+
+We save the registers of each user task on the heap, in a Switchframe struct.
+The pointer to this struct is stored alongside the task's metadata in the task table.
+
+Loading and storing these registers is always done in the kernel.
 
 = Program Output
 
