@@ -1,5 +1,5 @@
-#include "gacha.h"
 #include "log.h"
+#include "gacha.h"
 
 static char* const MMIO_BASE = (char*) 0xFE000000;
 static char* const TIMER_BASE = (char*)(MMIO_BASE + 0x3000);
@@ -45,10 +45,10 @@ void gacha_print_roll(void) {
     for (uint32_t i = 0; i < 5; i++) {
         uint32_t rarity = gacha_rarity_distribution();
         PRINT("%s  +-----------+------------------------------------------------------------------------------------------+  ", RARITY_COLORS[rarity]);
-        PRINT("  |           |                                                                                          |  ");
-        PRINT("  | %s |   %s |  ", RARITIES[rarity], UNITS[randint() % GACHA_UNIT_COUNT]);
-        PRINT("  |           |                                                                                          |  ");
-        PRINT("  +-----------+------------------------------------------------------------------------------------------+  ");
+        PRINT("%s  |           |                                                                                          |  ", RARITY_COLORS[rarity]);
+        PRINT("%s  | %s |   %s |  ", RARITY_COLORS[rarity], RARITIES[rarity], UNITS[randint() % GACHA_UNIT_COUNT]);
+        PRINT("%s  |           |                                                                                          |  ", RARITY_COLORS[rarity]);
+        PRINT("%s  +-----------+------------------------------------------------------------------------------------------+  ", RARITY_COLORS[rarity]);
         PRINT("\x1b[0m");
     }
     PRINT("o}--------------{o                 o}----------------------------------{o                 o}-------------{o");

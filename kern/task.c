@@ -88,7 +88,7 @@ void
 tasktable_set_current_task(Tid tid)
 {
     // make old current task ready
-    tasktable_get_task(current_task)->state = TASKSTATE_READY;
+    /* tasktable_get_task(current_task)->state = TASKSTATE_READY; */
 
     tasktable_get_task(tid)->state = TASKSTATE_ACTIVE;
     current_task = tid;

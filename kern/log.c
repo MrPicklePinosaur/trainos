@@ -18,7 +18,7 @@ _log(LogLevel level, char* prefix, char* format, ...)
 
         uart_printf(CONSOLE, prefix);
         uart_format_print(CONSOLE, format, args);
-        uart_printf(CONSOLE, "\r\n");
+        uart_printf(CONSOLE, "\033[0m\r\n");
 
         va_end(args);
     }

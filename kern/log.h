@@ -16,9 +16,9 @@ typedef enum {
 void set_log_level(LogLevel level);
 void _log(LogLevel level, char* prefix, char* format, ...);
 
-#define LOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, "[ERROR] ", (str), ##__VA_ARGS__)
-#define LOG_WARN(str, ...) _log(LOG_LEVEL_WARN, "[WARN] ", (str), ##__VA_ARGS__)
-#define LOG_INFO(str, ...) _log(LOG_LEVEL_INFO, "[INFO] ", (str), ##__VA_ARGS__)
+#define LOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
+#define LOG_WARN(str, ...) _log(LOG_LEVEL_WARN, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
+#define LOG_INFO(str, ...) _log(LOG_LEVEL_INFO, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
 #define LOG_DEBUG(str, ...) _log(LOG_LEVEL_DEBUG, "[DEBUG] ", (str), ##__VA_ARGS__)
 
 #define PRINT(str, ...) _log(LOG_LEVEL_ALWAYS, "", (str), ##__VA_ARGS__)

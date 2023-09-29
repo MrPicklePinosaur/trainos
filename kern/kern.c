@@ -34,7 +34,7 @@ handle_svc_create(uint32_t priority, void (*entrypoint)())
     if (new_tid == 1) new_task->parent_tid = 0;
     else new_task->parent_tid = current_tid;
 
-    LOG_DEBUG("[SYSCALL] Created new task %d", new_tid);
+    LOG_INFO("[SYSCALL] Created new task %d", new_tid);
 
     scheduler_insert(new_tid, priority);
 
@@ -53,7 +53,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
     // Find the task in question
     Task* target_task = tasktable_get_task(tid);
     if (target_task == 0) {
-        LOG_DEBUG("Invalid task priority %d", tid);
+        LOG_DEBUG("Invalid task %d", tid);
         return -1;
     }
     
@@ -62,15 +62,44 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         // RECEIVE_WAIT tasks exists, directly copy message
         current_task->state = TASKSTATE_REPLY_WAIT;
 
+        LOG_DEBUG("Sending message to task %d, in RECEIVE_WAIT", tid);
+
+
+
     }
     else if (target_task->state == TASKSTATE_READY) {
+
+        LOG_DEBUG("Sending message to task %d, not in RECEIVE_WAIT", tid);
         // task is not in RECEIVE_WAIT, add sending task to recieving tasks' recieve queue 
         current_task->state = TASKSTATE_SEND_WAIT;
         /* target_task */
-        cbuf_push_back(target_task->receive_queue, (uint8_t)current_tid);
+        cbuf_push_front(target_task->receive_queue, (uint8_t)current_tid);
+        /* cbuf_debug(target_task->receive_queue); */
     } else {
         LOG_WARN("Task %d is not available to receive since it is in state %d", tid, target_task->state);
     }
+
+    return 0;
+}
+
+int
+handle_svc_receive(int *tid, char *msg, int msglen)
+{
+    Tid current_tid = tasktable_current_task();
+    Task* current_task = tasktable_get_task(current_tid);
+
+    // check in receive queue for any pending messages
+    if (cbuf_len(current_task->receive_queue) == 0) {
+        // if no pending messages, go into RECEIVE_WAIT
+        current_task->state = TASKSTATE_RECEIVE_WAIT;        
+        LOG_DEBUG("empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
+
+    } else {
+
+        Tid sender_tid = (Tid)cbuf_pop_back(current_task->receive_queue);
+        LOG_DEBUG("got message from tid = %d", sender_tid);
+    }
+
 
     return 0;
 }
@@ -99,7 +128,8 @@ handle_svc(void)
     /* LOG_DEBUG("current task tid = %d", current_tid); */
 
     uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
-    LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode);
+    /* LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode); */
+    LOG_DEBUG("[SYSCALL] In task %d", current_tid);
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {
@@ -112,26 +142,27 @@ handle_svc(void)
         next_tid = current_tid;
     }
     else if (opcode == OPCODE_MY_TID) {
-        LOG_DEBUG("[SYSCALL] MyTid");
+        LOG_INFO("[SYSCALL] MyTid");
 
         sf->x0 = tasktable_current_task();
         next_tid = current_tid;
     }
     else if (opcode == OPCODE_MY_PARENT_TID) {
-        LOG_DEBUG("[SYSCALL] MyParentTid");
+        LOG_INFO("[SYSCALL] MyParentTid");
 
         sf->x0 = current_task->parent_tid;
         next_tid = current_tid;
     }
     else if (opcode == OPCODE_YIELD) {
-        LOG_DEBUG("[SYSCALL] Yield");
+        LOG_INFO("[SYSCALL] Yield");
 
         next_tid = find_next_task();
 
+        current_task->state = TASKSTATE_READY;
         LOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
     }
     else if (opcode == OPCODE_EXIT) {
-        LOG_DEBUG("[SYSCALL] Exit");
+        LOG_INFO("[SYSCALL] Exit");
 
         // NOTE: maybe don't allow task 1 to be deleted?
         if (current_tid == 1) {
@@ -147,9 +178,17 @@ handle_svc(void)
 
     } else if (opcode == OPCODE_SEND) {
 
-        LOG_DEBUG("[SYSCALL] SEND");
+        LOG_INFO("[SYSCALL] SEND");
 
         sf->x0 = handle_svc_send(sf->x0, (const char*)sf->x1, sf->x2, (char*)sf->x3, sf->x4);
+
+        next_tid = find_next_task();
+
+    } else if (opcode == OPCODE_RECEIVE) {
+
+        LOG_INFO("[SYSCALL] RECEIVE");
+
+        sf->x0 = handle_svc_receive((int*)sf->x0, (char*)sf->x1, sf->x2);
 
         next_tid = find_next_task();
 
@@ -157,6 +196,7 @@ handle_svc(void)
         LOG_WARN("Uncaught syscall with opcode %x", opcode);
     }
 
+    LOG_DEBUG("returning to task %d", next_tid);
     tasktable_set_current_task(next_tid);
     asm_enter_usermode(tasktable_get_task(next_tid)->sf);
 }
