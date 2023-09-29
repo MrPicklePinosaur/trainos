@@ -56,3 +56,9 @@ panic(void)
 {
     // access some invalid memory to induce a panic
 }
+
+int
+min(int a, int b)
+{
+    return (a <= b) ? a : b;
+}

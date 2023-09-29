@@ -64,7 +64,24 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
 
         LOG_DEBUG("Sending message to task %d, in RECEIVE_WAIT", tid);
 
+        // copy message to buffer
+        if (target_task->receive_buf == NULL) {
+            LOG_ERROR("receiving task doesn't have initalized receive buffer");
+            return -1; // TODO better error code
+        }
 
+        int copylen = min(msglen, target_task->receive_buf->buf_len); 
+        memcpy(target_task->receive_buf->buf, msg, copylen);
+        
+        // can unblock target task now
+        target_task->state = TASKSTATE_READY;
+
+        // delete receive_buf
+        arena_free(target_task->receive_buf);
+        target_task->receive_buf = 0;
+
+        // set the return value for receive for the receive caller
+        target_task->sf->x0 = copylen;
 
     }
     else if (target_task->state == TASKSTATE_READY) {
@@ -92,6 +109,12 @@ handle_svc_receive(int *tid, char *msg, int msglen)
     if (cbuf_len(current_task->receive_queue) == 0) {
         // if no pending messages, go into RECEIVE_WAIT
         current_task->state = TASKSTATE_RECEIVE_WAIT;        
+        ReceiveBuf* receive_buf = arena_alloc(sizeof(ReceiveBuf));
+        *receive_buf = (ReceiveBuf) {
+            .buf = msg,
+            .buf_len = msglen
+        };
+        current_task->receive_buf = receive_buf;
         LOG_DEBUG("empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
 
     } else {
@@ -180,9 +203,16 @@ handle_svc(void)
 
         LOG_INFO("[SYSCALL] SEND");
 
-        sf->x0 = handle_svc_send(sf->x0, (const char*)sf->x1, sf->x2, (char*)sf->x3, sf->x4);
+        int ret = handle_svc_send(sf->x0, (const char*)sf->x1, sf->x2, (char*)sf->x3, sf->x4);
+        if (ret < 0) {
+            // if error return to caller immediately (TODO is this a good design idea?)
+            sf->x0 = ret;
+            next_tid = current_tid;
+        } else {
 
-        next_tid = find_next_task();
+            next_tid = find_next_task();
+        }
+
 
     } else if (opcode == OPCODE_RECEIVE) {
 

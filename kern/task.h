@@ -19,6 +19,12 @@ typedef enum {
     TASKSTATE_REPLY_WAIT,
 } TaskState;
 
+// Store data about where the receive buffer for is
+typedef struct {
+    char* buf;
+    size_t buf_len;
+} ReceiveBuf;
+
 typedef struct {
 
     // switchframe is at beginning of struct for easy access
@@ -31,6 +37,7 @@ typedef struct {
     Addrspace addrspace;
 
     CBuf* receive_queue;
+    ReceiveBuf* receive_buf;
 
 } Task;
 
