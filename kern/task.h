@@ -19,9 +19,20 @@ typedef enum {
     TASKSTATE_REPLY_WAIT,
 } TaskState;
 
-// Store data about where the receive buffer for is
+// Store data for message senders
 typedef struct {
-    char* buf;
+    // used by receive to copy data to sender
+    char* reply_buf;
+    size_t reply_buf_len;
+
+    // may be used by sender to hold data before receiver calls receive
+    char* send_buf;
+    size_t send_buf_len;
+} SendBuf;
+
+// Store data for message receivers
+typedef struct {
+    char* buf; // receive buffer
     size_t buf_len;
 } ReceiveBuf;
 
@@ -37,6 +48,7 @@ typedef struct {
     Addrspace addrspace;
 
     CBuf* receive_queue;
+    SendBuf* send_buf;
     ReceiveBuf* receive_buf;
 
 } Task;

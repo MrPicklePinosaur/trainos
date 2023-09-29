@@ -47,6 +47,7 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
         .addrspace = addrspace,
         .sf = sf,
         .receive_queue = cbuf_new(RECEIVE_QUEUE_MAX_LEN),
+        .send_buf = 0,
         .receive_buf = 0
     };
 
