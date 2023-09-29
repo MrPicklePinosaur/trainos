@@ -19,4 +19,8 @@ uint8_t cbuf_pop_front(CBuf* cbuf);
 uint8_t cbuf_pop_back(CBuf* cbuf);
 uint32_t cbuf_len(CBuf* cbuf);
 
+uint8_t cbuf_get(CBuf* cbuf, size_t index);
+void cbuf_clear(CBuf* cbuf);
+void cbuf_debug(CBuf* cbuf);
+
 #endif // __TRAINSTD_CBUF_H__
