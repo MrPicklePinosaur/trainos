@@ -75,6 +75,9 @@ nameserverTask()
                     .register_as = {}
                 }
             };
+
+            // TODO implement nameserver database write
+
             Reply(from_tid, (char*)&reply_buf, sizeof(NameserverResp));
         }
         else if (msg_buf.type == NS_WHO_IS) {
@@ -88,6 +91,9 @@ nameserverTask()
                     }
                 }
             };
+
+            // TODO implement nameserver database lookup
+
             Reply(from_tid, (char*)&reply_buf, sizeof(NameserverResp));
         }
     }
