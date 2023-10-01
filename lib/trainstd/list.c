@@ -97,6 +97,19 @@ list_pop_back(List* list)
     return data;
 }
 
+void*
+list_find(List* list, ListFindFn pred)
+{
+    ListNode* node = list->head;
+    while (node != 0) {
+
+        if (pred(node->data)) return node->data;
+        
+        node = node->next;
+    }
+    return 0;
+}
+
 void
 list_deinit(List* list)
 {

@@ -9,6 +9,8 @@ static Tid sender_tid;
 void
 senderTask()
 {
+    println("Entered senderTask");
+
     const char* msg = "hello world";
     const char reply_buf[32];
     int replylen = Send((Tid)receive_tid, msg, strlen(msg)+1, (char*)reply_buf, 32);
@@ -19,6 +21,8 @@ senderTask()
 void
 receiverTask()
 {
+    println("Entered receiverTask");
+
     int from_tid;
     char receive_buf[32];
     int msglen = Receive((int*)&from_tid, (char*)receive_buf, 32);
@@ -42,6 +46,7 @@ sendReceiveReplyTestTask()
 void
 K2()
 {
+    println("In k2 task");
     RegisterAs("firstTask");
     WhoIs("firstTask");
 

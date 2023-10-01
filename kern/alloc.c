@@ -8,7 +8,7 @@ typedef struct ArenaAllocator ArenaAllocator;
 
 static ArenaAllocator alloc;
 
-#define ARENA_ALLOCATOR_SIZE 4096
+#define ARENA_ALLOCATOR_SIZE 2048
 struct ArenaAllocator {
     size_t cursor;
     unsigned int* buf[ARENA_ALLOCATOR_SIZE];

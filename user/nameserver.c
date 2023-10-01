@@ -3,7 +3,10 @@
 #include <stdbool.h>
 #include "usertasks.h"
 
-static Tid nameserverTid = 0;
+typedef struct NsdbEntry NsdbEntry;
+
+static Tid nameserver_tid = 0;
+static List* nsdb;
 
 typedef enum {
     NS_REGISTER_AS, 
@@ -36,14 +39,22 @@ typedef struct {
     } data;
 } NameserverResp;
 
+struct NsdbEntry {
+    char* name;
+    Tid tid;
+};
+
 void nameserverTask();
 
 void
 initNameserverTask()
 {
-    if (nameserverTid != 0) {
-        println("Warning: nameserverTask has already been created before");
+    if (nameserver_tid != 0) {
+        println("Warning: nameserverTask has already been created before tid = %d", nameserver_tid);
     }
+
+    // initalize namespace db
+    nsdb = list_init();
 
     int ret = Create(1, nameserverTask);
 
@@ -52,12 +63,13 @@ initNameserverTask()
     }
 
     // set globally acessible nameserverTid
-    nameserverTid = ret;
+    nameserver_tid = ret;
 }
 
 void
 nameserverTask()
 {
+    println("starting nameserver task");
 
     NameserverMsg msg_buf;
     NameserverResp reply_buf;
@@ -65,9 +77,28 @@ nameserverTask()
     for (;;) {
         int from_tid;
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(NameserverMsg));
+        if (msg_len < 0) {
+            println("Error when receiving");
+            continue;
+        }
 
         if (msg_buf.type == NS_REGISTER_AS) {
             println("Got register as request from %d", from_tid);
+
+            // insert namespace into list
+            // TODO we don't handle duplicate names (the later one is ignored)
+            // TODO this structure is leaked
+            /*
+            NsdbEntry* nsdb_entry = alloc(sizeof(nsdb_entry)); 
+            *nsdb_entry = (NsdbEntry) {
+                // TODO this might be dangerous, should we copy the string? Since it technically belongs to another task?
+                .name = msg_buf.data.register_as.name,
+                .tid = from_tid,
+            };
+            list_push_back(nsdb, nsdb_entry);
+            */
+
+            println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_REGISTER_AS,
@@ -76,12 +107,21 @@ nameserverTask()
                 }
             };
 
-            // TODO implement nameserver database write
-
             Reply(from_tid, (char*)&reply_buf, sizeof(NameserverResp));
         }
         else if (msg_buf.type == NS_WHO_IS) {
             println("Got whois request from %d", from_tid);
+
+            bool (*nsdb_lookup)(void* entry) = lambda(bool, (void* entry) {
+                NsdbEntry* nsdb_entry = (NsdbEntry*)entry;
+                return nsdb_entry->tid == (Tid)from_tid;
+            });
+            NsdbEntry* lookup = (NsdbEntry*)list_find(nsdb, nsdb_lookup);
+
+            Tid lookup_tid = 0; // error state is tid of zero
+            if (lookup != 0) {
+                lookup_tid = lookup->tid;
+            }
 
             reply_buf = (NameserverResp) {
                 .type = NS_WHO_IS,
@@ -112,7 +152,7 @@ RegisterAs(const char *name)
         }
     };
 
-    int ret = Send(nameserverTid, (const char*)&send_buf, sizeof(NameserverMsg), (char*)&resp_buf, sizeof(NameserverResp));
+    int ret = Send(nameserver_tid, (const char*)&send_buf, sizeof(NameserverMsg), (char*)&resp_buf, sizeof(NameserverResp));
     if (ret < 0) return -1;
 
     if (resp_buf.type != NS_REGISTER_AS) return -1;
@@ -133,7 +173,7 @@ WhoIs(const char *name)
         }
     };
 
-    int ret = Send(nameserverTid, (const char*)&send_buf, sizeof(NameserverMsg), (char*)&resp_buf, sizeof(NameserverResp));
+    int ret = Send(nameserver_tid, (const char*)&send_buf, sizeof(NameserverMsg), (char*)&resp_buf, sizeof(NameserverResp));
     if (ret < 0) return -1;
 
     if (resp_buf.type != NS_WHO_IS) return -1;

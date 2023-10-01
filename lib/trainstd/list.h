@@ -4,6 +4,7 @@
 /* doubly linked list implementation */
 
 #include <stddef.h>
+#include <stdbool.h>
 
 typedef struct List List;
 
@@ -18,6 +19,9 @@ void* list_pop_back(List* list);
 
 void* list_peek_front(List* list);
 void* list_peek_back(List* list);
+
+typedef bool(*ListFindFn)(void*) ;
+void* list_find(List* list, ListFindFn pred);
 
 size_t list_len(List* list);
 
