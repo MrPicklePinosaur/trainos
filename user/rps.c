@@ -54,10 +54,10 @@ typedef struct {
     RPSMove player2_move; 
 } RPSGameState;
 
-#define RPS_MAX_GAMES 32
 void
 RPSTask(void)
 {
+    // data structure for game state: hashmap mapping each player to a game state struct
     
     RPSMsg msg_buf;
     RPSResp reply_buf;

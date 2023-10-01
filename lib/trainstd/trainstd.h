@@ -6,6 +6,8 @@
 #include "list.h"
 #include "mem.h"
 #include "cbuf.h"
+#include "pair.h"
+#include "hashmap.h"
 
 void println(char* format, ...);
 void print(char* format, ...);

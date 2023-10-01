@@ -163,6 +163,12 @@ listiter_next(ListIter* it)
     return data;
 }
 
+bool
+listiter_end(ListIter* it)
+{
+    return it->node == 0;
+}
+
 void
 listiter_delete(ListIter* it)
 {
