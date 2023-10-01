@@ -1,6 +1,7 @@
 #include "rpi.h"
 #include "util.h"
 #include <stdarg.h>
+#include <trainstd.h>
 
 static char* const  MMIO_BASE = (char*)           0xFE000000;
 

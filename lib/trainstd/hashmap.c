@@ -57,7 +57,6 @@ int
 hashmap_insert(HashMap* hm, key_t key, value_t value)
 {
     size_t ind = hashfunction(hm, key);
-    println("computed hash %d", ind);
 
     // TODO: we actually need a linked list of pairs
     HashMapPair* pair = alloc(sizeof(HashMapPair));

@@ -12,6 +12,8 @@ void secondUserTask();
 void K2();
 void sendReceiveReplyTestTask();
 
+void RPSTask(void);
+
 // Nameserver
 void nameserverTask();
 void initNameserverTask();

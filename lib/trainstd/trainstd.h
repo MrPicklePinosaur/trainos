@@ -8,6 +8,7 @@
 #include "cbuf.h"
 #include "pair.h"
 #include "hashmap.h"
+#include "conv.h"
 
 void println(char* format, ...);
 void print(char* format, ...);

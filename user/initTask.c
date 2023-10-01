@@ -17,7 +17,7 @@ initTask()
     // max 10 tasks for now
     TaskMenuEntry* task_menu[11] = {
         &(TaskMenuEntry){ "K1", &firstUserTask },
-        &(TaskMenuEntry){ "K2", &K2 },
+        &(TaskMenuEntry){ "K2", &RPSTask },
         &(TaskMenuEntry){ "sendReceiveReplyTest", &sendReceiveReplyTestTask },
         &(TaskMenuEntry){ "graphics", &graphicsTask },
         &(TaskMenuEntry){ "test", &testHarness },

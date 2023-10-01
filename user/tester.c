@@ -76,19 +76,23 @@ testHashmap()
     HashMap* map = hashmap_new(20);
     TEST(hashmap_size(map) == 0);
 
-    hashmap_insert(map, "one", 1);
-    hashmap_insert(map, "two", 2);
-    hashmap_insert(map, "three", 3);
-    hashmap_insert(map, "four", 4);
+    hashmap_insert(map, "one", (void*)1);
+    hashmap_insert(map, "two", (void*)2);
+    hashmap_insert(map, "three", (void*)3);
+    hashmap_insert(map, "four", (void*)4);
     TEST(hashmap_size(map) == 4);
 
     bool success;
-    TEST(hashmap_get(map, "one", &success) == 1);
+    TEST(hashmap_get(map, "one", &success) == (void*)1);
     TEST(success);
-    TEST(hashmap_get(map, "two", &success) == 2);
+    TEST(hashmap_get(map, "two", &success) == (void*)2);
     TEST(success);
-    TEST(hashmap_get(map, "five", &success) == 0);
+    TEST(hashmap_get(map, "five", &success) == (void*)0);
     TEST(!success);
+
+    TEST(hashmap_contains(map, "one") == true);
+    TEST(hashmap_contains(map, "four") == true);
+    TEST(hashmap_contains(map, "five") == false);
 
     Exit();
 }
@@ -120,9 +124,9 @@ testNameserver()
 
     // TODO we need to wait for task1 and task2 to run, so sorta sus
 
-    TEST(WhoIs("firstTask") == task1);
-    TEST(WhoIs("secondTask") == task2);
-    TEST(WhoIs("thirdTask") == 0); // should be not found
+    TEST((Tid)WhoIs("firstTask") == task1);
+    TEST((Tid)WhoIs("secondTask") == task2);
+    TEST((Tid)WhoIs("thirdTask") == 0); // should be not found
 
     Exit();
 }
