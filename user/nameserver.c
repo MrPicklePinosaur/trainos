@@ -44,28 +44,6 @@ struct NsdbEntry {
     Tid tid;
 };
 
-void nameserverTask();
-
-void
-initNameserverTask()
-{
-    if (nameserver_tid != 0) {
-        println("Warning: nameserverTask has already been created before tid = %d", nameserver_tid);
-    }
-
-    // initalize namespace db
-    nsdb = list_init();
-
-    int ret = Create(1, nameserverTask);
-
-    if (ret < 0) {
-        println("failed to initalized nameserver");
-    }
-
-    // set globally acessible nameserverTid
-    nameserver_tid = ret;
-}
-
 void
 nameserverTask()
 {
@@ -88,7 +66,6 @@ nameserverTask()
             // insert namespace into list
             // TODO we don't handle duplicate names (the later one is ignored)
             // TODO this structure is leaked
-            /*
             NsdbEntry* nsdb_entry = alloc(sizeof(nsdb_entry)); 
             *nsdb_entry = (NsdbEntry) {
                 // TODO this might be dangerous, should we copy the string? Since it technically belongs to another task?
@@ -96,7 +73,6 @@ nameserverTask()
                 .tid = from_tid,
             };
             list_push_back(nsdb, nsdb_entry);
-            */
 
             println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
 
@@ -182,3 +158,25 @@ WhoIs(const char *name)
 
     return resp_buf.data.who_is.tid;
 }
+
+void
+initNameserverTask()
+{
+    if (nameserver_tid != 0) {
+        println("Warning: nameserverTask has already been created before tid = %d", nameserver_tid);
+    }
+
+    // initalize namespace db
+    nsdb = list_init();
+
+    println("address of nameserverTask %x", &nameserverTask);
+    int ret = Create(2, &nameserverTask);
+
+    if (ret < 0) {
+        println("failed to initalized nameserver");
+    }
+
+    // set globally acessible nameserverTid
+    nameserver_tid = ret;
+}
+

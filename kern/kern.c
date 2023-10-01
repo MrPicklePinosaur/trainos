@@ -346,6 +346,7 @@ handle_svc(void)
 
     } else {
         LOG_WARN("Uncaught syscall with opcode %x", opcode);
+        next_tid = current_tid;
     }
 
     LOG_DEBUG("returning to task %d", next_tid);

@@ -25,7 +25,7 @@ initTask()
     };
 
     // spawn init tasks
-    initNameserverTask();
+    /* initNameserverTask(); */
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
@@ -33,12 +33,12 @@ initTask()
             println("[%d] %s", i, task_menu[i]->name);
         }
         println("======================================================");
-        char ch = getc() - '0';
+        int ch = getc() - '0';
         if (!(0 <= ch && ch < 9)) {
             println("invalid task");
             continue;
         }
-        Create(1, task_menu[ch]->taskFn);
+        Create(5, task_menu[ch]->taskFn);
         Yield();
     }
     Exit();
