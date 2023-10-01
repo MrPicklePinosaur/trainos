@@ -96,7 +96,7 @@ nameserverTask()
                 if (entry == 0) break;
                 println("comparing %s and %s", entry->name, msg_buf.data.who_is.name);
                 if (strcmp(entry->name, msg_buf.data.who_is.name) == 0) {
-                    lookup_tid = from_tid;
+                    lookup_tid = entry->tid;
                 }
             }
 

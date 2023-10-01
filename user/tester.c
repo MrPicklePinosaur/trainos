@@ -1,7 +1,6 @@
 #include "usertasks.h"
-#include "trainsys.h"
-
-#include "trainstd.h"
+#include <trainsys.h>
+#include <trainstd.h>
 
 /* user tasks for running userland tests such as data structures */
 
@@ -9,11 +8,14 @@
 
 
 void testCbuf();
+void testNameserver();
 
 void
 testHarness()
 {
     Create(1, &testCbuf);
+    Yield();
+    Create(5, &testNameserver);
     Yield();
 
     Exit();
@@ -59,6 +61,40 @@ testCbuf()
     assert(cbuf_get(out_stream, 1) == 1);
     assert(cbuf_get(out_stream, 2) == 2);
     assert(cbuf_get(out_stream, 3) == 3);
+
+    Exit();
+}
+
+void
+testingTask1()
+{
+    assert(RegisterAs("firstTask") == 0);
+    Yield();
+    Exit();
+}
+
+void
+testingTask2()
+{
+    assert(RegisterAs("secondTask") == 0);
+    Yield();
+    Exit();
+}
+
+void
+testNameserver()
+{
+    println("Running test suite for nameserver -----------------");
+
+    Tid task1 = Create(1, &testingTask1);
+    Tid task2 = Create(1, &testingTask2);
+    Yield();
+
+    // TODO we need to wait for task1 and task2 to run, so sorta sus
+
+    assert(WhoIs("firstTask") == task1);
+    assert(WhoIs("secondTask") == task2);
+    assert(WhoIs("thirdTask") == 0); // should be not found
 
     Exit();
 }
