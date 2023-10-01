@@ -19,10 +19,10 @@ typedef enum {
 } RPSMove;
 
 typedef enum {
-    WIN,
-    LOSE,
-    TIE,
-    INCOMPLETE, // the other player forfeit
+    RESULT_INCOMPLETE = 0, // the other player forfeit
+    RESULT_WIN,
+    RESULT_LOSE,
+    RESULT_TIE,
 } RPSResult;
 
 typedef struct {
@@ -66,6 +66,26 @@ tid_to_key(Tid tid)
     char* key = alloc(sizeof(char)*RPS_MAX_KEY_LEN);
     ui2a(tid, 10, key);
     return key;
+}
+
+RPSResult
+calculate_result(RPSMove player1_move, RPSMove player2_move)
+{
+    if (player1_move == MOVE_NONE || player2_move == MOVE_NONE) {
+        println("WARNING, one move is none");
+        return RESULT_INCOMPLETE;
+    }
+
+    // tie conditions
+    if (player1_move == player2_move) return RESULT_TIE;
+
+    // win conditions
+    if (player1_move == MOVE_ROCK && player2_move == MOVE_SCISSORS) return RESULT_WIN;
+    if (player1_move == MOVE_PAPER && player2_move == MOVE_ROCK) return RESULT_WIN;
+    if (player1_move == MOVE_SCISSORS && player2_move == MOVE_PAPER) return RESULT_WIN;
+
+    // the rest is lose conditions
+    return RESULT_LOSE;
 }
 
 void
@@ -113,26 +133,74 @@ RPSServerTask(void)
                 };
 
                 // give both players a reference to the game state
-                hashmap_insert(game_db, tid_to_key(player1), game_db);
-                hashmap_insert(game_db, tid_to_key(player2), game_db);
+                hashmap_insert(game_db, tid_to_key(player1), game_state);
+                hashmap_insert(game_db, tid_to_key(player2), game_state);
 
                 waiting_player = 0; // clear queue
+
+                // reply to both players when ready to start
+                reply_buf = (RPSResp) {
+                    .type = RPS_SIGNUP,
+                    .data = {
+                        .signup = {}
+                    }
+                };
+                Reply(player1, (char*)&reply_buf, sizeof(RPSResp));
+                Reply(player2, (char*)&reply_buf, sizeof(RPSResp));
             }
 
-            reply_buf = (RPSResp) {
-                .type = RPS_SIGNUP,
-                .data = {
-                    .signup = {}
-                }
-            };
-            Reply(from_tid, (char*)&reply_buf, sizeof(RPSResp));
 
         }
         else if (msg_buf.type == RPS_PLAY) {
 
+            println("player %d played %d", from_tid, msg_buf.data.play.move);
+
             // look up the game the user to part of
+            bool success;
+            RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
+            if (!success) {
+                println("couldn't find game state for player, maybe a game isn't started?");
+                // TODO properly return error to client
+                for(;;){}
+            }
+
+            println("got gamestate player1 = %d, player2 = %d, player1_move = %d, player2_move = %d", game_state->player1, game_state->player2, game_state->player1_move, game_state->player2_move);
+
+            // TODO currently we are technically allowed to change our move as long as other player hasn't moved yet, consider if this is good behavior
+            // need to figure out which player we are (yuck!)
+            if (from_tid == game_state->player1) {
+                game_state->player1_move = msg_buf.data.play.move;
+            } else if (from_tid == game_state->player2) {
+                game_state->player2_move = msg_buf.data.play.move;
+            } else {
+                println("player is not part of game");
+                for(;;){}
+            }
 
             // check if the round is over
+            if (game_state->player1_move != MOVE_NONE && game_state->player2_move != MOVE_NONE) {
+
+                // reply to both players with the result
+                reply_buf = (RPSResp) {
+                    .type = RPS_PLAY,
+                    .data = {
+                        .play = {
+                            .res = calculate_result(game_state->player1_move, game_state->player2_move)
+                        }
+                    }
+                };
+                Reply(game_state->player1, (char*)&reply_buf, sizeof(RPSResp));
+
+                reply_buf = (RPSResp) {
+                    .type = RPS_PLAY,
+                    .data = {
+                        .play = {
+                            .res = calculate_result(game_state->player2_move, game_state->player1_move)
+                        }
+                    }
+                };
+                Reply(game_state->player2, (char*)&reply_buf, sizeof(RPSResp));
+            }
 
         }
         else if (msg_buf.type == RPS_QUIT) {
@@ -174,7 +242,22 @@ Signup(Tid rps)
 RPSResult
 Play(Tid rps, RPSMove move)
 {
+    RPSResp resp_buf;
+    RPSMsg send_buf = (RPSMsg) {
+        .type = RPS_PLAY,
+        .data = {
+            .play = {
+                .move = move
+            }
+        }
+    };
 
+    int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
+    if (ret < 0) return -1;
+
+    if (resp_buf.type != RPS_PLAY) return -1;
+
+    return resp_buf.data.play.res;
 }
 
 int
@@ -184,10 +267,22 @@ Quit(Tid rps)
 }
 
 void
-RPSClientTask(void)
+RPSClientTask1(void)
 {
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
+    RPSResult res = Play(rps, MOVE_ROCK);
+    println("player %d played with result %d", MyTid(), res);
+    Exit();
+}
+
+void
+RPSClientTask2(void)
+{
+    Tid rps = WhoIs(RPS_ADDRESS);
+    Signup(rps);
+    RPSResult res = Play(rps, MOVE_SCISSORS);
+    println("player %d played with result %d", MyTid(), res);
     Exit();
 }
 
@@ -195,9 +290,8 @@ void
 RPSTask(void)
 {
     Create(3, &RPSServerTask);
-    for (unsigned int i = 0; i < 2; ++i) {
-        Create(3, &RPSClientTask);
-    }
+    Create(3, &RPSClientTask1);
+    Create(3, &RPSClientTask2);
     Yield();
     for (;;) {}
     Exit();
