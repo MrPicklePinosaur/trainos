@@ -25,7 +25,8 @@ initTask()
     };
 
     // spawn init tasks
-    /* initNameserverTask(); */
+    initNameserverTask();
+
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");

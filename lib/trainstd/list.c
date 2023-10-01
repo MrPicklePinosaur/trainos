@@ -15,6 +15,10 @@ struct ListNode {
     void* data;
 };
 
+struct ListIter {
+    ListNode* node;
+};
+
 List*
 list_init(void)
 {
@@ -43,6 +47,11 @@ list_push_front(List* list, void* item)
     }
 
     list->head = node;
+    // special case when list is empty
+    if (list->size == 0) {
+        list->tail = node;
+    }
+
     ++(list->size);
 }
 void
@@ -60,6 +69,12 @@ list_push_back(List* list, void* item)
     }
 
     list->tail = node;
+
+    // special case when list is empty
+    if (list->size == 0) {
+        list->head = node;
+    }
+
     ++(list->size);
 }
 
@@ -77,6 +92,12 @@ list_pop_front(List* list)
 
     list->head = next;
     --(list->size);
+
+    // special case when list is empty
+    if (list->size == 0) {
+        list->tail = 0;
+    }
+
     return data;
 }
 
@@ -94,9 +115,16 @@ list_pop_back(List* list)
 
     list->tail = prev;
     --(list->size);
+
+    // special case when list is empty
+    if (list->size == 0) {
+        list->head = 0;
+    }
     return data;
 }
 
+// TODO can't use this, closures are evil
+/*
 void*
 list_find(List* list, ListFindFn pred)
 {
@@ -109,9 +137,34 @@ list_find(List* list, ListFindFn pred)
     }
     return 0;
 }
+*/
 
 void
 list_deinit(List* list)
 {
     // TODO free entire list
+}
+
+ListIter*
+list_iter(List* list) {
+    ListIter* it = alloc(sizeof(ListIter));
+    *it = (ListIter) {
+        .node = list->head
+    };
+    return it;
+}
+
+void*
+listiter_next(ListIter* it)
+{
+    if (it->node == 0) return 0;
+    void* data = it->node->data;
+    it->node = it->node->next;
+    return data;
+}
+
+void
+listiter_delete(ListIter* it)
+{
+    free(it);
 }

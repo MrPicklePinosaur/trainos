@@ -47,8 +47,8 @@ void
 K2()
 {
     println("In k2 task");
-    /* RegisterAs("firstTask"); */
-    /* WhoIs("firstTask"); */
+    RegisterAs("firstTask");
+    WhoIs("firstTask");
 
     for (;;) {}
     Exit();

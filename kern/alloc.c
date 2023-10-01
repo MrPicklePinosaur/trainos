@@ -6,9 +6,12 @@
  * */
 typedef struct ArenaAllocator ArenaAllocator;
 
-static ArenaAllocator alloc;
+// TODO becareful that tasks don't run into the heap
+static unsigned char* const HEAP_BASE = (unsigned char*)0x00800000;
+static ArenaAllocator* alloc = (ArenaAllocator*)HEAP_BASE;
 
-#define ARENA_ALLOCATOR_SIZE 4096
+// 1mb heap
+#define ARENA_ALLOCATOR_SIZE 0x10000
 struct ArenaAllocator {
     size_t cursor;
     unsigned int* buf[ARENA_ALLOCATOR_SIZE];
@@ -17,7 +20,7 @@ struct ArenaAllocator {
 void
 arena_init(void)
 {
-    alloc = (ArenaAllocator) {
+    *alloc = (ArenaAllocator) {
         .cursor = 0
     };
 }
@@ -27,13 +30,13 @@ arena_alloc(size_t size)
 {
     /* LOG_DEBUG("alloc %d", size); */
     // bounds check
-    if (alloc.cursor + size >= ARENA_ALLOCATOR_SIZE) {
+    if (alloc->cursor + size >= ARENA_ALLOCATOR_SIZE) {
         LOG_WARN("arena allocator is out of memory");
         return 0;
     }
 
-    void* ptr = alloc.buf + alloc.cursor;
-    alloc.cursor += size;
+    void* ptr = alloc->buf + alloc->cursor;
+    alloc->cursor += size;
 
     return ptr;
 }

@@ -13,6 +13,7 @@ void K2();
 void sendReceiveReplyTestTask();
 
 // Nameserver
+void nameserverTask();
 void initNameserverTask();
 
 int RegisterAs(const char *name);

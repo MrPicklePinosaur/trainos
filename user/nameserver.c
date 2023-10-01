@@ -1,11 +1,12 @@
 #include <trainsys.h>
 #include <trainstd.h>
 #include <stdbool.h>
+#include <string.h>
 #include "usertasks.h"
 
 typedef struct NsdbEntry NsdbEntry;
 
-static Tid nameserver_tid = 0;
+static Tid nameserver_tid;
 static List* nsdb;
 
 typedef enum {
@@ -73,7 +74,6 @@ nameserverTask()
                 .tid = from_tid,
             };
             list_push_back(nsdb, nsdb_entry);
-
             println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
 
             reply_buf = (NameserverResp) {
@@ -88,22 +88,25 @@ nameserverTask()
         else if (msg_buf.type == NS_WHO_IS) {
             println("Got whois request from %d", from_tid);
 
-            bool (*nsdb_lookup)(void* entry) = lambda(bool, (void* entry) {
-                NsdbEntry* nsdb_entry = (NsdbEntry*)entry;
-                return nsdb_entry->tid == (Tid)from_tid;
-            });
-            NsdbEntry* lookup = (NsdbEntry*)list_find(nsdb, nsdb_lookup);
-
+            // TODO this is sus closure stuff
+            ListIter* it = list_iter(nsdb);
             Tid lookup_tid = 0; // error state is tid of zero
-            if (lookup != 0) {
-                lookup_tid = lookup->tid;
+            for (;;) {
+                NsdbEntry* entry = (NsdbEntry*)listiter_next(it);
+                if (entry == 0) break;
+                println("comparing %s and %s", entry->name, msg_buf.data.who_is.name);
+                if (strcmp(entry->name, msg_buf.data.who_is.name) == 0) {
+                    lookup_tid = from_tid;
+                }
             }
+
+            println("whois look up found %d", lookup_tid);
 
             reply_buf = (NameserverResp) {
                 .type = NS_WHO_IS,
                 .data = {
                     .who_is = {
-                        .tid = 69
+                        .tid = lookup_tid
                     }
                 }
             };
@@ -169,7 +172,6 @@ initNameserverTask()
     // initalize namespace db
     nsdb = list_init();
 
-    println("address of nameserverTask %x", &nameserverTask);
     int ret = Create(2, &nameserverTask);
 
     if (ret < 0) {
