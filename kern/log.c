@@ -23,3 +23,10 @@ _log(LogLevel level, char* prefix, char* format, ...)
         va_end(args);
     }
 }
+
+void
+_panic(void)
+{
+    // make kernel block forever
+    for (;;) {}
+}

@@ -82,7 +82,7 @@ tasktable_get_task(Tid tid)
             return current->task;
         }
     }
-    LOG_WARN("getting invalid tid %d", tid);
+    PANIC("getting invalid tid %d", tid);
     return nullptr;
 }
 

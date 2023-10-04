@@ -23,4 +23,7 @@ void _log(LogLevel level, char* prefix, char* format, ...);
 
 #define PRINT(str, ...) _log(LOG_LEVEL_ALWAYS, "", (str), ##__VA_ARGS__)
 
+#define PANIC(str, ...) _log(LOG_LEVEL_ERROR, "\033[37m\033[41m[PANIC]", (str), ##__VA_ARGS__); _panic();
+void _panic(void);
+
 #endif // __LOG_H__

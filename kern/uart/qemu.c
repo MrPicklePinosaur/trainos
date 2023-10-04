@@ -1,4 +1,8 @@
 
+/* CREDIT TO https://github.com/bztsrc/raspi3-tutorial/tree/master/03_uart1
+ * for uart implementation for raspberry pi 3
+ */
+
 #include "kern/uart.h"
 
 #if QEMU == true

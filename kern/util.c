@@ -14,13 +14,6 @@ void* memcpy(void* restrict dest, const void* restrict src, size_t n) {
     return dest;
 }
 
-void
-_panic(void)
-{
-    // make kernel block forever
-    for (;;) {}
-}
-
 int
 min(int a, int b)
 {

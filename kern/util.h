@@ -34,8 +34,6 @@ extern int priviledge_level(void);
 // Get the value in ELR register
 extern int reg_elr(void);
 
-#define PANIC(str, ...) _log(LOG_LEVEL_ERROR, "\033[37m\033[41m[PANIC]", (str), ##__VA_ARGS__); _panic();
-void _panic(void);
 int vbar_value(void);
 
 extern uint32_t asm_esr_el1(void);
