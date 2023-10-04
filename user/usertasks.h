@@ -14,6 +14,8 @@ void sendReceiveReplyTestTask();
 
 void RPSTask(void);
 
+void K2Perf();
+
 // Nameserver
 void nameserverTask();
 void initNameserverTask();

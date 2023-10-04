@@ -9,6 +9,7 @@
 #include "pair.h"
 #include "hashmap.h"
 #include "conv.h"
+#include "timer.h"
 
 void println(char* format, ...);
 void print(char* format, ...);
