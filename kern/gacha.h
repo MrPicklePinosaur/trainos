@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define GACHA_UNIT_COUNT 15
+#define GACHA_UNIT_COUNT 20
 #define GACHA_RARITY_COUNT 5
 
 static const char* const UNITS[GACHA_UNIT_COUNT] = {
@@ -20,8 +20,13 @@ static const char* const UNITS[GACHA_UNIT_COUNT] = {
     "CS 241     \"...reg.link = savedPC; Reg.framePointer = dynamicLink; Stack.pop...\"      ",
     "CS 245     \"...sigma, A |- B is a theorem, then sigma |- A -> B is a theorem...\"      ",
     "CS 251     \"...LDUR X1, [X2, #20]; NOP; NOP; CBZ X1, #4...\"                           ",
+    "CS 341     \"...jobs J_1, ..., J_n, with t(1), ..., t(n) processing times and d(1)...\" ",
+    "CS 350     \"...mutex_t m1, m2; void f1() { lock(m1); lock(m2); \\* critical section...\"",
     "CS 370     \"...f(t) = a0 + sum a_i cos (2 pi k t/T) + sum b_i sin (2 pi k t / T)...\"  ",
+    "CS 442     \"...attempts to satisfy a query by searching the database from...\"  ",
+    "CS 452     \"...svc is called, ARM will record the exception code and N in ESR_EL1...\" ",
     "STAT 230   \"...probability function of f(x) = e^-u * u^x / x! where u > 0 is...\"      ",
+    "STAT 231   \"...[y - 1.96 sigma / sqrt(n) <= mu <= y + 1.96 sigma / sqrt(n)]...\"       ",
 };
 static const char* const RARITIES[GACHA_RARITY_COUNT] = {
     "    o    ",
