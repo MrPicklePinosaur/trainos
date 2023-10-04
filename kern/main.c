@@ -10,10 +10,10 @@
 #include "user/usertasks.h"
 
 int kmain() {
-    
-    kern_init();
 
     set_log_level(LOG_LEVEL_DEBUG);
+    
+    kern_init();
 
     // print the banner
     PRINT("");
@@ -25,7 +25,10 @@ int kmain() {
     PRINT("    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ");
     PRINT("                                                                              ");
 
+    // gacha current does not work on simulator (no timer)
+#if QEMU == false
     gacha_print_roll();
+#endif
 
     // need to create first task using kernel primitives since we are in kernel mode right here
     Tid init_tid = handle_svc_create(10, &initTask); // temp making starting task very low priority

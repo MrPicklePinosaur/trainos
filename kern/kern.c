@@ -19,7 +19,9 @@ kern_init(void)
     tasktable_init();
     vector_table_init();
     scheduler_init();
+#if QEMU == false
     gacha_init();
+#endif
 }
 
 void
