@@ -1,5 +1,5 @@
 #include "scheduler.h"
-#include "rpi.h"
+#include "uart.h"
 #include "log.h"
 #include "alloc.h"
 

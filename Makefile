@@ -1,4 +1,5 @@
 XDIR:=/u/cs452/public/xdev
+QEMU:=false
 
 -include config.mk
 
@@ -19,14 +20,14 @@ INCLUDEDIR  = include
 WARNINGS=-Wall -Wextra -Wpedantic -Wno-unused-const-variable
 CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles\
 	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only\
-	-I./$(INCLUDEDIR) -I./
+	-I./$(INCLUDEDIR) -I./ -DQEMU=$(QEMU)
 
 # -Wl,option tells g++ to pass 'option' to the linker with commas replaced by spaces
 # doing this rather than calling the linker ourselves simplifies the compilation procedure
 LDFLAGS:=-Wl,-nmagic -Wl,-Tlinker.ld
 
 # Source files and include dirs
-SOURCES := $(wildcard $(KERNDIR)/*.[cS]) $(wildcard $(USERDIR)/*.[cS]) $(wildcard $(LIBDIR)/**/*.[cS])
+SOURCES := $(wildcard $(KERNDIR)/*.[cS]) $(wildcard $(KERNDIR)/**/*.[cS]) $(wildcard $(USERDIR)/*.[cS]) $(wildcard $(LIBDIR)/**/*.[cS])
 
 # Create .o and .d files for every .cc and .S (hand-written assembly) file
 OBJECTS := $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(SOURCES)))

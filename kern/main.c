@@ -1,4 +1,4 @@
-#include "rpi.h"
+#include "uart.h"
 #include "kern.h"
 #include "task.h"
 #include "util.h"
@@ -7,7 +7,6 @@
 #include "task.h"
 #include "alloc.h"
 #include "gacha.h"
-
 #include "user/usertasks.h"
 
 int kmain() {

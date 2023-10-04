@@ -31,12 +31,21 @@ go 0x80000
 
 ## Running in simulator
 
+WARNING: currently qemu only supports raspberry pi 3, so there may be
+unexpected between the simulator and the actual lab raspberry pis.
+
 The kernel can be inside qemu and remotely debugged using gdb. Ensure that you
 have the following installed:
 - qemu-system-aarch64
 - gdb-multiarch
 
-First start qemu with the trainos image:
+First build the image with the `QEMU=true`. You can set the value in your
+`config.mk` or pass it to make when building:
+```sh
+make clean; make QEMU=true
+```
+
+Start qemu with the trainos image:
 ```sh
 ./scripts/sim.sh
 ```
@@ -47,7 +56,8 @@ This will start a gdbserver on port 1234. Next start `gdb-multiarch` and run:
 
 ## Directory Structure
 
-`kern`: kernel code
-`user`: user programs
-`lib`: library implmentation
-`include`: header files for libraries
+- `kern`: kernel code
+- `user`: user programs
+- `lib`: library implmentation
+- `include`: header files for libraries
+

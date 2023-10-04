@@ -1,5 +1,9 @@
-#include "rpi.h"
-#include "util.h"
+
+#include "kern/uart.h"
+
+#if QEMU == false
+
+#include "kern/util.h"
 #include <stdarg.h>
 #include <trainstd.h>
 
@@ -106,6 +110,8 @@ static const uint32_t UART_LCRH_FEN = 0x10;
 static const uint32_t UART_LCRH_WLEN_LOW = 0x20;
 static const uint32_t UART_LCRH_WLEN_HIGH = 0x40;
 
+void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t control);
+
 // UART initialization, to be called before other UART functions
 // Nothing to do for UART0, for which GPIO is configured during boot process
 // For UART3 (line 2 on the RPi hat), we need to configure the GPIO to route
@@ -199,46 +205,4 @@ bool uart_busy(size_t line) {
   return UART_REG(line, UART_FR) & UART_FR_TXFF;
 }
 
-// printf-style printing, with limited format support
-void uart_format_print (size_t line, char *fmt, va_list va ) {
-	char bf[12];
-	char ch;
-
-  while ( ( ch = *(fmt++) ) ) {
-		if ( ch != '%' )
-			uart_putc(line, ch );
-		else {
-			ch = *(fmt++);
-			switch( ch ) {
-			case 'u':
-				ui2a( va_arg( va, unsigned int ), 10, bf );
-				uart_puts( line, bf );
-				break;
-			case 'd':
-				i2a( va_arg( va, int ), bf );
-				uart_puts( line, bf );
-				break;
-			case 'x':
-				ui2a( va_arg( va, unsigned int ), 16, bf );
-				uart_puts( line, bf );
-				break;
-			case 's':
-				uart_puts( line, va_arg( va, char* ) );
-				break;
-			case '%':
-				uart_putc( line, ch );
-				break;
-      case '\0':
-        return;
-			}
-		}
-	}
-}
-
-void uart_printf( size_t line, char *fmt, ... ) {
-	va_list va;
-
-	va_start(va,fmt);
-	uart_format_print( line, fmt, va );
-	va_end(va);
-}
+#endif

@@ -1,7 +1,7 @@
 #include <stddef.h>
 
 #include "addrspace.h"
-#include "rpi.h"
+#include "uart.h"
 #include "log.h"
 
 typedef struct PageTable PageTable;

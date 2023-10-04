@@ -1,5 +1,5 @@
 #include "switchframe.h"
-#include "rpi.h"
+#include "uart.h"
 #include "log.h"
 
 SwitchFrame

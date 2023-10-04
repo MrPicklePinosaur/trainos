@@ -1,5 +1,5 @@
 #include "log.h"
-#include "rpi.h"
+#include "uart.h"
 
 static LogLevel log_level = LOG_LEVEL_WARN;
 
