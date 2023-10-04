@@ -29,6 +29,22 @@ tftpboot 0x80000 129.97.167.60:images/<user>.img
 go 0x80000
 ```
 
+## Running in simulator
+
+The kernel can be inside qemu and remotely debugged using gdb. Ensure that you
+have the following installed:
+- qemu-system-aarch64
+- gdb-multiarch
+
+First start qemu with the trainos image:
+```sh
+./scripts/sim.sh
+```
+This will start a gdbserver on port 1234. Next start `gdb-multiarch` and run:
+```sh
+(gdb) target remote :1234
+```
+
 ## Directory Structure
 
 `kern`: kernel code
