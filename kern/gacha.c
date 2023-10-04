@@ -1,9 +1,6 @@
-#include "log.h"
 #include "gacha.h"
-
-static char* const MMIO_BASE = (char*) 0xFE000000;
-static char* const TIMER_BASE = (char*)(MMIO_BASE + 0x3000);
-static const uint32_t TIMER_LO = 0x04;
+#include "log.h"
+#include "rpi.h"
 
 uint32_t gacha_rand_num;
 
@@ -32,7 +29,7 @@ uint32_t gacha_rarity_distribution(void) {
 }
 
 void gacha_init(void) {
-    gacha_rand_num = *(volatile uint32_t*)(TIMER_BASE + TIMER_LO);
+    gacha_rand_num = timer_get();
 }
 
 void gacha_print_roll(void) {
