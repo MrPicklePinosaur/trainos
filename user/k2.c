@@ -69,7 +69,7 @@ send_perf_test(uint32_t msglen)
         Send((Tid)receive_tid, msg, msglen, reply_buf, msglen);
         timer_end(timer);
     }
-    println("Samples: %u, Mean: %u, Worst: %d", timer->samples, timer_get_mean(timer), timer->worst);
+    println("Samples: %u, Mean: %u, Variance: %u, Worst: %d", timer->samples, timer_get_mean(timer), timer_get_variance(timer), timer->worst);
     Exit();
 }
 
