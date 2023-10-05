@@ -16,6 +16,7 @@ typedef enum {
     MOVE_ROCK,
     MOVE_PAPER,
     MOVE_SCISSORS,
+    MOVE_QUIT,
 } RPSMove;
 
 typedef enum {
@@ -73,6 +74,11 @@ calculate_result(RPSMove player1_move, RPSMove player2_move)
 {
     if (player1_move == MOVE_NONE || player2_move == MOVE_NONE) {
         println("WARNING, one move is none");
+        return RESULT_INCOMPLETE;
+    }
+
+    // check if other player quit. player1_move should never be MOVE_QUIT
+    if (player2_move == MOVE_QUIT) {
         return RESULT_INCOMPLETE;
     }
 
@@ -179,35 +185,93 @@ RPSServerTask(void)
 
             // check if the round is over
             if (game_state->player1_move != MOVE_NONE && game_state->player2_move != MOVE_NONE) {
-
-                // reply to both players with the result
-                reply_buf = (RPSResp) {
-                    .type = RPS_PLAY,
-                    .data = {
-                        .play = {
-                            .res = calculate_result(game_state->player1_move, game_state->player2_move)
+                // reply to both players with the result, or the non-quitting player if their opponent quit
+                if (game_state->player1_move != MOVE_QUIT) {
+                    reply_buf = (RPSResp) {
+                        .type = RPS_PLAY,
+                        .data = {
+                            .play = {
+                                .res = calculate_result(game_state->player1_move, game_state->player2_move)
+                            }
                         }
-                    }
-                };
-                Reply(game_state->player1, (char*)&reply_buf, sizeof(RPSResp));
+                    };
+                    Reply(game_state->player1, (char*)&reply_buf, sizeof(RPSResp));
+                }
 
-                reply_buf = (RPSResp) {
-                    .type = RPS_PLAY,
-                    .data = {
-                        .play = {
-                            .res = calculate_result(game_state->player2_move, game_state->player1_move)
+                if (game_state->player2_move != MOVE_QUIT) {
+                    reply_buf = (RPSResp) {
+                        .type = RPS_PLAY,
+                        .data = {
+                            .play = {
+                                .res = calculate_result(game_state->player2_move, game_state->player1_move)
+                            }
                         }
-                    }
-                };
-                Reply(game_state->player2, (char*)&reply_buf, sizeof(RPSResp));
+                    };
+                    Reply(game_state->player2, (char*)&reply_buf, sizeof(RPSResp));
+                }
+
+                // reset the game state so players can play again
+                game_state->player1_move = MOVE_NONE;
+                game_state->player2_move = MOVE_NONE;
             }
 
         }
         else if (msg_buf.type == RPS_QUIT) {
 
-            // clean up the game the player is part of
+            // TODO remove the game state from game_db
 
-            // inform other participant the game is over
+            bool success;
+            RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
+            if (!success) {
+                println("couldn't find game state for player, maybe a game isn't started?");
+                // TODO properly return error to client
+                for(;;){}
+            }
+
+            Tid other_tid;
+            RPSMove* from_move;
+            RPSMove* other_move;
+            if (from_tid == game_state->player1) {
+                other_tid = game_state->player2;
+                from_move = &game_state->player1_move;
+                other_move = &game_state->player2_move;
+            }
+            else {
+                other_tid = game_state->player1;
+                from_move = &game_state->player2_move;
+                other_move = &game_state->player1_move;
+            }
+
+            // There are three cases to handle:
+
+            // Case 1: Other player has not done anything yet, so store that you've quit
+            if (*other_move == MOVE_NONE) {
+                *from_move = MOVE_QUIT;
+            }
+
+            // Case 2: Other player has already made a move, reply to that move that you've quit
+            else if (*other_move != MOVE_QUIT) {
+                reply_buf = (RPSResp) {
+                    .type = RPS_PLAY,
+                    .data = {
+                        .play = {
+                            .res = RESULT_INCOMPLETE
+                        }
+                    }
+                };
+                Reply(other_tid, (char*)&reply_buf, sizeof(RPSResp));
+            }
+
+            // Case 3: Other player has also quit, and nothing needs to be done
+
+            // Reply to quitting player's Send
+            reply_buf = (RPSResp) {
+                .type = RPS_QUIT,
+                .data = {
+                    .quit = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(RPSResp));
 
         } else {
             println("invalid message type");
@@ -263,7 +327,14 @@ Play(Tid rps, RPSMove move)
 int
 Quit(Tid rps)
 {
-
+    RPSResp resp_buf;
+    RPSMsg send_buf = (RPSMsg) {
+        .type = RPS_QUIT,
+        .data = {
+            .quit = {}
+        }
+    };
+    Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
 }
 
 void
@@ -273,6 +344,11 @@ RPSClientTask1(void)
     Signup(rps);
     RPSResult res = Play(rps, MOVE_ROCK);
     println("player %d played with result %d", MyTid(), res);
+    res = Play(rps, MOVE_ROCK);
+    println("player %d played with result %d", MyTid(), res);
+
+    Quit(rps);
+    println("player %d quit", MyTid());
     Exit();
 }
 
@@ -283,6 +359,13 @@ RPSClientTask2(void)
     Signup(rps);
     RPSResult res = Play(rps, MOVE_SCISSORS);
     println("player %d played with result %d", MyTid(), res);
+    res = Play(rps, MOVE_PAPER);
+    println("player %d played with result %d", MyTid(), res);
+    res = Play(rps, MOVE_PAPER);
+    println("player %d played with result %d", MyTid(), res);
+
+    Quit(rps);
+    println("player %d quit", MyTid());
     Exit();
 }
 
