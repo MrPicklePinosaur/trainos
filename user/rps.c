@@ -292,9 +292,14 @@ Signup(Tid rps)
     };
 
     int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
-    if (ret < 0) return -1;
-
-    if (resp_buf.type != RPS_SIGNUP) return -1;
+    if (ret < 0) {
+        println("WARNING, player %d's Signup()'s Send() call returned a negative value", MyTid());
+        return -1;
+    }
+    if (resp_buf.type != RPS_SIGNUP) {
+        println("WARNING, the reply to player %d's Signup()'s Send() call is not the right type", MyTid());
+        return -1;
+    }
 
     println("Successfully registered %d", MyTid());
 
@@ -315,9 +320,14 @@ Play(Tid rps, RPSMove move)
     };
 
     int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
-    if (ret < 0) return -1;
-
-    if (resp_buf.type != RPS_PLAY) return -1;
+    if (ret < 0) {
+        println("WARNING, player %d's Play()'s Send() call returned a negative value", MyTid());
+        return -1;
+    }
+    if (resp_buf.type != RPS_PLAY) {
+        println("WARNING, the reply to player %d's Play()'s Send() call is not the right type", MyTid());
+        return -1;
+    }
 
     return resp_buf.data.play.res;
 }
@@ -332,7 +342,16 @@ Quit(Tid rps)
             .quit = {}
         }
     };
-    Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
+    int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
+    if (ret < 0) {
+        println("WARNING, player %d's Quit()'s Send() call returned a negative value", MyTid());
+        return -1;
+    }
+    if (resp_buf.type != RPS_QUIT) {
+        println("WARNING, the reply to player %d's Quit()'s Send() call is not the right type", MyTid());
+        return -1;
+    }
+    return 0;
 }
 
 void
