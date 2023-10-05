@@ -16,7 +16,6 @@ typedef enum {
     MOVE_ROCK,
     MOVE_PAPER,
     MOVE_SCISSORS,
-    MOVE_QUIT,
 } RPSMove;
 
 typedef enum {
@@ -51,6 +50,7 @@ typedef struct {
 } RPSResp;
 
 typedef struct {
+    bool is_over;
     Tid player1;
     Tid player2;
     RPSMove player1_move; 
@@ -77,11 +77,6 @@ calculate_result(RPSMove player1_move, RPSMove player2_move)
         return RESULT_INCOMPLETE;
     }
 
-    // check if other player quit. player1_move should never be MOVE_QUIT
-    if (player2_move == MOVE_QUIT) {
-        return RESULT_INCOMPLETE;
-    }
-
     // tie conditions
     if (player1_move == player2_move) return RESULT_TIE;
 
@@ -92,23 +87,6 @@ calculate_result(RPSMove player1_move, RPSMove player2_move)
 
     // the rest is lose conditions
     return RESULT_LOSE;
-}
-
-void
-remove_game(HashMap* game_db, RPSGameState* game_state)
-{
-    Tid player1_tid = game_state->player1;
-    Tid player2_tid = game_state->player2;
-
-    bool result = hashmap_remove(game_db, tid_to_key(player1_tid));
-    if (!result) {
-        println("WARNING, when trying to remove game, couldn't find game state for player %d", player1_tid);
-    }
-
-    result = hashmap_remove(game_db, tid_to_key(player2_tid));
-    if (!result) {
-        println("WARNING, when trying to remove game, couldn't find game state for player %d", player2_tid);
-    }
 }
 
 void
@@ -149,6 +127,7 @@ RPSServerTask(void)
                 Tid player2 = from_tid;
                 RPSGameState* game_state = alloc(sizeof(RPSGameState));
                 *game_state = (RPSGameState) {
+                    .is_over = false,
                     .player1 = player1,
                     .player2 = player2,
                     .player1_move = MOVE_NONE,
@@ -187,23 +166,38 @@ RPSServerTask(void)
                 for(;;){}
             }
 
-            // TODO currently we are technically allowed to change our move as long as other player hasn't moved yet, consider if this is good behavior
-            // need to figure out which player we are (yuck!)
-            if (from_tid == game_state->player1) {
-                game_state->player1_move = msg_buf.data.play.move;
-            } else if (from_tid == game_state->player2) {
-                game_state->player2_move = msg_buf.data.play.move;
-            } else {
-                println("Player is not part of this game");
-                for(;;){}
+            // If the other player has quit, reply with the INCOMPLETE result
+            if (game_state->is_over) {
+                println("Rejected player %d's play since the game is already over", from_tid);
+
+                reply_buf = (RPSResp) {
+                    .type = RPS_PLAY,
+                    .data = {
+                        .play = {
+                            .res = RESULT_INCOMPLETE
+                        }
+                    }
+                };
+                Reply(from_tid, (char*)&reply_buf, sizeof(RPSResp));
             }
 
-            // check if the round is over
-            if (game_state->player1_move != MOVE_NONE && game_state->player2_move != MOVE_NONE) {
-                println("Replying game results for player %d and player %d's game", game_state->player1, game_state->player2);
+            // Otherwise, play the game
+            else {
+                // TODO currently we are technically allowed to change our move as long as other player hasn't moved yet, consider if this is good behavior
+                // need to figure out which player we are (yuck!)
+                if (from_tid == game_state->player1) {
+                    game_state->player1_move = msg_buf.data.play.move;
+                } else if (from_tid == game_state->player2) {
+                    game_state->player2_move = msg_buf.data.play.move;
+                } else {
+                    println("Player is not part of this game");
+                    for(;;){}
+                }
 
-                // reply to both players with the result, or the non-quitting player if their opponent quit
-                if (game_state->player1_move != MOVE_QUIT) {
+                // check if both players have made a move
+                if (game_state->player1_move != MOVE_NONE && game_state->player2_move != MOVE_NONE) {
+                    println("Replying game results for player %d and player %d's game", game_state->player1, game_state->player2);
+
                     reply_buf = (RPSResp) {
                         .type = RPS_PLAY,
                         .data = {
@@ -213,9 +207,7 @@ RPSServerTask(void)
                         }
                     };
                     Reply(game_state->player1, (char*)&reply_buf, sizeof(RPSResp));
-                }
 
-                if (game_state->player2_move != MOVE_QUIT) {
                     reply_buf = (RPSResp) {
                         .type = RPS_PLAY,
                         .data = {
@@ -225,17 +217,12 @@ RPSServerTask(void)
                         }
                     };
                     Reply(game_state->player2, (char*)&reply_buf, sizeof(RPSResp));
-                }
 
-                if (game_state->player1_move == MOVE_QUIT || game_state->player2_move == MOVE_QUIT) {
-                    remove_game(game_db, game_state);
+                    // reset the game state so players can play again
+                    game_state->player1_move = MOVE_NONE;
+                    game_state->player2_move = MOVE_NONE;
                 }
-
-                // reset the game state so players can play again
-                game_state->player1_move = MOVE_NONE;
-                game_state->player2_move = MOVE_NONE;
             }
-
         }
         else if (msg_buf.type == RPS_QUIT) {
             bool success;
@@ -246,45 +233,25 @@ RPSServerTask(void)
                 for(;;){}
             }
 
-            Tid other_tid;
-            RPSMove* from_move;
-            RPSMove* other_move;
-            if (from_tid == game_state->player1) {
-                other_tid = game_state->player2;
-                from_move = &game_state->player1_move;
-                other_move = &game_state->player2_move;
+            // Case 1: Other player has not quit yet. Mark the game as over
+            if (!game_state->is_over) {
+                game_state->is_over = true;
             }
+
+            // Case 2: Other player has already quit. Remove the game from the database
             else {
-                other_tid = game_state->player1;
-                from_move = &game_state->player2_move;
-                other_move = &game_state->player1_move;
-            }
+                Tid player1_tid = game_state->player1;
+                Tid player2_tid = game_state->player2;
 
-            // There are three cases to handle:
+                bool result = hashmap_remove(game_db, tid_to_key(player1_tid));
+                if (!result) {
+                    println("WARNING, when trying to remove game, couldn't find game state for player %d", player1_tid);
+                }
 
-            // Case 1: Other player has not done anything yet, so store that you've quit
-            if (*other_move == MOVE_NONE) {
-                *from_move = MOVE_QUIT;
-            }
-
-            // Case 2: Other player has already made a move, reply to that move that you've quit
-            else if (*other_move != MOVE_QUIT) {
-                reply_buf = (RPSResp) {
-                    .type = RPS_PLAY,
-                    .data = {
-                        .play = {
-                            .res = RESULT_INCOMPLETE
-                        }
-                    }
-                };
-                Reply(other_tid, (char*)&reply_buf, sizeof(RPSResp));
-
-                remove_game(game_db, game_state);
-            }
-
-            // Case 3: Other player has also quit
-            else {
-                remove_game(game_db, game_state);
+                result = hashmap_remove(game_db, tid_to_key(player2_tid));
+                if (!result) {
+                    println("WARNING, when trying to remove game, couldn't find game state for player %d", player2_tid);
+                }
             }
 
             // Reply to quitting player's Send
