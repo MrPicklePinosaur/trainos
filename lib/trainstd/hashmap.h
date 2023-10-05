@@ -13,6 +13,7 @@ HashMap* hashmap_new(size_t bucket_count);
 void hashmap_delete(HashMap* hm);
 int hashmap_insert(HashMap* hm, key_t key, value_t value);
 bool hashmap_contains(HashMap* hm, key_t key);
+bool hashmap_remove(HashMap* hm, key_t key);
 value_t hashmap_get(HashMap* hm, key_t key, bool* success);
 size_t hashmap_size(HashMap* hm);
 

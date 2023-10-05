@@ -139,6 +139,33 @@ list_find(List* list, ListFindFn pred)
 }
 */
 
+bool
+list_remove(List* list, void* item)
+{
+    ListNode* node = list->head;
+    while (node != 0) {
+        if (node->data == item) {
+            if (node == list->head) {
+                list_pop_front(list);
+            }
+            else if (node == list->tail) {
+                list_pop_back(list);
+            }
+            else {
+                // If it's not the head or the tail, it's guaranteed to have something before and after it
+                node->prev->next = node->next;
+                node->next->prev = node->prev;
+                void* data = node->data;
+                free(node);
+                --(list->size);
+            }
+            return true;
+        }
+        node = node->next;
+    }
+    return false;
+}
+
 void
 list_deinit(List* list)
 {

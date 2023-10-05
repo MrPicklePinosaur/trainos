@@ -94,6 +94,22 @@ testHashmap()
     TEST(hashmap_contains(map, "four") == true);
     TEST(hashmap_contains(map, "five") == false);
 
+    TEST(hashmap_remove(map, "one") == true);
+    TEST(hashmap_remove(map, "three") == true);
+    TEST(hashmap_remove(map, "four") == true);
+    TEST(hashmap_remove(map, "one") == false);
+    TEST(hashmap_remove(map, "five") == false);
+    TEST(hashmap_size(map) == 1);
+
+    TEST(hashmap_get(map, "one", &success) == (void*)0);
+    TEST(!success);
+    TEST(hashmap_get(map, "two", &success) == (void*)2);
+    TEST(success);
+    TEST(hashmap_get(map, "three", &success) == (void*)0);
+    TEST(!success);
+    TEST(hashmap_get(map, "five", &success) == (void*)0);
+    TEST(!success);
+
     Exit();
 }
 

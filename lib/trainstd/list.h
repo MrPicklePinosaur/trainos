@@ -21,6 +21,9 @@ void* list_pop_back(List* list);
 void* list_peek_front(List* list);
 void* list_peek_back(List* list);
 
+// Search the list for an item and remove it. Returns true if the item was in the list, false otherwise.
+bool list_remove(List* list, void* item);
+
 /* typedef bool(*ListFindFn)(void*) ; */
 /* void* list_find(List* list, ListFindFn pred); */
 

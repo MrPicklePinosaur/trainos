@@ -86,6 +86,23 @@ hashmap_contains(HashMap* hm, key_t key)
     return false;
 }
 
+bool
+hashmap_remove(HashMap* hm, key_t key)
+{
+    size_t ind = hashfunction(hm, key);
+    List* bucket = hm->buckets[ind];
+    ListIter* it = list_iter(bucket);
+    HashMapPair* pair;
+    while((pair = (HashMapPair*)listiter_next(it)) != 0) {
+        if (strcmp(pair->first, key) == 0) {
+            list_remove(bucket, pair);  // Slightly inefficient, since this searches the list for the item a second time
+            --(hm->size);
+            return true;
+        }
+    }
+    return false;
+}
+
 value_t
 hashmap_get(HashMap* hm, key_t key, bool* success)
 {
