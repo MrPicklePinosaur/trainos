@@ -90,7 +90,7 @@ scheduler_next(void)
             }
         }
     }
-    LOG_DEBUG("no next task because scheduler is empty");
+    LOG_DEBUG("no next task because the scheduler contains no ready/active tasks");
     return 0;
 }
 
