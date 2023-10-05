@@ -120,12 +120,12 @@ RPSServerTask(void)
 
             if (waiting_player == 0) {
                 // if there is not another player waiting to join, queue the player
-                println("No other player in queue, adding player %d to queue", from_tid);
+                println("Player %d joined, no players in queue", from_tid);
                 waiting_player = from_tid;
             } else {
                 // if there is a waiting player, we can start the game
 
-                println("Player %d joined, player %d already in queue",from_tid, waiting_player);
+                println("Player %d joined, player %d already in queue", from_tid, waiting_player);
 
                 // create game object
                 Tid player1 = waiting_player;
@@ -159,18 +159,16 @@ RPSServerTask(void)
         }
         else if (msg_buf.type == RPS_PLAY) {
 
-            println("player %d played %d", from_tid, msg_buf.data.play.move);
+            println("Player %d played %d", from_tid, msg_buf.data.play.move);
 
             // look up the game the user to part of
             bool success;
             RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
             if (!success) {
-                println("couldn't find game state for player, maybe a game isn't started?");
+                println("Couldn't find game state for player %d, maybe a game isn't started?", from_tid);
                 // TODO properly return error to client
                 for(;;){}
             }
-
-            println("got gamestate player1 = %d, player2 = %d, player1_move = %d, player2_move = %d", game_state->player1, game_state->player2, game_state->player1_move, game_state->player2_move);
 
             // TODO currently we are technically allowed to change our move as long as other player hasn't moved yet, consider if this is good behavior
             // need to figure out which player we are (yuck!)
@@ -179,7 +177,7 @@ RPSServerTask(void)
             } else if (from_tid == game_state->player2) {
                 game_state->player2_move = msg_buf.data.play.move;
             } else {
-                println("player is not part of game");
+                println("Player is not part of this game");
                 for(;;){}
             }
 
@@ -223,7 +221,7 @@ RPSServerTask(void)
             bool success;
             RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
             if (!success) {
-                println("couldn't find game state for player, maybe a game isn't started?");
+                println("Couldn't find game state for player %d, maybe a game isn't started?", from_tid);
                 // TODO properly return error to client
                 for(;;){}
             }
@@ -274,7 +272,7 @@ RPSServerTask(void)
             Reply(from_tid, (char*)&reply_buf, sizeof(RPSResp));
 
         } else {
-            println("invalid message type");
+            println("Invalid message type");
             continue;
         }
 
@@ -298,7 +296,7 @@ Signup(Tid rps)
 
     if (resp_buf.type != RPS_SIGNUP) return -1;
 
-    println("successfully registered %d", MyTid()); 
+    println("Successfully registered %d", MyTid());
 
     return 0;
 }
@@ -343,12 +341,12 @@ RPSClientTask1(void)
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
     RPSResult res = Play(rps, MOVE_ROCK);
-    println("player %d played with result %d", MyTid(), res);
+    println("Player %d received game result %d", MyTid(), res);
     res = Play(rps, MOVE_ROCK);
-    println("player %d played with result %d", MyTid(), res);
+    println("Player %d received game result %d", MyTid(), res);
 
     Quit(rps);
-    println("player %d quit", MyTid());
+    println("Player %d quit", MyTid());
     Exit();
 }
 
@@ -358,14 +356,14 @@ RPSClientTask2(void)
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
     RPSResult res = Play(rps, MOVE_SCISSORS);
-    println("player %d played with result %d", MyTid(), res);
+    println("Player %d received game result %d", MyTid(), res);
     res = Play(rps, MOVE_PAPER);
-    println("player %d played with result %d", MyTid(), res);
+    println("Player %d received game result %d", MyTid(), res);
     res = Play(rps, MOVE_PAPER);
-    println("player %d played with result %d", MyTid(), res);
+    println("Player %d received game result %d", MyTid(), res);
 
     Quit(rps);
-    println("player %d quit", MyTid());
+    println("Player %d quit", MyTid());
     Exit();
 }
 
