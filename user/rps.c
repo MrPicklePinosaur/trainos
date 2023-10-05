@@ -183,6 +183,8 @@ RPSServerTask(void)
 
             // check if the round is over
             if (game_state->player1_move != MOVE_NONE && game_state->player2_move != MOVE_NONE) {
+                println("Replying game results for player %d and player %d's game", game_state->player1, game_state->player2);
+
                 // reply to both players with the result, or the non-quitting player if their opponent quit
                 if (game_state->player1_move != MOVE_QUIT) {
                     reply_buf = (RPSResp) {
@@ -301,7 +303,7 @@ Signup(Tid rps)
         return -1;
     }
 
-    println("Successfully registered %d", MyTid());
+    println("Player %d got a successful reply to their signup request", MyTid());
 
     return 0;
 }
@@ -360,9 +362,9 @@ RPSClientTask1(void)
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
     RPSResult res = Play(rps, MOVE_ROCK);
-    println("Player %d received game result %d", MyTid(), res);
+    println("Player %d got game result %d", MyTid(), res);
     res = Play(rps, MOVE_ROCK);
-    println("Player %d received game result %d", MyTid(), res);
+    println("Player %d got game result %d", MyTid(), res);
 
     Quit(rps);
     println("Player %d quit", MyTid());
@@ -375,11 +377,9 @@ RPSClientTask2(void)
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
     RPSResult res = Play(rps, MOVE_SCISSORS);
-    println("Player %d received game result %d", MyTid(), res);
+    println("Player %d got game result %d", MyTid(), res);
     res = Play(rps, MOVE_PAPER);
-    println("Player %d received game result %d", MyTid(), res);
-    res = Play(rps, MOVE_PAPER);
-    println("Player %d received game result %d", MyTid(), res);
+    println("Player %d got game result %d", MyTid(), res);
 
     Quit(rps);
     println("Player %d quit", MyTid());
