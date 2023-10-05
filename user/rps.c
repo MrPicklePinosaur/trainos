@@ -95,6 +95,23 @@ calculate_result(RPSMove player1_move, RPSMove player2_move)
 }
 
 void
+remove_game(HashMap* game_db, RPSGameState* game_state)
+{
+    Tid player1_tid = game_state->player1;
+    Tid player2_tid = game_state->player2;
+
+    bool result = hashmap_remove(game_db, tid_to_key(player1_tid));
+    if (!result) {
+        println("WARNING, when trying to remove game, couldn't find game state for player %d", player1_tid);
+    }
+
+    result = hashmap_remove(game_db, tid_to_key(player2_tid));
+    if (!result) {
+        println("WARNING, when trying to remove game, couldn't find game state for player %d", player2_tid);
+    }
+}
+
+void
 RPSServerTask(void)
 {
     HashMap* game_db = hashmap_new(32);
@@ -210,6 +227,10 @@ RPSServerTask(void)
                     Reply(game_state->player2, (char*)&reply_buf, sizeof(RPSResp));
                 }
 
+                if (game_state->player1_move == MOVE_QUIT || game_state->player2_move == MOVE_QUIT) {
+                    remove_game(game_db, game_state);
+                }
+
                 // reset the game state so players can play again
                 game_state->player1_move = MOVE_NONE;
                 game_state->player2_move = MOVE_NONE;
@@ -217,9 +238,6 @@ RPSServerTask(void)
 
         }
         else if (msg_buf.type == RPS_QUIT) {
-
-            // TODO remove the game state from game_db
-
             bool success;
             RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
             if (!success) {
@@ -260,9 +278,14 @@ RPSServerTask(void)
                     }
                 };
                 Reply(other_tid, (char*)&reply_buf, sizeof(RPSResp));
+
+                remove_game(game_db, game_state);
             }
 
-            // Case 3: Other player has also quit, and nothing needs to be done
+            // Case 3: Other player has also quit
+            else {
+                remove_game(game_db, game_state);
+            }
 
             // Reply to quitting player's Send
             reply_buf = (RPSResp) {
