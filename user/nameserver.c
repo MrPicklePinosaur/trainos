@@ -164,12 +164,8 @@ WhoIs(const char *name)
 }
 
 void
-initNameserverTask()
+initNameserverTask()  // Please do not call this more than once
 {
-    if (nameserver_tid != 0) {
-        println("Warning: nameserverTask has already been created before tid = %d", nameserver_tid);
-    }
-
     // initalize namespace db
     nsdb = list_init();
 
