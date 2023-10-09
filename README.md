@@ -8,10 +8,11 @@ microkernel developed for cs452
 
 ## Running the code
 
-Copy `config.mk.example` and fill out the location of your toolchain directory:
+Make a copy of `config.mk.example` called `config.mk`:
 ```sh
 cp config.mk.example config.mk
 ```
+Then, in `config.mk`, replace `/u/cs452/public/xdev` with the location of your toolchain directory.
 
 Build the project:
 ```sh
