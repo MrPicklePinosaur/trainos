@@ -48,7 +48,7 @@ struct NsdbEntry {
 void
 nameserverTask()
 {
-    println("starting nameserver task");
+    // println("starting nameserver task");
 
     NameserverMsg msg_buf;
     NameserverResp reply_buf;
@@ -62,7 +62,7 @@ nameserverTask()
         }
 
         if (msg_buf.type == NS_REGISTER_AS) {
-            println("Got register as request from %d", from_tid);
+            // println("Got register as request from %d", from_tid);
 
             // insert namespace into list
             // TODO we don't handle duplicate names (the later one is ignored)
@@ -74,7 +74,7 @@ nameserverTask()
                 .tid = from_tid,
             };
             list_push_back(nsdb, nsdb_entry);
-            println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
+            // println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_REGISTER_AS,
@@ -86,7 +86,7 @@ nameserverTask()
             Reply(from_tid, (char*)&reply_buf, sizeof(NameserverResp));
         }
         else if (msg_buf.type == NS_WHO_IS) {
-            println("Got whois request from %d", from_tid);
+            // println("Got whois request from %d", from_tid);
 
             // TODO this is sus closure stuff
             ListIter* it = list_iter(nsdb);
@@ -94,14 +94,14 @@ nameserverTask()
             for (;;) {
                 NsdbEntry* entry = (NsdbEntry*)listiter_next(it);
                 if (entry == 0) break;
-                println("comparing %s and %s", entry->name, msg_buf.data.who_is.name);
+                // println("comparing %s and %s", entry->name, msg_buf.data.who_is.name);
                 if (strcmp(entry->name, msg_buf.data.who_is.name) == 0) {
                     lookup_tid = entry->tid;
                 }
             }
             listiter_delete(it);
 
-            println("whois look up found %d", lookup_tid);
+            // println("whois look up found %d", lookup_tid);
 
             reply_buf = (NameserverResp) {
                 .type = NS_WHO_IS,
@@ -158,7 +158,7 @@ WhoIs(const char *name)
 
     if (resp_buf.type != NS_WHO_IS) return -1;
 
-    println("who is result is %d", resp_buf.data.who_is.tid); 
+    // println("who is result is %d", resp_buf.data.who_is.tid);
 
     return resp_buf.data.who_is.tid;
 }
