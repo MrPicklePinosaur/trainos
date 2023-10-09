@@ -6,7 +6,7 @@ microkernel developed for cs452
 
 </div>
 
-## Setting up for development
+## Running the code
 
 Copy `config.mk.example` and fill out the location of your toolchain directory:
 ```sh
@@ -18,16 +18,13 @@ Build the project:
 make
 ```
 
-This should generate a `trainos.img` file. You can upload this image file to
-the cs452 TFTP server.
+This should generate a `trainos.img` file. Upload this image file to [https://cs452.student.cs.uwaterloo.ca/](https://cs452.student.cs.uwaterloo.ca/). This should get it onto the Raspberry Pi.
 
-On the raspberry pi, to boot the image:
+Turn on the Raspberry Pi (or restart it if it's already on). Wait for the TrainOS kernel to boot up.
 
-```sh
-dhcp
-tftpboot 0x80000 129.97.167.60:images/<user>.img
-go 0x80000
-```
+Below the TrainOS logo and the UW course gacha, there should be a prompt asking you to `SELECT TASK TO RUN`. Each task is assigned a number; type in the corresponding number to run that task. The RPS test is the task called `K2` while the performance test is the task called `K2Perf`.
+
+You can find the CSV file for the K2 performance test at `docs/K2Perf.csv`.
 
 ## Running in simulator
 
