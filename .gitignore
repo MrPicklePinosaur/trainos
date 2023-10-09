@@ -5,3 +5,4 @@
 *.elf
 *.img
 config.mk
+*.pdf
