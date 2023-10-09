@@ -60,6 +60,20 @@ typedef struct {
 // TID's would not need more than 64 bits
 #define RPS_MAX_KEY_LEN 4
 
+static const char* const MOVE_TO_STRING[4] = {
+    "NONE",
+    "ROCK",
+    "PAPER",
+    "SCISSORS"
+};
+
+static const char* const RESULT_TO_STRING[4] = {
+    "OPPONENT QUIT",
+    "WIN",
+    "LOSE",
+    "TIE"
+};
+
 // convert tid to key usable with hashtable
 char*
 tid_to_key(Tid tid)
@@ -73,7 +87,7 @@ RPSResult
 calculate_result(RPSMove player1_move, RPSMove player2_move)
 {
     if (player1_move == MOVE_NONE || player2_move == MOVE_NONE) {
-        println("WARNING, one move is none");
+        println("[RPS SERVER] WARNING, one move is none");
         return RESULT_INCOMPLETE;
     }
 
@@ -107,7 +121,7 @@ RPSServerTask(void)
         int from_tid;
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(RPSMsg));
         if (msg_len < 0) {
-            println("Error when receiving");
+            println("[RPS SERVER] Error when receiving");
             continue;
         }
 
@@ -115,12 +129,12 @@ RPSServerTask(void)
 
             if (waiting_player == 0) {
                 // if there is not another player waiting to join, queue the player
-                println("Player %d joined, no players in queue", from_tid);
+                println("[RPS SERVER] Player %d joined, no players in queue", from_tid);
                 waiting_player = from_tid;
             } else {
                 // if there is a waiting player, we can start the game
 
-                println("Player %d joined, player %d already in queue", from_tid, waiting_player);
+                println("[RPS SERVER] Player %d joined, player %d in queue, starting game", from_tid, waiting_player);
 
                 // create game object
                 Tid player1 = waiting_player;
@@ -155,20 +169,20 @@ RPSServerTask(void)
         }
         else if (msg_buf.type == RPS_PLAY) {
 
-            println("Player %d played %d", from_tid, msg_buf.data.play.move);
+            println("[RPS SERVER] Player %d played %s", from_tid, MOVE_TO_STRING[msg_buf.data.play.move]);
 
             // look up the game the user to part of
             bool success;
             RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
             if (!success) {
-                println("Couldn't find game state for player %d, maybe a game isn't started?", from_tid);
+                println("[RPS SERVER] Couldn't find game state for player %d, maybe a game isn't started?", from_tid);
                 // TODO properly return error to client
                 for(;;){}
             }
 
             // If the other player has quit, reply with the INCOMPLETE result
             if (game_state->is_over) {
-                println("Rejected player %d's play since the game is already over", from_tid);
+                println("[RPS SERVER] Rejected player %d's play since the game is already over", from_tid);
 
                 reply_buf = (RPSResp) {
                     .type = RPS_PLAY,
@@ -190,13 +204,13 @@ RPSServerTask(void)
                 } else if (from_tid == game_state->player2) {
                     game_state->player2_move = msg_buf.data.play.move;
                 } else {
-                    println("Player is not part of this game");
+                    println("[RPS SERVER] Player is not part of this game");
                     for(;;){}
                 }
 
                 // check if both players have made a move
                 if (game_state->player1_move != MOVE_NONE && game_state->player2_move != MOVE_NONE) {
-                    println("Replying game results for player %d and player %d's game", game_state->player1, game_state->player2);
+                    println("[RPS SERVER] Replying results for player %d and player %d's game", game_state->player1, game_state->player2);
 
                     reply_buf = (RPSResp) {
                         .type = RPS_PLAY,
@@ -225,10 +239,12 @@ RPSServerTask(void)
             }
         }
         else if (msg_buf.type == RPS_QUIT) {
+            println("[RPS SERVER] Player %d requested to quit", from_tid);
+
             bool success;
             RPSGameState* game_state = hashmap_get(game_db, tid_to_key(from_tid), &success);
             if (!success) {
-                println("Couldn't find game state for player %d, maybe a game isn't started?", from_tid);
+                println("[RPS SERVER] Couldn't find game state for player %d, maybe a game isn't started?", from_tid);
                 // TODO properly return error to client
                 for(;;){}
             }
@@ -243,14 +259,16 @@ RPSServerTask(void)
                 Tid player1_tid = game_state->player1;
                 Tid player2_tid = game_state->player2;
 
+                println("[RPS SERVER] Closing player %d and player %d's game", player1_tid, player2_tid);
+
                 bool result = hashmap_remove(game_db, tid_to_key(player1_tid));
                 if (!result) {
-                    println("WARNING, when trying to remove game, couldn't find game state for player %d", player1_tid);
+                    println("[RPS SERVER] WARNING, when trying to remove game, couldn't find game state for player %d", player1_tid);
                 }
 
                 result = hashmap_remove(game_db, tid_to_key(player2_tid));
                 if (!result) {
-                    println("WARNING, when trying to remove game, couldn't find game state for player %d", player2_tid);
+                    println("[RPS SERVER] WARNING, when trying to remove game, couldn't find game state for player %d", player2_tid);
                 }
             }
 
@@ -264,7 +282,7 @@ RPSServerTask(void)
             Reply(from_tid, (char*)&reply_buf, sizeof(RPSResp));
 
         } else {
-            println("Invalid message type");
+            println("[RPS SERVER] Invalid message type");
             continue;
         }
 
@@ -283,17 +301,19 @@ Signup(Tid rps)
         }
     };
 
+    println("[RPS PLAYER %d] Requesting sign up", MyTid());
+
     int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
     if (ret < 0) {
-        println("WARNING, player %d's Signup()'s Send() call returned a negative value", MyTid());
+        println("[RPS PLAYER %d] WARNING, Signup()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != RPS_SIGNUP) {
-        println("WARNING, the reply to player %d's Signup()'s Send() call is not the right type", MyTid());
+        println("[RPS PLAYER %d] WARNING, the reply to Signup()'s Send() call is not the right type", MyTid());
         return -1;
     }
 
-    println("Player %d got a successful reply to their signup request", MyTid());
+    println("[RPS PLAYER %d] Successfully signed up", MyTid());
 
     return 0;
 }
@@ -311,15 +331,19 @@ Play(Tid rps, RPSMove move)
         }
     };
 
+    println("[RPS PLAYER %d] Playing move %s", MyTid(), MOVE_TO_STRING[send_buf.data.play.move]);
+
     int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
     if (ret < 0) {
-        println("WARNING, player %d's Play()'s Send() call returned a negative value", MyTid());
+        println("[RPS PLAYER %d] WARNING, Play()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != RPS_PLAY) {
-        println("WARNING, the reply to player %d's Play()'s Send() call is not the right type", MyTid());
+        println("[RPS PLAYER %d] WARNING, the reply to Play()'s Send() call is not the right type", MyTid());
         return -1;
     }
+
+    println("[RPS PLAYER %d] Got game result %s", MyTid(), RESULT_TO_STRING[resp_buf.data.play.res]);
 
     return resp_buf.data.play.res;
 }
@@ -334,15 +358,21 @@ Quit(Tid rps)
             .quit = {}
         }
     };
+
+    println("[RPS PLAYER %d] Requesting to quit", MyTid());
+
     int ret = Send(rps, (const char*)&send_buf, sizeof(RPSMsg), (char*)&resp_buf, sizeof(RPSResp));
     if (ret < 0) {
-        println("WARNING, player %d's Quit()'s Send() call returned a negative value", MyTid());
+        println("[RPS PLAYER %d] WARNING, Quit()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != RPS_QUIT) {
-        println("WARNING, the reply to player %d's Quit()'s Send() call is not the right type", MyTid());
+        println("[RPS PLAYER %d] WARNING, the reply to Quit()'s Send() call is not the right type", MyTid());
         return -1;
     }
+
+    println("[RPS PLAYER %d] Successfully quit", MyTid());
+
     return 0;
 }
 
@@ -351,13 +381,12 @@ RPSClientTask1(void)
 {
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
-    RPSResult res = Play(rps, MOVE_ROCK);
-    println("Player %d got game result %d", MyTid(), res);
-    res = Play(rps, MOVE_ROCK);
-    println("Player %d got game result %d", MyTid(), res);
+
+    Play(rps, MOVE_ROCK);
+    Play(rps, MOVE_ROCK);
+    Play(rps, MOVE_ROCK);
 
     Quit(rps);
-    println("Player %d quit", MyTid());
     Exit();
 }
 
@@ -366,13 +395,14 @@ RPSClientTask2(void)
 {
     Tid rps = WhoIs(RPS_ADDRESS);
     Signup(rps);
-    RPSResult res = Play(rps, MOVE_SCISSORS);
-    println("Player %d got game result %d", MyTid(), res);
-    res = Play(rps, MOVE_PAPER);
-    println("Player %d got game result %d", MyTid(), res);
+
+    Play(rps, MOVE_SCISSORS);
+    Play(rps, MOVE_PAPER);
+    Play(rps, MOVE_ROCK);
+    Play(rps, MOVE_PAPER);
+    Play(rps, MOVE_SCISSORS);
 
     Quit(rps);
-    println("Player %d quit", MyTid());
     Exit();
 }
 
@@ -380,9 +410,24 @@ void
 RPSTask(void)
 {
     Create(3, &RPSServerTask);
+
+    println("");
+    println("======================");
+    println("======= TEST 1 =======");
+    println("======================");
     Create(3, &RPSClientTask1);
     Create(3, &RPSClientTask2);
     Yield();
-    for (;;) {}
+
+    println("");
+    println("======================");
+    println("======= TEST 2 =======");
+    println("======================");
+    Create(3, &RPSClientTask1);
+    Create(3, &RPSClientTask2);
+    Create(3, &RPSClientTask1);
+    Create(3, &RPSClientTask1);
+    Create(3, &RPSClientTask2);
+    Create(3, &RPSClientTask2);
     Exit();
 }
