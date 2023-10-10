@@ -67,7 +67,8 @@ int Receive(int *tid, char *msg, int msglen)
 int Reply(int tid, void *reply, int replylen)
 ```
 
-The scheduler properly blocks tasks that call Send or Receive until they receive a message.
+The scheduler properly blocks tasks that call Send or Receive.
+They will not be run again until they receive a message.
 
 == Name Server
 
@@ -95,8 +96,8 @@ Some notes:
  - `RPSMove` is a struct that stores the move that the player wants to make.
  - `Signup` and `Quit` return a negative integer if there is an error, otherwise they return 0.
  - If one player quits from a game, the other player can still send in moves using Play(), but they will receive a result indicating that the opponent has quit.
- - Games can be played by multiple pairs of clients at once.
- - After quitting, clients can sign up again, which may match them with a different opponent.
+ - Multiple games between different pairs of clients can be played at the same time.
+ - After quitting, clients can sign up again to play another match. They may match up with a different opponent.
 
 = Kernel Implementation
 
@@ -151,12 +152,12 @@ They should start with the following lines (although the player numbers may be d
 [RPS PLAYER 6] Playing move SCISSORS
 ```
 
-Note that all lines starting with `[RPS PLAYER X]` are done by player X's task, and all prints starting with `[RPS SERVER]` are done by the RPS server task.
+Note that all prints starting with `[RPS PLAYER X]` are done by player X's task, and all prints starting with `[RPS SERVER]` are done by the RPS server task.
 
 == Test 2
 
-Test 2 showcases multiple RPS games at the same time.
-These tests use the same series of moves as the players above, though in three different configurations.
+Test 2 showcases the playing of multiple RPS games at the same time.
+These tests use Player A and Player B from the test 1, though they are paired up in different ways.
 
 One game should be a Player A vs Player B game. It should have the same results as Test 1.
 
@@ -164,15 +165,15 @@ Another game should be a Player A vs Player A game. It should tie 3 times in a r
 
 The final game should be a Player B vs Player B game. It should tie 5 times in a row.
 
-The print statements should showcase the server handling the above three games at the same time.
+The print statements should showcase the server handling signups, plays, and quits from the above three games at the same time.
 
 == Test 3
 
 Test 3 showcases how clients can play more RPS games even after quitting their first.
 This test creates three players, each of whom will sign up, play rock, quit, sign up again, play scissors, then quit.
 
-There are three players, but only two players can play at once.
-This offsets their games in the following way:
+Though there are three players, only two players can play at once.
+This causes their games to be offset in the following way:
 
 #table(
   columns: (auto),
@@ -212,13 +213,12 @@ This offsets their games in the following way:
 For each of the twelve tests, we create one task that sends and one task that receives.
 Each task loops through 20 iterations of Send/Receive/Reply.
 Since the variance on times is low, we believe that 20 is enough iterations to obtain a good average time.
-Our heap allocator is still incapable of reclaiming memory, so we cannot increase this number by much without running out of memory.
+As well, since our heap allocator is still incapable of reclaiming memory, we cannot increase this number by much without running out of memory.
 #footnote[If you try running the performance test multiple in the same session, you can see what happens when our allocator runs out of memory.]
 
 Some notes:
  - The timer is created in the sending task.
  - The timer starts just before Send() is called and stops just after we return from Send() (and thus have obtained a reply).
- - We test Send-first and Receive-first by giving the task we want to run first a higher priority.
 
 We use the following methodology to measure time:
 ```c
