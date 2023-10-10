@@ -71,7 +71,7 @@ The scheduler properly blocks tasks that call Send or Receive until they receive
 
 == Name Server
 
-The name server is created when the kernel boots up.
+The name server is created when the kernel boots up, as a child task of the init task.
 It implements the following primitives as described on the assignment page, with no changes to their signatures:
 
 ```c
