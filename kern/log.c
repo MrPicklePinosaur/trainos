@@ -1,5 +1,5 @@
 #include "log.h"
-#include "uart.h"
+#include "kern/dev/uart.h"
 
 static LogLevel log_level = LOG_LEVEL_WARN;
 

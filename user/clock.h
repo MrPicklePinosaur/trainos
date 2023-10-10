@@ -5,8 +5,8 @@
 
 void clockTask();
 
-int Time(Tid server, Tid tid);
-int Delay(Tid server, Tid tid, int ticks);
-int DelayUntil(Tid server, Tid tid, int ticks);
+int Time(Tid tid);
+int Delay(Tid tid, int ticks);
+int DelayUntil(Tid tid, int ticks);
 
 #endif // __USER_CLOCK_H__

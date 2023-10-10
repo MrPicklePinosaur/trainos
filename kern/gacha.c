@@ -1,6 +1,6 @@
 #include "gacha.h"
 #include "log.h"
-#include "rpi.h"
+#include "kern/dev/timer.h"
 
 uint32_t gacha_rand_num;
 

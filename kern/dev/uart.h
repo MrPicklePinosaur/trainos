@@ -1,5 +1,5 @@
-#ifndef __UART_H__
-#define __UART_H__
+#ifndef __DEV_UART_H__
+#define __DEV_UART_H__
 
 #include <stdint.h>
 #include <stddef.h>
@@ -20,4 +20,5 @@ void uart_puts(size_t line, const char* buf);
 void uart_printf(size_t line, char *fmt, ...);
 void uart_format_print (size_t line, char *fmt, va_list va );
 
-#endif // __UART_H__
+
+#endif // __DEV_UART_H__

@@ -1,6 +1,6 @@
 
 #include <trainstd.h>
-#include "kern/uart.h"
+#include "kern/dev/uart.h"
 
 // printf-style printing, with limited format support
 void uart_format_print (size_t line, char *fmt, va_list va ) {

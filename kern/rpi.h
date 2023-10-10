@@ -24,6 +24,4 @@ void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t control);
 void uart_init();
 bool uart_busy(size_t line);
 
-uint64_t timer_get(void);
-
 #endif /* rpi.h */

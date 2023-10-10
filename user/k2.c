@@ -1,4 +1,5 @@
 #include "usertasks.h"
+#include "nameserver.h"
 #include <string.h>
 #include <trainsys.h>
 #include <trainstd.h>

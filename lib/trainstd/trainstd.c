@@ -1,7 +1,7 @@
 #include "./trainstd.h"
 
 // TODO not a big fan of reaching out of lib directory into kernel
-#include "kern/uart.h"
+#include "kern/dev/uart.h"
 #include "kern/alloc.h"
 
 // this is kinda dumb repeated code

@@ -1,4 +1,4 @@
-#include "uart.h"
+#include "kern/dev/uart.h"
 #include "kern.h"
 #include "task.h"
 #include "util.h"

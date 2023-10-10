@@ -1,2 +1,2 @@
 XDIR = /u/cs452/public/xdev
-QEMU = false
+QEMU = 0

@@ -1,6 +1,6 @@
 #include "timer.h"
 #include "mem.h"
-#include "kern/rpi.h"
+#include "kern/dev/timer.h"
 
 Timer*
 timer_new()

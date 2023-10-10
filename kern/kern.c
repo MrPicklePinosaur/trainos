@@ -6,7 +6,7 @@
 #include "util.h"
 #include "scheduler.h"
 #include "alloc.h"
-#include "uart.h"
+#include "kern/dev/uart.h"
 #include "util.h"
 #include "gacha.h"
 

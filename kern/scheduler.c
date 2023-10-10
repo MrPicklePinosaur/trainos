@@ -1,5 +1,5 @@
 #include "scheduler.h"
-#include "uart.h"
+#include "kern/dev/uart.h"
 #include "log.h"
 #include "alloc.h"
 
