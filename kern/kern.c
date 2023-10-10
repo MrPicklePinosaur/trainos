@@ -25,29 +25,6 @@ kern_init(void)
 void
 set_task_state(Task* task, TaskState state)
 {
-    /*
-    Tid tid = task->tid;
-    switch (state) {
-        case TASKSTATE_ACTIVE: {
-            scheduler_remove(tid);
-            break;
-        }
-        case TASKSTATE_READY: {
-            scheduler_insert(tid, task->priority);
-            break;
-        }
-        case TASKSTATE_EXITED: {
-            scheduler_remove(tid);
-            break;
-        }
-        case TASKSTATE_SEND_WAIT:
-        case TASKSTATE_RECEIVE_WAIT:
-        case TASKSTATE_REPLY_WAIT: {
-            scheduler_remove(tid);
-            break;
-        }
-    };
-    */
     task->state = state;
 }
 
@@ -341,6 +318,12 @@ handle_svc(void)
         LOG_INFO("[SYSCALL] REPLY");
 
         sf->x0 = handle_svc_reply((int)sf->x0, (const char*)sf->x1, sf->x2);
+
+        next_tid = find_next_task();
+
+    } else if (opcode == OPCODE_AWAITEVENT) {
+
+        LOG_INFO("[SYSCALL] AWAIT EVENT");
 
         next_tid = find_next_task();
 

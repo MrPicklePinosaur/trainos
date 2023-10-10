@@ -16,13 +16,6 @@ void RPSTask(void);
 
 void K2Perf();
 
-// Nameserver
-void nameserverTask();
-void initNameserverTask();
-
-int RegisterAs(const char *name);
-int WhoIs(const char *name);
-
 // Other
 void graphicsTask();
 void testHarness();

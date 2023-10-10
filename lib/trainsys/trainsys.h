@@ -15,6 +15,6 @@ extern void Exit(void);
 extern int Send(int tid, const char* msg, int msglen, char* reply, int rplen);
 extern int Receive(int* tid, char* msg, int msglen);
 extern int Reply(int tid, const char* reply, int rplen);
-
+extern int AwaitEvent(int eventid);
 
 #endif // __TRAINSYS_H__

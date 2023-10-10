@@ -49,3 +49,9 @@ Reply:
     svc 0x7
     br x30
 
+.global AwaitEvent
+.type AwaitEvent, %function
+AwaitEvent:
+    svc 0x8
+    br x30
+

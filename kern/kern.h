@@ -15,6 +15,7 @@ typedef enum {
     OPCODE_SEND = 5,
     OPCODE_RECEIVE = 6,
     OPCODE_REPLY = 7,
+    OPCODE_AWAITEVENT = 8,
 } OpCode;
 
 // Initalize kernel data structurea
