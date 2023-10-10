@@ -7,6 +7,7 @@
 #include "scheduler.h"
 #include "alloc.h"
 #include "kern/dev/uart.h"
+#include "kern/dev/timer.h"
 #include "util.h"
 #include "gacha.h"
 
@@ -15,6 +16,7 @@ kern_init(void)
 {
     uart_init();
     arena_init();
+    timer_init();
     pagetable_init();
     tasktable_init();
     vector_table_init();
