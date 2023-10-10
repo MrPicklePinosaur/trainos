@@ -8,7 +8,6 @@
 #include <stdarg.h>
 #include <trainstd.h>
 
-
 /*********** GPIO CONFIGURATION ********************************/
 
 static char* const GPIO_BASE = (char*)(MMIO_BASE + 0x200000);
