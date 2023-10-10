@@ -249,27 +249,13 @@ RPSServerTask(void)
                 for(;;){}
             }
 
-            // Case 1: Other player has not quit yet. Mark the game as over
-            if (!game_state->is_over) {
-                game_state->is_over = true;
-            }
-
-            // Case 2: Other player has already quit. Remove the game from the database
-            else {
-                Tid player1_tid = game_state->player1;
-                Tid player2_tid = game_state->player2;
-
-                println("[RPS SERVER] Closing player %d and player %d's game", player1_tid, player2_tid);
-
-                bool result = hashmap_remove(game_db, tid_to_key(player1_tid));
-                if (!result) {
-                    println("[RPS SERVER] WARNING, when trying to remove game, couldn't find game state for player %d", player1_tid);
-                }
-
-                result = hashmap_remove(game_db, tid_to_key(player2_tid));
-                if (!result) {
-                    println("[RPS SERVER] WARNING, when trying to remove game, couldn't find game state for player %d", player2_tid);
-                }
+            game_state->is_over = true;
+            // Remember that games are stored under two TIDs, one per player.
+            // We only remove the game under the TID of the quitting player.
+            // Thus, the game is not fully removed from the hash map until both players have quit.
+            bool result = hashmap_remove(game_db, tid_to_key(from_tid));
+            if (!result) {
+                println("[RPS SERVER] WARNING, when trying to remove game, couldn't find game state for player %d", from_tid);
             }
 
             // Reply to quitting player's Send
@@ -407,6 +393,21 @@ RPSClientTask2(void)
 }
 
 void
+RPSClientTask3(void)
+{
+    Tid rps = WhoIs(RPS_ADDRESS);
+    Signup(rps);
+    Play(rps, MOVE_ROCK);
+    Quit(rps);
+
+    Signup(rps);
+    Play(rps, MOVE_SCISSORS);
+    Quit(rps);
+
+    Exit();
+}
+
+void
 RPSTask(void)
 {
     Create(3, &RPSServerTask);
@@ -429,5 +430,15 @@ RPSTask(void)
     Create(3, &RPSClientTask1);
     Create(3, &RPSClientTask2);
     Create(3, &RPSClientTask2);
+    Yield();
+
+    println("");
+    println("======================");
+    println("======= TEST 3 =======");
+    println("======================");
+    Create(3, &RPSClientTask3);
+    Create(3, &RPSClientTask3);
+    Create(3, &RPSClientTask3);
+
     Exit();
 }
