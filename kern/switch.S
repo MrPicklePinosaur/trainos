@@ -3,7 +3,7 @@
 .global	asm_enter_kernelmode
 .type asm_enter_kernelmode, %function
 asm_enter_kernelmode:
-    
+
     # Grab current task switchframe and save necessary registers
     # WARNING: this procedure clobbers x1
 
@@ -16,7 +16,7 @@ asm_enter_kernelmode:
     str x30, [sp, #32]
 
     # x0 = tasktable_current_task()
-    bl tasktable_current_task 
+    bl tasktable_current_task
 
     # x0 = tasktable_get_task(x0)
     bl tasktable_get_task
@@ -50,7 +50,7 @@ asm_enter_kernelmode:
     stp x24, x25, [x0, #192]
     stp x26, x27, [x0, #208]
     stp x28, x30, [x0, #224]
-    
+
     # save stack ptr
     mrs x1, SP_EL0
     str x1, [x0, #240]
