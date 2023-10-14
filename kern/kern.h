@@ -24,6 +24,7 @@ void kern_init(void);
 // Handle a call from svc
 extern void vector_table_init(void);
 void handle_svc(void);
+void handle_interrupt(void);
 Tid handle_svc_create(uint32_t priority, void (*entrypoint)());
 
 #endif // __KERN_H__

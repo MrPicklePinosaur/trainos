@@ -9,6 +9,7 @@
 #include "kern/dev/uart.h"
 #include "kern/dev/timer.h"
 #include "util.h"
+#include "gic.h"
 #include "gacha.h"
 
 void
@@ -21,6 +22,7 @@ kern_init(void)
     tasktable_init();
     vector_table_init();
     scheduler_init();
+    gic_init();
     gacha_init();
 }
 
@@ -337,4 +339,12 @@ handle_svc(void)
     LOG_DEBUG("returning to task %d", next_tid);
     tasktable_set_current_task(next_tid);
     asm_enter_usermode(tasktable_get_task(next_tid)->sf);
+}
+
+void
+handle_interrupt(void)
+{
+    for (;;) {
+        LOG_WARN("INTERRUPT HANDLER ENTERED");
+    }
 }

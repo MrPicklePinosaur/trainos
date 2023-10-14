@@ -18,7 +18,7 @@ static const uint32_t TIMER_C3  =   0x18; // timer compare 3
 void
 timer_init(void)
 {
-    TIMER_REG(TIMER_C1) = 10000; // 10ms
+    TIMER_REG(TIMER_C1) = 60000000;  // Interrupt at 60 seconds (to account for bootup time)
 }
 
 uint64_t timer_get(void) {
