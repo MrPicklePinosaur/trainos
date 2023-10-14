@@ -8,6 +8,8 @@ static char* const GICC_BASE = (char*) (GIC_BASE + 0x2000);
 static const uint32_t GICD_ISENABLE = 0x100;
 static const uint32_t GICD_ITARGETS = 0x800;
 
+static const uint32_t GICC_IAR = 0xC;
+
 void
 gic_init(void)
 {
@@ -18,4 +20,10 @@ gic_init(void)
     char* enable = GICD_BASE + GICD_ISENABLE + 4*(96/32);
     *enable |= 0x2;  // Enable ID 97
     *enable |= 0x8;  // Enable ID 99
+}
+
+uint32_t gic_read_iar(void)
+{
+    uint32_t* iar = (uint32_t*) (GICC_BASE + GICC_IAR);
+    return *iar;
 }

@@ -344,7 +344,10 @@ handle_svc(void)
 void
 handle_interrupt(void)
 {
+    uint32_t iar = gic_read_iar();
+    uint32_t interrupt_id = iar & 0x3FF;  // Get last 10 bits
+
     for (;;) {
-        LOG_WARN("INTERRUPT HANDLER ENTERED");
+        LOG_DEBUG("[INTERRUPT] ID: %d", interrupt_id);
     }
 }
