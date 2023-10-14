@@ -4,14 +4,18 @@
 
 uint32_t gacha_rand_num;
 
-uint32_t randint(void) {
+uint32_t
+randint(void)
+{
     // glibc random integer implementation
     // https://en.wikipedia.org/wiki/Linear_congruential_generator
     gacha_rand_num = (1103515245 * gacha_rand_num + 12345) % 2147483648;
     return gacha_rand_num;
 }
 
-uint32_t gacha_rarity_distribution(void) {
+uint32_t
+gacha_rarity_distribution(void)
+{
     uint32_t roll = randint() % 100;
     if (roll >= 33) {
         return 0;  // 67% chance of rolling a 1 star
@@ -28,11 +32,15 @@ uint32_t gacha_rarity_distribution(void) {
     return 4;  // 1% chance of rolling a 5 star
 }
 
-void gacha_init(void) {
+void
+gacha_init(void)
+{
     gacha_rand_num = timer_get();
 }
 
-void gacha_print_roll(void) {
+void
+gacha_print_roll(void)
+{
     PRINT("                o}-------------------------------{o      o}------------------------------{o                ");
     PRINT("         o}------------{o   o}-------------{o                  o}-------------{o   o}-----------{o         ");
     PRINT("     o}------------{o           o}-------{o     TODAY'S ROLL     o}-------{o           o}-----------{o     ");
