@@ -22,8 +22,8 @@ timer_init(void)
 }
 
 uint64_t timer_get(void) {
-  uint64_t time;
-  time = TIMER_REG(TIMER_CLO);
-  time |= (uint64_t)TIMER_REG(TIMER_CHI) << 32;
-  return(time);
+    uint64_t time;
+    time = TIMER_REG(TIMER_CLO);
+    time |= (uint64_t)TIMER_REG(TIMER_CHI) << 32;
+    return(time);
 }
