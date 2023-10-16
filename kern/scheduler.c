@@ -42,7 +42,7 @@ do_scheduler_insert(Tid tid, uint32_t priority)
 {
     SchedulerNode* node = arena_alloc(sizeof(SchedulerNode));
     node->tid = tid;
-    node-> priority = priority;
+    node->priority = priority;
     node->next = nullptr;
 
     // Reach the end of the linked list and insert the task there
