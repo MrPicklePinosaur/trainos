@@ -83,7 +83,7 @@ scheduler_next(void)
             SchedulerNode* queue_top = mlq[i];
             mlq[i] = mlq[i]->next;
             queue_top->next = nullptr;
-            do_scheduler_insert_node(queue_top);
+            do_scheduler_insert(queue_top);
             TaskState state = tasktable_get_task(queue_top->tid)->state;
             if (state == TASKSTATE_READY || state == TASKSTATE_ACTIVE) {
                 return queue_top->tid;

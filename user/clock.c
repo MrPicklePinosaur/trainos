@@ -2,6 +2,8 @@
 #include "trainstd.h"
 #include "nameserver.h"
 
+#include "kern/dev/timer.h" // not very nice to straight up include kernel code like this
+
 typedef enum {
     CLOCK_TIME = 1,
     CLOCK_DELAY,
@@ -141,7 +143,7 @@ clockTask()
 
         }
         else if (msg_buf.type == CLOCK_TICK) {
-            println("[CLOCK SERVER] tick");
+            /* println("[CLOCK SERVER] tick"); */
 
             ++ticks;
 

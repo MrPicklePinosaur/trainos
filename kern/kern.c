@@ -34,6 +34,7 @@ set_task_state(Task* task, TaskState state)
 Tid
 handle_svc_create(uint32_t priority, void (*entrypoint)())
 {
+    LOG_INFO("[SYSCALL] Create task");
     Tid current_tid = tasktable_current_task();
 
     Tid new_tid = tasktable_create_task(priority, entrypoint);
@@ -371,14 +372,12 @@ handle_interrupt(void)
     gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
 
     // Find next task to go to
-#if 0
     // TODO commenting for now since scheduler allocates memory and doesn't reclaim
     Tid next_tid = find_next_task();
     Task* next_task = tasktable_get_task(next_tid);
     tasktable_set_current_task(next_tid);
     asm_enter_usermode(next_task->sf);
-#endif
-    asm_enter_usermode(tasktable_get_task(tasktable_current_task())->sf); // TODO we might want to use the scheduler to find next task
+    /* asm_enter_usermode(tasktable_get_task(tasktable_current_task())->sf); // TODO we might want to use the scheduler to find next task */
 }
 
 void
