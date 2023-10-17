@@ -38,3 +38,9 @@ asm_elr_el1:
 asm_sp_el0:
     mrs x0, SP_EL0
     br x30
+
+.global	asm_spsr_el1
+.type asm_spsr_el1, %function
+asm_spsr_el1:
+    mrs x0, SPSR_EL1
+    br x30

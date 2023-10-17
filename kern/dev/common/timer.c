@@ -28,6 +28,7 @@ void
 timer_set_c1_next_tick()
 {
     TIMER_REG(TIMER_C1) = TIMER_REG(TIMER_C1) + TICK_TIME;
+    TIMER_REG(TIMER_CS) |= (0x1 << 1);
 }
 
 void

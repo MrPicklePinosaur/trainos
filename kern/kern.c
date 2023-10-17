@@ -354,10 +354,15 @@ handle_svc(void)
 void
 handle_interrupt(void)
 {
+
     uint32_t iar = gic_read_iar();
     uint32_t interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
-    LOG_DEBUG("[INTERRUPT] ID: %d", interrupt_id);
+    Tid current_tid = tasktable_current_task();
+    Task* current_task = tasktable_get_task(current_tid);
+    switchframe_debug(current_task->sf);
+
+    PRINT("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
 
     // Timer task
     if (interrupt_id == 97) {
@@ -365,11 +370,15 @@ handle_interrupt(void)
         timer_set_c1_next_tick();
     }
 
-    gic_write_eoir(iar);
-
-    Tid current_tid = tasktable_current_task();
-    Task* current_task = tasktable_get_task(current_tid);
+    gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
 
     // Return to the task that was running before the interrupt occurred
     asm_enter_usermode(current_task->sf);
 }
+
+void
+unhandled_vector_table()
+{
+    PANIC("unhandled vector table entry");
+}
+

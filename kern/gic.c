@@ -11,6 +11,9 @@ static const uint32_t GICD_ITARGETS = 0x800;
 static const uint32_t GICC_IAR = 0xC;
 static const uint32_t GICC_EOIR = 0x10;
 
+#define GICD_REG(offset) (*(volatile uint32_t*)(GICD_BASE + offset))
+#define GICC_REG(offset) (*(volatile uint32_t*)(GICC_BASE + offset))
+
 void
 gic_target(uint32_t core, uint32_t id)
 {

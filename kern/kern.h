@@ -27,4 +27,6 @@ void handle_svc(void);
 void handle_interrupt(void);
 Tid handle_svc_create(uint32_t priority, void (*entrypoint)());
 
+void unhandled_vector_table(void);
+
 #endif // __KERN_H__
