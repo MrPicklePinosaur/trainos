@@ -39,6 +39,12 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
     SwitchFrame* sf = arena_alloc(sizeof(SwitchFrame));
     *sf = switchframe_new(addrspace.stackbase, entrypoint);
 
+    SendBuf* send_buf = arena_alloc(sizeof(SendBuf));
+    *send_buf = (SendBuf) {0};
+
+    ReceiveBuf* recveive_buf = arena_alloc(sizeof(ReceiveBuf));
+    *recveive_buf = (ReceiveBuf) {0};
+
     *new_task = (Task) {
         .tid = new_task_id,
         .parent_tid = 0,
@@ -47,8 +53,8 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
         .addrspace = addrspace,
         .sf = sf,
         .receive_queue = cbuf_new(RECEIVE_QUEUE_MAX_LEN),
-        .send_buf = 0,
-        .receive_buf = 0,
+        .send_buf = send_buf,
+        .receive_buf = recveive_buf,
         .blocking_event = EVENT_NONE
     };
 
