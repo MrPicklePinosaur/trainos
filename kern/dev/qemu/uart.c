@@ -8,6 +8,7 @@
 #if QEMU == 1
 
 #include "kern/dev/dev.h"
+#include "kern/log.h"
 
 #define GPFSEL0         ((volatile unsigned int*)(MMIO_BASE+0x00200000))
 #define GPFSEL1         ((volatile unsigned int*)(MMIO_BASE+0x00200004))
