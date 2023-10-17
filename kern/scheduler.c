@@ -38,19 +38,14 @@ uint32_t scheduler_valid_priority(uint32_t priority) {
 }
 
 void
-do_scheduler_insert(Tid tid, uint32_t priority)
+do_scheduler_insert(SchedulerNode* node)
 {
-    SchedulerNode* node = arena_alloc(sizeof(SchedulerNode));
-    node->tid = tid;
-    node->priority = priority;
-    node->next = nullptr;
-
     // Reach the end of the linked list and insert the task there
-    if (mlq[priority] == nullptr) {
-        mlq[priority] = node;
+    if (mlq[node->priority] == nullptr) {
+        mlq[node->priority] = node;
     }
     else {
-        SchedulerNode* current = mlq[priority];
+        SchedulerNode* current = mlq[node->priority];
         for (;;) {
             if (current->next == nullptr) {
                 current->next = node;
@@ -71,7 +66,11 @@ scheduler_insert(Tid tid, uint32_t priority)
         return;
     }
 
-    do_scheduler_insert(tid, priority);
+    SchedulerNode* node = arena_alloc(sizeof(SchedulerNode));
+    node->tid = tid;
+    node->priority = priority;
+    node->next = nullptr;
+    do_scheduler_insert(node);
 
     task_count++;
 }
@@ -83,7 +82,7 @@ scheduler_next(void)
         for (uint32_t j = 0; j < scheduler_count_level(mlq[i]); ++j) {
             SchedulerNode* queue_top = mlq[i];
             mlq[i] = mlq[i]->next;
-            do_scheduler_insert(queue_top->tid, queue_top->priority);
+            do_scheduler_insert_node(queue_top);
             TaskState state = tasktable_get_task(queue_top->tid)->state;
             if (state == TASKSTATE_READY || state == TASKSTATE_ACTIVE) {
                 return queue_top->tid;
