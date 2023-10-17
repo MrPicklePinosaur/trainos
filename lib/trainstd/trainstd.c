@@ -33,3 +33,10 @@ getc(void)
 {
     return uart_getc(CONSOLE);
 }
+
+char
+getc_poll(void)
+{
+    unsigned char data = 0;
+    return (uart_getc_poll(CONSOLE, &data) == 0) ? (char)data : 0;
+}

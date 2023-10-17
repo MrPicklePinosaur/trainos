@@ -11,7 +11,7 @@
 
 int kmain() {
 
-    set_log_level(LOG_LEVEL_DEBUG);
+    set_log_level(LOG_LEVEL_WARN);
     
     kern_init();
 

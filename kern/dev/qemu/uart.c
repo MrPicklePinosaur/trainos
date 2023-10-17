@@ -93,6 +93,12 @@ unsigned char uart_getc(size_t line) {
     return r=='\r'?'\n':r;
 }
 
+int
+uart_getc_poll(size_t line, unsigned char* data)
+{
+    PANIC("unimplemented");
+}
+
 /**
  * Display a string
  */

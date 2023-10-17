@@ -3,10 +3,17 @@
 #include <trainstd.h>
 
 void
-K3() {
+awaitEventTest()
+{
     for (;;) {
         AwaitEvent(EVENT_CLOCK_TICK);
         println("got clock tick event");
     }
 }
 
+
+void
+K3()
+{
+    Exit();
+}

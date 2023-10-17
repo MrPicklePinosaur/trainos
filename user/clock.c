@@ -1,12 +1,14 @@
 #include "clock.h"
 #include "trainstd.h"
+#include "nameserver.h"
 
 #define CLOCK_ADDRESS "Clock"
 
 typedef enum {
-    CLOCK_TIME,
+    CLOCK_TIME = 1,
     CLOCK_DELAY,
     CLOCK_DELAY_UNTIL,
+    CLOCK_TICK,
 } ClockMsgType;
 
 typedef struct {
@@ -20,6 +22,7 @@ typedef struct {
         struct {
             int tick;
         } delay_until;
+        struct {} tick;
     } data;
 } ClockMsg;
 
@@ -37,15 +40,32 @@ typedef struct {
             int ticks;
             bool valid_delay;
         } delay_until;
+        struct {} tick;
     } data;
 } ClockResp;
+
+void Tick(Tid clock_server);
+
+void notifierTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    for (;;) {
+        AwaitEvent(EVENT_CLOCK_TICK); 
+        Tick(clock_server);
+    }
+}
 
 void
 clockTask()
 {
     RegisterAs(CLOCK_ADDRESS);
 
+    Create(0, &notifierTask);
+    Yield();
+    
     timer_init_c1();
+
+    u32 ticks = 0;
 
     ClockMsg msg_buf;
     ClockResp reply_buf;
@@ -67,16 +87,22 @@ clockTask()
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
             // DelayUntil() implementation
         }
-        else {
+        else if (msg_buf.type == CLOCK_TICK) {
+            println("[CLOCK SERVER] tick");
+            ++ticks;
+
+            reply_buf = (ClockResp) {
+                .type = CLOCK_TICK,
+                .data = {
+                    .tick = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
+        } else {
             println("[CLOCK SERVER] Invalid message type");
             continue;
         }
     }
-
-}
-
-void notifierTask()
-{
 
 }
 
@@ -157,4 +183,19 @@ int DelayUntil(Tid clock_server, int ticks) {
     }
 
     return resp_buf.data.time.ticks;
+}
+
+void Tick(Tid clock_server) {
+    ClockResp resp_buf;
+    ClockMsg send_buf = {
+        .type = CLOCK_TICK,
+        .data = {
+            .tick = {}
+        }
+    };
+
+    int ret = Send(clock_server, (const char*)&send_buf, sizeof(ClockMsg), (char*)&resp_buf, sizeof(ClockResp));
+    if (ret < 0) {
+        println("Something went wrong when calling Tick()");
+    }
 }

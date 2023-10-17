@@ -15,6 +15,7 @@ static const size_t MARKLIN = 2;
 void uart_init();
 void uart_putc(size_t line, unsigned char c);
 unsigned char uart_getc(size_t line);
+int uart_getc_poll(size_t line, unsigned char* data);
 void uart_puts(size_t line, const char* buf);
 
 void uart_printf(size_t line, char *fmt, ...);

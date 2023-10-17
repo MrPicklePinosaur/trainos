@@ -360,7 +360,7 @@ handle_interrupt(void)
     uint32_t iar = gic_read_iar();
     uint32_t interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
-    LOG_DEBUG("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
+    // LOG_DEBUG("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
 
     // Timer task
     if (interrupt_id == 97) {
