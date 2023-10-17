@@ -1,5 +1,6 @@
 #include "usertasks.h"
 #include "nameserver.h"
+#include "clock.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
@@ -28,7 +29,8 @@ initTask()
 
     // spawn init tasks
     initNameserverTask();
-
+    Create(0, &clockTask);
+    Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");

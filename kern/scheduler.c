@@ -125,3 +125,17 @@ scheduler_remove(Tid tid)
 
     LOG_DEBUG("could not find task id %d in scheduler", tid);
 }
+
+void scheduler_unblock_event(int eventid) {
+    for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        SchedulerNode* current = mlq[i];
+        for (; current != nullptr;) {
+            Task* task = tasktable_get_task(current->tid);
+            if (task->state == TASKSTATE_AWAIT_EVENT_WAIT && task->blocking_event == eventid) {
+                task->state = TASKSTATE_READY;
+                task->blocking_event = EVENT_NONE;
+            }
+            current = current->next;
+        }
+    }
+}

@@ -48,7 +48,8 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
         .sf = sf,
         .receive_queue = cbuf_new(RECEIVE_QUEUE_MAX_LEN),
         .send_buf = 0,
-        .receive_buf = 0
+        .receive_buf = 0,
+        .blocking_event = EVENT_NONE
     };
 
     TaskNode* new_task_node = arena_alloc(sizeof(TaskNode));

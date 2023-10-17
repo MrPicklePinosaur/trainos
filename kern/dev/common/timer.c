@@ -15,15 +15,23 @@ static const uint32_t TIMER_C3  =   0x18; // timer compare 3
 
 #define TIMER_REG(offset) (*(volatile uint32_t*)(TIMER_BASE + offset))
 
-void
-timer_init(void)
-{
-    TIMER_REG(TIMER_C1) = 60000000;  // Interrupt at 60 seconds (to account for bootup time)
-}
+const uint32_t TICK_TIME = 1000000;  // 10000 normally
 
 uint64_t timer_get(void) {
     uint64_t time;
     time = TIMER_REG(TIMER_CLO);
     time |= (uint64_t)TIMER_REG(TIMER_CHI) << 32;
     return(time);
+}
+
+void
+timer_set_c1_next_tick()
+{
+    TIMER_REG(TIMER_C1) = TIMER_REG(TIMER_C1) + TICK_TIME;
+}
+
+void
+timer_init_c1(void)
+{
+    TIMER_REG(TIMER_C1) = timer_get() + TICK_TIME;
 }

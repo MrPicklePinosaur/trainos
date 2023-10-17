@@ -20,5 +20,6 @@ uint32_t scheduler_valid_priority(uint32_t priority);  // Returns 1 if valid pri
 void scheduler_insert(Tid tid, uint32_t priority);
 Tid scheduler_next(void);
 void scheduler_remove(Tid tid);
+void scheduler_unblock_event(int eventid);  // Unblock all tasks waiting for eventid
 
 #endif // __SCHEDULER_H__

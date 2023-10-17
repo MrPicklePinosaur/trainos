@@ -9,6 +9,7 @@ static const uint32_t GICD_ISENABLE = 0x100;
 static const uint32_t GICD_ITARGETS = 0x800;
 
 static const uint32_t GICC_IAR = 0xC;
+static const uint32_t GICC_EOIR = 0x10;
 
 void
 gic_target(uint32_t core, uint32_t id)
@@ -38,4 +39,10 @@ uint32_t gic_read_iar(void)
 {
     uint32_t* iar = (uint32_t*) (GICC_BASE + GICC_IAR);
     return *iar;
+}
+
+void gic_write_eoir(uint32_t iar)
+{
+    uint32_t* eoir = (uint32_t*) (GICC_BASE + GICC_EOIR);
+    (*eoir) = iar;
 }
