@@ -155,13 +155,26 @@ void
 testAlloc()
 {
     println("Running test suite for memory allocator -----------------");
+
     void* ptrs[50] = {0};
+    ptrs[0] = alloc(10);
+    ptrs[1] = alloc(12);
+    ptrs[2] = alloc(14);
+    free(ptrs[1]);
+    free(ptrs[0]);
+    ptrs[3] = alloc(40);
+    free(ptrs[3]);
+    ptrs[4] = alloc(8);
+    free(ptrs[2]);
+
     for (int i = 0; i < 50; ++i) {
         ptrs[i] = alloc(i % 7 + 1);
     }
     for (int i = 0; i < 50; ++i) {
-        free(ptrs[i]);
+        free(ptrs[49 - i]);
     }
+
+    println("done");
 
     Exit();
 }
