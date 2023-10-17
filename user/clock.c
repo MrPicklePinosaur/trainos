@@ -2,8 +2,6 @@
 #include "trainstd.h"
 #include "nameserver.h"
 
-#define CLOCK_ADDRESS "Clock"
-
 typedef enum {
     CLOCK_TIME = 1,
     CLOCK_DELAY,

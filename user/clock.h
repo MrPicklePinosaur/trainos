@@ -3,6 +3,8 @@
 
 #include <trainsys.h>
 
+#define CLOCK_ADDRESS "Clock"
+
 void clockTask();
 
 int Time(Tid clock_server);
