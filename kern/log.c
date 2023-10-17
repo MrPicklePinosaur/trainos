@@ -1,7 +1,7 @@
 #include "log.h"
 #include "kern/dev/uart.h"
 
-static LogLevel log_level = LOG_LEVEL_DEBUG;
+static LogLevel log_level = LOG_LEVEL_WARN;
 
 void
 set_log_level(LogLevel level)

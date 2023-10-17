@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <trainstd.h>
+#include <trainsys.h>
 #include "addrspace.h"
 #include "switchframe.h"
 
@@ -19,11 +20,6 @@ typedef enum {
     TASKSTATE_REPLY_WAIT,
     TASKSTATE_AWAIT_EVENT_WAIT,
 } TaskState;
-
-typedef enum {
-    EVENT_NONE,
-    EVENT_CLOCK_TICK,
-} Event;
 
 // Store data for message senders
 typedef struct {
@@ -59,7 +55,7 @@ typedef struct {
     SendBuf* send_buf;
     ReceiveBuf* receive_buf;
 
-    Event blocking_event;
+    EventId blocking_event;
 } Task;
 
 // Nodes for a linked list

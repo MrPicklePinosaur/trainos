@@ -222,9 +222,10 @@ handle_svc_reply(int tid, const char *reply, int rplen)
     return copylen;
 }
 
-int
-handle_svc_await_event(int event_id)
+void
+handle_svc_await_event(EventId event_id)
 {
+    // TODO check if event_id is valid
     Tid current_tid = tasktable_current_task();
     Task* current_task = tasktable_get_task(current_tid);
     current_task->state = TASKSTATE_AWAIT_EVENT_WAIT;
@@ -337,7 +338,8 @@ handle_svc(void)
 
         LOG_INFO("[SYSCALL] AWAIT EVENT");
 
-        sf->x0 = handle_svc_await_event((int)sf->x0);
+        handle_svc_await_event((EventId)sf->x0);
+        sf->x0 = 0; // TODO set proper return value
 
         next_tid = find_next_task();
 
@@ -358,11 +360,7 @@ handle_interrupt(void)
     uint32_t iar = gic_read_iar();
     uint32_t interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
-    Tid current_tid = tasktable_current_task();
-    Task* current_task = tasktable_get_task(current_tid);
-    switchframe_debug(current_task->sf);
-
-    PRINT("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
+    LOG_DEBUG("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
 
     // Timer task
     if (interrupt_id == 97) {
@@ -372,8 +370,11 @@ handle_interrupt(void)
 
     gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
 
-    // Return to the task that was running before the interrupt occurred
-    asm_enter_usermode(current_task->sf);
+    // Find next task to go to
+    Tid next_tid = find_next_task();
+    Task* next_task = tasktable_get_task(next_tid);
+    tasktable_set_current_task(next_tid);
+    asm_enter_usermode(next_task->sf);
 }
 
 void

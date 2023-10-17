@@ -16,6 +16,9 @@ void RPSTask(void);
 
 void K2Perf();
 
+// K3
+void K3();
+
 // Other
 void graphicsTask();
 void testHarness();

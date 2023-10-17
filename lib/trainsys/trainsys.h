@@ -7,6 +7,11 @@
 
 typedef uint32_t Tid;
 
+typedef enum {
+    EVENT_NONE = 0,
+    EVENT_CLOCK_TICK,
+} EventId;
+
 extern int Create(int priority, void (*function)());
 extern int MyTid(void);
 extern int MyParentTid(void);
@@ -15,6 +20,6 @@ extern void Exit(void);
 extern int Send(int tid, const char* msg, int msglen, char* reply, int rplen);
 extern int Receive(int* tid, char* msg, int msglen);
 extern int Reply(int tid, const char* reply, int rplen);
-extern int AwaitEvent(int eventid);
+extern int AwaitEvent(EventId eventid);
 
 #endif // __TRAINSYS_H__

@@ -21,6 +21,7 @@ initTask()
         &(TaskMenuEntry){ "K1", &firstUserTask },
         &(TaskMenuEntry){ "K2", &RPSTask },
         &(TaskMenuEntry){ "K2Perf", &K2Perf },
+        &(TaskMenuEntry){ "K3", &K3 },
         &(TaskMenuEntry){ "sendReceiveReplyTest", &sendReceiveReplyTestTask },
         &(TaskMenuEntry){ "graphics", &graphicsTask },
         &(TaskMenuEntry){ "test", &testHarness },
