@@ -381,8 +381,8 @@ handle_interrupt(void)
 }
 
 void
-unhandled_vector_table()
+unhandled_vector_table(int number)
 {
-    PANIC("unhandled vector table entry");
+    PANIC("unhandled vector table entry %d", number);
 }
 
