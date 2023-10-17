@@ -15,7 +15,7 @@ static const uint32_t TIMER_C3  =   0x18; // timer compare 3
 
 #define TIMER_REG(offset) (*(volatile uint32_t*)(TIMER_BASE + offset))
 
-const uint32_t TICK_TIME = 1000000;  // 10000 normally
+const uint32_t TICK_TIME = 10000;  // 10000 normally
 
 uint64_t timer_get(void) {
     uint64_t time;

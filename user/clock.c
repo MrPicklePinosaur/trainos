@@ -20,7 +20,7 @@ typedef struct {
             int ticks;
         } delay;
         struct {
-            int tick;
+            int ticks;
         } delay_until;
         struct {} tick;
     } data;
@@ -58,13 +58,16 @@ void notifierTask()
 void
 clockTask()
 {
+    typedef PAIR(Tid, int) ClockRequest;
+
     RegisterAs(CLOCK_ADDRESS);
 
     Create(0, &notifierTask);
     Yield();
-    
+
     timer_init_c1();
 
+    List* clock_requests = list_init(); // TODO could make this sorted list
     u32 ticks = 0;
 
     ClockMsg msg_buf;
@@ -80,15 +83,40 @@ clockTask()
 
         if (msg_buf.type == CLOCK_TIME) {
             // Time() implementation
+
+            reply_buf = (ClockResp) {
+                .type = CLOCK_TIME,
+                .data = {
+                    .time = {
+                        .ticks = ticks
+                    }
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
+
         }
         else if (msg_buf.type == CLOCK_DELAY) {
             // Delay() implementation
+
+            ClockRequest* request = alloc(sizeof(ClockRequest));
+            request->first = from_tid;
+            request->second = msg_buf.data.delay_until.ticks + ticks;
+            list_push_back(clock_requests, request);
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
             // DelayUntil() implementation
+
+            // TODO return error if delay until request tick is invalid
+
+            ClockRequest* request = alloc(sizeof(ClockRequest));
+            request->first = from_tid;
+            request->second = msg_buf.data.delay_until.ticks;
+            list_push_back(clock_requests, request);
+
         }
         else if (msg_buf.type == CLOCK_TICK) {
-            println("[CLOCK SERVER] tick");
+            /* println("[CLOCK SERVER] tick"); */
+
             ++ticks;
 
             reply_buf = (ClockResp) {
@@ -98,6 +126,11 @@ clockTask()
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
+
+            // check if any delays requests should be replied to
+            
+
+
         } else {
             println("[CLOCK SERVER] Invalid message type");
             continue;
