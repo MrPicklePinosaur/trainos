@@ -367,6 +367,9 @@ handle_interrupt(void)
 
     gic_write_eoir(iar);
 
+    Tid current_tid = tasktable_current_task();
+    Task* current_task = tasktable_get_task(current_tid);
+
     // Return to the task that was running before the interrupt occurred
     asm_enter_usermode(current_task->sf);
 }
