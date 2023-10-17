@@ -84,6 +84,9 @@ clockTask()
         }
 
         if (msg_buf.type == CLOCK_TIME) {
+
+            println("[CLOCK SERVER] TIME request from %d", from_tid);
+
             // Time() implementation
 
             reply_buf = (ClockResp) {
@@ -98,6 +101,9 @@ clockTask()
 
         }
         else if (msg_buf.type == CLOCK_DELAY) {
+
+            println("[CLOCK SERVER] DELAY request from %d", from_tid);
+
             // Delay() implementation
 
             ClockRequest* request = alloc(sizeof(ClockRequest));
@@ -107,6 +113,9 @@ clockTask()
             list_push_back(clock_requests, request);
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
+
+            println("[CLOCK SERVER] DELAY_UNTIL request from %d", from_tid);
+
             // DelayUntil() implementation
 
             // TODO return error if delay until request tick is invalid
@@ -132,7 +141,7 @@ clockTask()
 
         }
         else if (msg_buf.type == CLOCK_TICK) {
-            /* println("[CLOCK SERVER] tick"); */
+            println("[CLOCK SERVER] tick");
 
             ++ticks;
 
@@ -144,6 +153,7 @@ clockTask()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
 
+#if 0
             // check if any delays requests should be replied to
             ListIter* it = list_iter(clock_requests); 
             ClockRequest* clock_request;
@@ -176,6 +186,7 @@ clockTask()
                 }
             }
             listiter_deinit(it);
+#endif
 
 
         } else {
