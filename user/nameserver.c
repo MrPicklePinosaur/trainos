@@ -100,7 +100,7 @@ nameserverTask()
                     lookup_tid = entry->tid;
                 }
             }
-            listiter_delete(it);
+            listiter_deinit(it);
 
             // println("whois look up found %d", lookup_tid);
 

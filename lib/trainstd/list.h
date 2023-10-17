@@ -32,6 +32,8 @@ size_t list_len(List* list);
 ListIter* list_iter(List* list);
 void* listiter_next(ListIter* it);
 bool listiter_end(ListIter* it);
-void listiter_delete(ListIter* it);
+void listiter_deinit(ListIter* it);
+void listiter_insert_before(ListIter* it, void* item);
+void listiter_delete_at(ListIter* it);
 
 #endif // __TRAINSTD_LIST_H__

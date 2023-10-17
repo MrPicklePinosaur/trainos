@@ -58,7 +58,11 @@ void notifierTask()
 void
 clockTask()
 {
-    typedef PAIR(Tid, int) ClockRequest;
+    typedef struct {
+        Tid tid;
+        int target_delay;
+        ClockMsgType type;
+    } ClockRequest;
 
     RegisterAs(CLOCK_ADDRESS);
 
@@ -99,18 +103,33 @@ clockTask()
             // Delay() implementation
 
             ClockRequest* request = alloc(sizeof(ClockRequest));
-            request->first = from_tid;
-            request->second = msg_buf.data.delay_until.ticks + ticks;
+            request->tid = from_tid;
+            request->target_delay = msg_buf.data.delay_until.ticks + ticks;
+            request->type = CLOCK_DELAY;
             list_push_back(clock_requests, request);
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
             // DelayUntil() implementation
 
             // TODO return error if delay until request tick is invalid
+            if (msg_buf.data.delay_until.ticks <= ticks) {
+                reply_buf = (ClockResp) {
+                    .type = CLOCK_DELAY_UNTIL,
+                    .data = {
+                        .delay_until = {
+                            .ticks = ticks,
+                            .valid_delay = false,
+                        }
+                    }
+                };
+                Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
+                continue;
+            }
 
             ClockRequest* request = alloc(sizeof(ClockRequest));
-            request->first = from_tid;
-            request->second = msg_buf.data.delay_until.ticks;
+            request->tid = from_tid;
+            request->target_delay = msg_buf.data.delay_until.ticks;
+            request->type = CLOCK_DELAY_UNTIL;
             list_push_back(clock_requests, request);
 
         }
@@ -128,7 +147,37 @@ clockTask()
             Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
 
             // check if any delays requests should be replied to
-            
+            ListIter* it = list_iter(clock_requests); 
+            ClockRequest* clock_request;
+            while ((clock_request = listiter_next(it)) != 0) {
+
+                if (clock_request->target_delay <= ticks) {
+
+                    if (clock_request->type == CLOCK_DELAY) {
+                        reply_buf = (ClockResp) {
+                            .type = CLOCK_DELAY,
+                            .data = {
+                                .delay = {
+                                    .ticks = ticks
+                                }
+                            }
+                        };
+                    } else if (clock_request->type == CLOCK_DELAY_UNTIL) {
+                        reply_buf = (ClockResp) {
+                            .type = CLOCK_DELAY_UNTIL,
+                            .data = {
+                                .delay_until = {
+                                    .ticks = ticks,
+                                    .valid_delay = true,
+                                }
+                            }
+                        };
+                    }
+                    Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
+                    listiter_delete_at(it);
+                }
+            }
+            listiter_deinit(it);
 
 
         } else {

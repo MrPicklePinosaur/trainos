@@ -16,6 +16,7 @@ struct ListNode {
 };
 
 struct ListIter {
+    List* list;
     ListNode* node;
 };
 
@@ -176,6 +177,7 @@ ListIter*
 list_iter(List* list) {
     ListIter* it = alloc(sizeof(ListIter));
     *it = (ListIter) {
+        .list = list,
         .node = list->head
     };
     return it;
@@ -197,7 +199,41 @@ listiter_end(ListIter* it)
 }
 
 void
-listiter_delete(ListIter* it)
+listiter_deinit(ListIter* it)
 {
     free(it);
+}
+
+// Insert item before item pointed to by iter
+void
+listiter_insert_before(ListIter* it, void* item)
+{
+    ListNode* new_node = alloc(sizeof(ListNode));
+    *new_node = (ListNode) {
+        .next = it->node->next,
+        .prev = it->node->prev,
+        .data = item,
+    };
+    
+    // update next and previous node's pointers
+    if (it->node->prev != 0) it->node->prev->next = new_node;
+    if (it->node->next != 0) it->node->next->prev = new_node;
+
+    // set head and tail accordinly
+    if (it->node->prev == 0) it->list->head = new_node; 
+    if (it->node->next == 0) it->list->tail = new_node; 
+}
+
+// Delete item at listiter
+// THE USER MUST ADVANCE THE LIST ITERATOR THEMSELVES
+void
+listiter_delete_at(ListIter* it)
+{
+    if (it->node == 0) return;
+
+    if (it->node->prev == 0) it->list->head = it->node->next;
+    if (it->node->next == 0) it->list->tail = it->node->prev;
+
+    if (it->node->prev != 0) it->node->prev = it->node->next;
+    if (it->node->next != 0) it->node->next = it->node->prev;
 }
