@@ -109,9 +109,7 @@ tasktable_delete_task(Tid tid)
     Task* task = tasktable_get_task(tid);
     task->state = TASKSTATE_EXITED;
     // don't free it for now
-    /*
     arena_free(task->sf);
     arena_free(task);
-    tasktable.tasks[tid] = nullptr;
-    */
+    // tasktable.tasks[tid] = nullptr;
 }

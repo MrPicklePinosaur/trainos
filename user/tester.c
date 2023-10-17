@@ -12,6 +12,7 @@
 void testCbuf();
 void testHashmap();
 void testNameserver();
+void testAlloc();
 
 void
 testHarness()
@@ -21,6 +22,8 @@ testHarness()
     Create(1, &testHashmap);
     Yield();
     Create(5, &testNameserver);
+    Yield();
+    Create(1, &testAlloc);
     Yield();
 
     Exit();
@@ -144,6 +147,21 @@ testNameserver()
     TEST((Tid)WhoIs("firstTask") == task1);
     TEST((Tid)WhoIs("secondTask") == task2);
     TEST((Tid)WhoIs("thirdTask") == 0); // should be not found
+
+    Exit();
+}
+
+void
+testAlloc()
+{
+    println("Running test suite for memory allocator -----------------");
+    void* ptrs[50] = {0};
+    for (int i = 0; i < 50; ++i) {
+        ptrs[i] = alloc(i % 7 + 1);
+    }
+    for (int i = 0; i < 50; ++i) {
+        free(ptrs[i]);
+    }
 
     Exit();
 }

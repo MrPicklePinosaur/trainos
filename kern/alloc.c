@@ -1,5 +1,6 @@
 #include <traindef.h>
 #include "alloc.h"
+#include "dev/uart.h"
 #include "log.h"
 
 /* dumb allocator that maintains a buffer in memory and advances ptr
@@ -24,6 +25,8 @@ struct AllocBlock {
     usize size;
     AllocBlock* next;
 };
+
+void freelist_debug(void);
 
 void
 arena_init(void)
@@ -53,29 +56,31 @@ arena_alloc(size_t size)
         
         // traverse
         if (free_block->size < size) {
-            prev_block = free_block;
             free_block = free_block->next;
             continue;
         }
 
         // split current block if necessary
         if (free_block->size - size >= sizeof(AllocBlock)) {
-            AllocBlock* next_block = free_block + sizeof(AllocBlock) + size;
+            AllocBlock* next_block = (AllocBlock*)((char*)free_block + sizeof(AllocBlock) + size);
             next_block->size = free_block->size - size - sizeof(AllocBlock);
             next_block->next = free_block->next;
 
-            if (prev_block == NULL) {
-                free_list = next_block;
-            } else {
-                prev_block->next = next_block;
-            }
+            free_block->next = next_block;
+        }
+
+        if (prev_block != NULL) {
+            prev_block->next = free_block->next;
+        } else {
+            free_list = free_block->next;
         }
 
         free_block->size = size; 
         free_block->next = NULL;
 
-        void* ptr = free_block + sizeof(AllocBlock);
+        freelist_debug();
 
+        void* ptr = (AllocBlock*)free_block + 1;
         return ptr;
 
     }
@@ -88,7 +93,32 @@ arena_alloc(size_t size)
 void
 arena_free(void* ptr)
 {
-    /* NOP :D */
-    AllocBlock* block = (AllocBlock*)(ptr - sizeof(AllocBlock));
+    AllocBlock* block = (AllocBlock*)ptr - 1;
+
+    PRINT("free %d", block->size);
+
+    // tiny sanitation check
+    if (block->next != NULL) {
+        LOG_WARN("Potentially corrupted malloc data structure or invalid ptr to free");
+        return;
+    }
+
+    // Push to free list
+    block->next = free_list;
+    free_list = block;
+
+    freelist_debug();
+
+    // TODO can try merging adjacent blocks to reduce fragmentization
 }
 
+void
+freelist_debug(void)
+{
+    AllocBlock* block = free_list;
+    while (block != NULL) {
+        uart_printf(CONSOLE, "[%x] %d,%x ", block,block->size, block->next);
+        block = block->next;
+    }
+    uart_printf(CONSOLE, "\n");
+}
