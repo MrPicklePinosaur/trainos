@@ -11,15 +11,27 @@ static const uint32_t GICD_ITARGETS = 0x800;
 static const uint32_t GICC_IAR = 0xC;
 
 void
+gic_target(uint32_t core, uint32_t id)
+{
+    char* target = GICD_BASE + GICD_ITARGETS + 4*(id/4);
+    *(target + id%4) |= 0x1 << core;
+}
+
+void
+gic_enable(uint32_t id)
+{
+    uint32_t* enable = (uint32_t*) (GICD_BASE + GICD_ISENABLE + 4*(id/32));
+    *enable |= 0x1 << (id%32);
+}
+
+void
 gic_init(void)
 {
-    char* target = GICD_BASE + GICD_ITARGETS + 4*(96/4);
-    *(target + 1) |= 0x1;  // ID 97 should target core 0
-    *(target + 3) |= 0x1;  // ID 99 should target core 0
+    gic_target(0, 97);
+    // gic_target(0, 99);
 
-    char* enable = GICD_BASE + GICD_ISENABLE + 4*(96/32);
-    *enable |= 0x2;  // Enable ID 97
-    *enable |= 0x8;  // Enable ID 99
+    gic_enable(97);
+    // gic_enable(99);
 }
 
 uint32_t gic_read_iar(void)
