@@ -60,18 +60,18 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
     Task* current_task = tasktable_get_task(current_tid);
 
     // TODO: disallow sending to self?
-#if 0
     if (current_task->send_buf != 0) {
         LOG_WARN("Own send buffer hasn't been cleaned up");
     }
-#endif
 
-    *(current_task->send_buf) = (SendBuf) {
+    SendBuf* send_buf = arena_alloc(sizeof(send_buf));
+    *send_buf = (SendBuf) {
         .reply_buf = reply,
         .reply_buf_len = rplen,
         .send_buf = 0,
         .send_buf_len = 0,
     };
+    current_task->send_buf = send_buf;
 
     // Find the task in question
     Task* target_task = tasktable_get_task(tid);
@@ -111,6 +111,10 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         /* LOG_DEBUG("buffer for sender tid %x", target_task->receive_buf->sender_tid); */
         *(target_task->receive_buf->sender_tid) = current_tid;
 
+        // delete receive_buf
+        arena_free(target_task->receive_buf);
+        target_task->receive_buf = 0;
+
     }
     else {
 
@@ -146,11 +150,13 @@ handle_svc_receive(int *tid, char *msg, int msglen)
 
         // if no pending messages, go into RECEIVE_WAIT
         set_task_state(current_task, TASKSTATE_RECEIVE_WAIT);
-        *(current_task->receive_buf) = (ReceiveBuf) {
+        ReceiveBuf* receive_buf = arena_alloc(sizeof(ReceiveBuf));
+        *receive_buf = (ReceiveBuf) {
             .buf = msg,
             .buf_len = msglen,
             .sender_tid = tid 
         };
+        current_task->receive_buf = receive_buf;
         LOG_DEBUG("empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
 
     } else {
@@ -203,6 +209,10 @@ handle_svc_reply(int tid, const char *reply, int rplen)
 
     int copylen = min(rplen, target_task->send_buf->reply_buf_len); 
     memcpy(target_task->send_buf->reply_buf, reply, copylen);
+
+    // free the sender's buf
+    free(target_task->send_buf);
+    target_task->send_buf = 0;
 
     // make sender ready again
     set_task_state(target_task, TASKSTATE_READY);

@@ -30,7 +30,7 @@ initTask()
 
     // spawn init tasks
     initNameserverTask();
-    /* Create(1, &clockTask); */
+    Create(1, &clockTask);
     Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
 
     for (;;) {
