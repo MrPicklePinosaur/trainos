@@ -1,10 +1,11 @@
+#include <traindef.h>
 #include "gacha.h"
 #include "log.h"
 #include "kern/dev/timer.h"
 
-uint32_t gacha_rand_num;
+u32 gacha_rand_num;
 
-uint32_t
+u32
 randint(void)
 {
     // glibc random integer implementation
@@ -13,10 +14,10 @@ randint(void)
     return gacha_rand_num;
 }
 
-uint32_t
+u32
 gacha_rarity_distribution(void)
 {
-    uint32_t roll = randint() % 100;
+    u32 roll = randint() % 100;
     if (roll >= 33) {
         return 0;  // 67% chance of rolling a 1 star
     }
@@ -47,8 +48,8 @@ gacha_print_roll(void)
     PRINT("  o}-------------{o               o}-------{o                  o}-------{o               o}------------{o  ");
     PRINT("o}--------------{o                 o}------------{o      o}------------{o                 o}-------------{o");
     PRINT("");
-    for (uint32_t i = 0; i < 5; i++) {
-        uint32_t rarity = gacha_rarity_distribution();
+    for (u32 i = 0; i < 5; i++) {
+        u32 rarity = gacha_rarity_distribution();
         PRINT("%s  +-----------+------------------------------------------------------------------------------------------+  ", RARITY_COLORS[rarity]);
         PRINT("%s  |           |                                                                                          |  ", RARITY_COLORS[rarity]);
         PRINT("%s  | %s |   %s |  ", RARITY_COLORS[rarity], RARITIES[rarity], UNITS[randint() % GACHA_UNIT_COUNT]);

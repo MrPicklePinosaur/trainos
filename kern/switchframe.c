@@ -36,10 +36,10 @@ switchframe_new(Address sp, void (*entrypoint)())
         .x26 = 0,
         .x27 = 0,
         .x28 = 0,
-        .x30 = (uint64_t)entrypoint,
+        .x30 = (u64)entrypoint,
 
-        .sp_el0 = (uint64_t)sp,
-        .elr_el1 = (uint64_t)entrypoint,
+        .sp_el0 = (u64)sp,
+        .elr_el1 = (u64)entrypoint,
         .spsr_el1 = 0,
     };
 }

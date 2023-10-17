@@ -11,7 +11,7 @@ static TaskTable tasktable;
 static Tid current_task;
 
 struct TaskTable {
-    uint32_t next_tid;
+    u32 next_tid;
     TaskNode* task_nodes[TASK_TABLE_SIZE];
 };
 
@@ -22,14 +22,14 @@ tasktable_init(void)
     tasktable = (TaskTable) {
         .next_tid = 1
     };
-    for (uint32_t i = 0; i < TASK_TABLE_SIZE; i++) {
+    for (u32 i = 0; i < TASK_TABLE_SIZE; i++) {
         tasktable.task_nodes[i] = nullptr;
     }
 }
 
 // TODO should introduce error codes
 Tid
-tasktable_create_task(uint32_t priority, void (*entrypoint)())
+tasktable_create_task(u32 priority, void (*entrypoint)())
 {
     Addrspace addrspace = pagetable_createpage();
 
@@ -56,7 +56,7 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
     new_task_node->task = new_task;
     new_task_node->next = nullptr;
 
-    uint32_t index = new_task_id % TASK_TABLE_SIZE;
+    u32 index = new_task_id % TASK_TABLE_SIZE;
     if (!tasktable.task_nodes[index]) {
         tasktable.task_nodes[index] = new_task_node;
     }
@@ -77,7 +77,7 @@ tasktable_create_task(uint32_t priority, void (*entrypoint)())
 Task*
 tasktable_get_task(Tid tid)
 {
-    uint32_t index = tid % TASK_TABLE_SIZE;
+    u32 index = tid % TASK_TABLE_SIZE;
     for (TaskNode* current = tasktable.task_nodes[index]; current != nullptr; current = current->next) {
         if (current->task->tid == tid) {
             return current->task;

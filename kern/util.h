@@ -1,6 +1,7 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <traindef.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "log.h"
@@ -36,9 +37,9 @@ extern int reg_elr(void);
 
 int vbar_value(void);
 
-extern uint32_t asm_esr_el1(void);
-extern uint32_t asm_elr_el1(void);
-extern uint32_t asm_sp_el0(void);
-extern uint32_t asm_spsr_el1(void);
+extern u32 asm_esr_el1(void);
+extern u32 asm_elr_el1(void);
+extern u32 asm_sp_el0(void);
+extern u32 asm_spsr_el1(void);
 
 #endif // __UTIL_H__

@@ -43,10 +43,10 @@ static const char* const RARITY_COLORS[GACHA_RARITY_COUNT] = {
     "\x1b[38;5;46m",
 };
 
-uint32_t randint(void);
+u32 randint(void);
 
 void gacha_init(void);
-uint32_t gacha_rarity_distribution(void);
+u32 gacha_rarity_distribution(void);
 void gacha_print_roll(void);
 
 #endif  // __GACHA_H__

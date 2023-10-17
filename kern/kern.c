@@ -32,7 +32,7 @@ set_task_state(Task* task, TaskState state)
 }
 
 Tid
-handle_svc_create(uint32_t priority, void (*entrypoint)())
+handle_svc_create(u32 priority, void (*entrypoint)())
 {
     LOG_INFO("[SYSCALL] Create task");
     Tid current_tid = tasktable_current_task();
@@ -125,7 +125,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         // task is not in RECEIVE_WAIT, add sending task to recieving tasks' recieve queue 
         LOG_DEBUG("Sending message to task %d, not in RECEIVE_WAIT", tid);
         set_task_state(current_task, TASKSTATE_SEND_WAIT);
-        cbuf_push_front(target_task->receive_queue, (uint8_t)current_tid);
+        cbuf_push_front(target_task->receive_queue, (u8)current_tid);
 
         // also buffer the data we are trying to send
         current_task->send_buf->send_buf = (char*)msg;
@@ -255,7 +255,7 @@ handle_svc(void)
     /* switchframe_debug(sf); */
     /* LOG_DEBUG("current task tid = %d", current_tid); */
 
-    uint32_t opcode = asm_esr_el1() & 0x1FFFFFF;
+    u32 opcode = asm_esr_el1() & 0x1FFFFFF;
     /* LOG_DEBUG("jumped to vector table handler with opcode = %x", opcode); */
     LOG_INFO("[SYSCALL] In task %d", current_tid);
 
@@ -358,8 +358,8 @@ void
 handle_interrupt(void)
 {
 
-    uint32_t iar = gic_read_iar();
-    uint32_t interrupt_id = iar & 0x3FF;  // Get last 10 bits
+    u32 iar = gic_read_iar();
+    u32 interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
     // LOG_DEBUG("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
 

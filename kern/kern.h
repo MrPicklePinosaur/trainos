@@ -25,7 +25,7 @@ void kern_init(void);
 extern void vector_table_init(void);
 void handle_svc(void);
 void handle_interrupt(void);
-Tid handle_svc_create(uint32_t priority, void (*entrypoint)());
+Tid handle_svc_create(u32 priority, void (*entrypoint)());
 
 void unhandled_vector_table(int number);
 

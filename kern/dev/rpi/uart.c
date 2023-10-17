@@ -11,31 +11,31 @@
 /*********** GPIO CONFIGURATION ********************************/
 
 static char* const GPIO_BASE = (char*)(MMIO_BASE + 0x200000);
-static const uint32_t GPFSEL_OFFSETS[6] = {0x00, 0x04, 0x08, 0x0c, 0x10, 0x14};
-static const uint32_t GPIO_PUP_PDN_CNTRL_OFFSETS[4] = {0xe4, 0xe8, 0xec, 0xf0};
+static const u32 GPFSEL_OFFSETS[6] = {0x00, 0x04, 0x08, 0x0c, 0x10, 0x14};
+static const u32 GPIO_PUP_PDN_CNTRL_OFFSETS[4] = {0xe4, 0xe8, 0xec, 0xf0};
 
-#define GPFSEL_REG(reg) (*(uint32_t*)(GPIO_BASE + GPFSEL_OFFSETS[reg]))
-#define GPIO_PUP_PDN_CNTRL_REG(reg) (*(uint32_t*)(GPIO_BASE + GPIO_PUP_PDN_CNTRL_OFFSETS[reg]))
+#define GPFSEL_REG(reg) (*(u32*)(GPIO_BASE + GPFSEL_OFFSETS[reg]))
+#define GPIO_PUP_PDN_CNTRL_REG(reg) (*(u32*)(GPIO_BASE + GPIO_PUP_PDN_CNTRL_OFFSETS[reg]))
 
 // function control settings for GPIO pins
-static const uint32_t GPIO_INPUT  = 0x00;
-static const uint32_t GPIO_OUTPUT = 0x01;
-static const uint32_t GPIO_ALTFN0 = 0x04;
-static const uint32_t GPIO_ALTFN1 = 0x05;
-static const uint32_t GPIO_ALTFN2 = 0x06;
-static const uint32_t GPIO_ALTFN3 = 0x07;
-static const uint32_t GPIO_ALTFN4 = 0x03;
-static const uint32_t GPIO_ALTFN5 = 0x02;
+static const u32 GPIO_INPUT  = 0x00;
+static const u32 GPIO_OUTPUT = 0x01;
+static const u32 GPIO_ALTFN0 = 0x04;
+static const u32 GPIO_ALTFN1 = 0x05;
+static const u32 GPIO_ALTFN2 = 0x06;
+static const u32 GPIO_ALTFN3 = 0x07;
+static const u32 GPIO_ALTFN4 = 0x03;
+static const u32 GPIO_ALTFN5 = 0x02;
 
 // pup/pdn resistor settings for GPIO pins
-static const uint32_t GPIO_NONE = 0x00;
-static const uint32_t GPIO_PUP  = 0x01;
-static const uint32_t GPIO_PDP  = 0x02;
+static const u32 GPIO_NONE = 0x00;
+static const u32 GPIO_PUP  = 0x01;
+static const u32 GPIO_PDP  = 0x02;
 
-static void setup_gpio(uint32_t pin, uint32_t setting, uint32_t resistor) {
-  uint32_t reg   =  pin / 10;
-  uint32_t shift = (pin % 10) * 3;
-  uint32_t status = GPFSEL_REG(reg);   // read status
+static void setup_gpio(u32 pin, u32 setting, u32 resistor) {
+  u32 reg   =  pin / 10;
+  u32 shift = (pin % 10) * 3;
+  u32 status = GPFSEL_REG(reg);   // read status
   status &= ~(7u << shift);              // clear bits
   status |=  (setting << shift);         // set bits
   GPFSEL_REG(reg) = status;
@@ -61,37 +61,37 @@ static char* const UART3_BASE = (char*)(MMIO_BASE + 0x201600);
 static char* const line_uarts[] = { NULL, UART0_BASE, UART3_BASE };
 
 // UART register offsets
-static const uint32_t UART_DR =   0x00;
-static const uint32_t UART_FR =   0x18;
-static const uint32_t UART_IBRD = 0x24;
-static const uint32_t UART_FBRD = 0x28;
-static const uint32_t UART_LCRH = 0x2c;
-static const uint32_t UART_CR =   0x30;
+static const u32 UART_DR =   0x00;
+static const u32 UART_FR =   0x18;
+static const u32 UART_IBRD = 0x24;
+static const u32 UART_FBRD = 0x28;
+static const u32 UART_LCRH = 0x2c;
+static const u32 UART_CR =   0x30;
 
-#define UART_REG(line, offset) (*(volatile uint32_t*)(line_uarts[line] + offset))
+#define UART_REG(line, offset) (*(volatile u32*)(line_uarts[line] + offset))
 
 // masks for specific fields in the UART registers
-static const uint32_t UART_FR_RXFE = 0x10;
-static const uint32_t UART_FR_TXFF = 0x20;
-static const uint32_t UART_FR_RXFF = 0x40;
-static const uint32_t UART_FR_TXFE = 0x80;
+static const u32 UART_FR_RXFE = 0x10;
+static const u32 UART_FR_TXFF = 0x20;
+static const u32 UART_FR_RXFF = 0x40;
+static const u32 UART_FR_TXFE = 0x80;
 
-static const uint32_t UART_CR_UARTEN = 0x01;
-static const uint32_t UART_CR_LBE = 0x80;
-static const uint32_t UART_CR_TXE = 0x100;
-static const uint32_t UART_CR_RXE = 0x200;
-static const uint32_t UART_CR_RTS = 0x800;
-static const uint32_t UART_CR_RTSEN = 0x4000;
-static const uint32_t UART_CR_CTSEN = 0x8000;
+static const u32 UART_CR_UARTEN = 0x01;
+static const u32 UART_CR_LBE = 0x80;
+static const u32 UART_CR_TXE = 0x100;
+static const u32 UART_CR_RXE = 0x200;
+static const u32 UART_CR_RTS = 0x800;
+static const u32 UART_CR_RTSEN = 0x4000;
+static const u32 UART_CR_CTSEN = 0x8000;
 
-static const uint32_t UART_LCRH_PEN = 0x2;
-static const uint32_t UART_LCRH_EPS = 0x4;
-static const uint32_t UART_LCRH_STP2 = 0x8;
-static const uint32_t UART_LCRH_FEN = 0x10;
-static const uint32_t UART_LCRH_WLEN_LOW = 0x20;
-static const uint32_t UART_LCRH_WLEN_HIGH = 0x40;
+static const u32 UART_LCRH_PEN = 0x2;
+static const u32 UART_LCRH_EPS = 0x4;
+static const u32 UART_LCRH_STP2 = 0x8;
+static const u32 UART_LCRH_FEN = 0x10;
+static const u32 UART_LCRH_WLEN_LOW = 0x20;
+static const u32 UART_LCRH_WLEN_HIGH = 0x40;
 
-void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t control);
+void uart_config_and_enable(size_t line, u32 baudrate, u32 control);
 
 // UART initialization, to be called before other UART functions
 // Nothing to do for UART0, for which GPIO is configured during boot process
@@ -112,14 +112,14 @@ void uart_init() {
     // TODO configure marklin uart
 }
 
-static const uint32_t UARTCLK = 48000000;
+static const u32 UARTCLK = 48000000;
 
 // Configure the line properties (e.g, parity, baud rate) of a UART
 // and ensure that it is enabled
-void uart_config_and_enable(size_t line, uint32_t baudrate, uint32_t control) {
-  uint32_t cr_state;
+void uart_config_and_enable(size_t line, u32 baudrate, u32 control) {
+  u32 cr_state;
   // to avoid floating point, this computes 64 times the required baud divisor
-  uint32_t baud_divisor = (uint32_t)((((uint64_t)UARTCLK)*4)/baudrate);
+  u32 baud_divisor = (u32)((((u64)UARTCLK)*4)/baudrate);
 
   // line control registers should not be changed while the UART is enabled, so disable it
   cr_state = UART_REG(line, UART_CR);
@@ -169,7 +169,7 @@ int uart_try_putc(size_t line, unsigned char c) {
 }
 
 void uart_putl(size_t line, const char* buf, size_t blen) {
-  uint32_t i;
+  u32 i;
   for(i=0; i < blen; i++) {
     uart_putc(line, *(buf+i));
   }

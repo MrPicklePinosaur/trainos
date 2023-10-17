@@ -4,9 +4,9 @@
 #include "mem.h"
 
 struct CBuf {
-  uint8_t* data;
-  uint32_t front_ptr;
-  uint32_t back_ptr;
+  u8* data;
+  u32 front_ptr;
+  u32 back_ptr;
   size_t len;
   size_t max_len;
 };
@@ -14,7 +14,7 @@ struct CBuf {
 CBuf*
 cbuf_new(size_t max_len)
 {
-    uint8_t* data_buf = alloc(sizeof(uint8_t)*max_len);
+    u8* data_buf = alloc(sizeof(u8)*max_len);
     CBuf* cbuf = alloc(sizeof(CBuf));
     *cbuf = (CBuf) {
         .data = data_buf,
@@ -34,13 +34,13 @@ cbuf_delete(CBuf* cbuf)
     free(cbuf);
 }
 
-uint8_t
+u8
 cbuf_front(CBuf* cbuf)
 {
    return cbuf->data[cbuf->front_ptr];
 }
 
-uint8_t
+u8
 cbuf_back(CBuf* cbuf)
 {
     // TODO handle if empty
@@ -49,7 +49,7 @@ cbuf_back(CBuf* cbuf)
 
 // Returns 1 if buffer is full
 int
-cbuf_push_front(CBuf* cbuf, uint8_t byte)
+cbuf_push_front(CBuf* cbuf, u8 byte)
 {
     if (cbuf->len >= cbuf->max_len) return 1;
 
@@ -62,7 +62,7 @@ cbuf_push_front(CBuf* cbuf, uint8_t byte)
 
 // Returns 1 if buffer is full
 int
-cbuf_push_back(CBuf* cbuf, uint8_t byte)
+cbuf_push_back(CBuf* cbuf, u8 byte)
 {
     if (cbuf->len >= cbuf->max_len) return 1;
 
@@ -73,13 +73,13 @@ cbuf_push_back(CBuf* cbuf, uint8_t byte)
     return 0;
 }
 
-uint8_t
+u8
 cbuf_pop_front(CBuf* cbuf)
 {
     // TODO handle if buf is empty (this is bad default value)
     if (cbuf->len == 0) return 0;
 
-    uint8_t data = cbuf->data[cbuf->front_ptr];
+    u8 data = cbuf->data[cbuf->front_ptr];
 
     cbuf->front_ptr = (cbuf->front_ptr+1) % cbuf->max_len;
     --(cbuf->len);
@@ -87,27 +87,27 @@ cbuf_pop_front(CBuf* cbuf)
     return data;
 }
 
-uint8_t
+u8
 cbuf_pop_back(CBuf* cbuf)
 {
     // TODO handle if buf is empty
     if (cbuf->len == 0) return 0;
 
     cbuf->back_ptr = (cbuf->back_ptr-1) % cbuf->max_len;
-    uint8_t data = cbuf->data[cbuf->back_ptr];
+    u8 data = cbuf->data[cbuf->back_ptr];
 
     --(cbuf->len);
 
     return data;
 }
 
-uint32_t
+u32
 cbuf_len(CBuf* cbuf)
 {
     return cbuf->len;
 }
 
-uint8_t
+u8
 cbuf_get(CBuf* cbuf, size_t index)
 {
     if (index >= cbuf->len) return 0;

@@ -58,14 +58,14 @@ K2()
 }
 
 void
-send_perf_test(uint32_t msglen)
+send_perf_test(u32 msglen)
 {
     char* msg = alloc(sizeof(char)*msglen);
     char* reply_buf = alloc(sizeof(char)*msglen);
 
     Timer* timer = timer_new();
 
-    for (uint32_t i = 0; i < PERF_TEST_REPITITIONS; i++) {
+    for (u32 i = 0; i < PERF_TEST_REPITITIONS; i++) {
         timer_start(timer);
         Send((Tid)receive_tid, msg, msglen, reply_buf, msglen);
         timer_end(timer);
@@ -75,13 +75,13 @@ send_perf_test(uint32_t msglen)
 }
 
 void
-receive_perf_test(uint32_t msglen)
+receive_perf_test(u32 msglen)
 {
     int from_tid;
     char* receive_buf = alloc(sizeof(char)*msglen);
     char* reply_msg = alloc(sizeof(char)*msglen);
 
-    for (uint32_t i = 0; i < PERF_TEST_REPITITIONS; i++) {
+    for (u32 i = 0; i < PERF_TEST_REPITITIONS; i++) {
         Receive((int*)&from_tid, receive_buf, msglen);
         Reply(sender_tid, reply_msg, msglen);
     }

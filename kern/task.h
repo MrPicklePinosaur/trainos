@@ -9,7 +9,7 @@
 
 #define TASK_TABLE_SIZE 128
 
-typedef uint32_t Tid;
+typedef u32 Tid;
 
 typedef enum {
     TASKSTATE_ACTIVE,
@@ -48,7 +48,7 @@ typedef struct {
     Tid tid;
     Tid parent_tid;
     TaskState state;
-    uint32_t priority;
+    u32 priority;
     Addrspace addrspace;
 
     CBuf* receive_queue;
@@ -66,7 +66,7 @@ struct TaskNode {
 };
 
 void tasktable_init(void);
-Tid tasktable_create_task(uint32_t priority, void (*entrypoint)());
+Tid tasktable_create_task(u32 priority, void (*entrypoint)());
 Task* tasktable_get_task(Tid tid);
 
 // Update the current active tasks. If a task was active before, it will be made into ready

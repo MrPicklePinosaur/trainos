@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <traindef.h>
 
 #include "addrspace.h"
 #include "kern/dev/uart.h"
@@ -50,6 +51,6 @@ pagetable_createpage(void)
 void
 pagetable_deletepage(Addrspace* addrspace)
 {
-    size_t index = ((uint64_t)addrspace->base - (uint64_t)&pagetable)/USER_ADDRSPACE_SIZE;
+    size_t index = ((u64)addrspace->base - (u64)&pagetable)/USER_ADDRSPACE_SIZE;
     pagetable.entries[index] &= (~PTE_ALLOCATED);
 }

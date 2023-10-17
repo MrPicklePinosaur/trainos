@@ -4,28 +4,28 @@
 #include "alloc.h"
 
 SchedulerNode* mlq[NUM_PRIORITY_LEVELS];
-uint32_t task_count;
+u32 task_count;
 
 void
 scheduler_init(void)
 {
     task_count = 0;
-    for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+    for (u32 i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         mlq[i] = nullptr;
     }
 }
 
-uint32_t
+u32
 scheduler_count(void)
 {
     return task_count;
 }
 
 // Return task coutn for a given level of the queue
-uint32_t
+u32
 scheduler_count_level(SchedulerNode* node)
 {
-    uint32_t count = 0;
+    u32 count = 0;
     while (node != nullptr) {
         ++count;
         node = node->next;
@@ -33,7 +33,7 @@ scheduler_count_level(SchedulerNode* node)
     return count;
 }
 
-uint32_t scheduler_valid_priority(uint32_t priority) {
+u32 scheduler_valid_priority(u32 priority) {
     return priority < NUM_PRIORITY_LEVELS;
 }
 
@@ -57,7 +57,7 @@ do_scheduler_insert(SchedulerNode* node)
 }
 
 void
-scheduler_insert(Tid tid, uint32_t priority)
+scheduler_insert(Tid tid, u32 priority)
 {
     LOG_DEBUG("inserting task id %d, with priority %d, previous task_count = %d", tid, priority, task_count);
 
@@ -78,8 +78,8 @@ scheduler_insert(Tid tid, uint32_t priority)
 Tid
 scheduler_next(void)
 {
-    for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
-        for (uint32_t j = 0; j < scheduler_count_level(mlq[i]); ++j) {
+    for (u32 i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+        for (u32 j = 0; j < scheduler_count_level(mlq[i]); ++j) {
             SchedulerNode* queue_top = mlq[i];
             mlq[i] = mlq[i]->next;
             queue_top->next = nullptr;
@@ -103,7 +103,7 @@ scheduler_remove(Tid tid)
         return;
     }
 
-    for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+    for (u32 i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         SchedulerNode* previous = nullptr;
         SchedulerNode* current = mlq[i];
         for (; current != nullptr;) {
@@ -127,7 +127,7 @@ scheduler_remove(Tid tid)
 }
 
 void scheduler_unblock_event(int eventid) {
-    for (uint32_t i = 0; i < NUM_PRIORITY_LEVELS; i++) {
+    for (u32 i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         SchedulerNode* current = mlq[i];
         for (; current != nullptr;) {
             Task* task = tasktable_get_task(current->tid);

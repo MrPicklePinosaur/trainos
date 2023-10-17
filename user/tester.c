@@ -41,7 +41,7 @@ testCbuf()
     cbuf_push_front(out_stream, 0x3);
     TEST(cbuf_len(out_stream) == 3);
 
-    uint8_t val = cbuf_pop_front(out_stream);
+    u8 val = cbuf_pop_front(out_stream);
     TEST(cbuf_len(out_stream) == 2);
     TEST(val == 0x3);
 

@@ -1,5 +1,5 @@
-#ifndef __TRAINSTD_TYPES_H__
-#define __TRAINSTD_TYPES_H__
+#ifndef __TRAINDEF_H__
+#define __TRAINDEF_H__
 
 #include <stdint.h>
 #include <stddef.h>
@@ -22,4 +22,4 @@ typedef size_t usize;
 
 typedef char byte;
 
-#endif // __TRAINSTD_TYPES_H__
+#endif // __TRAINDEF_H__

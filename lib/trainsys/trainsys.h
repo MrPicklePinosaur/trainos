@@ -3,9 +3,9 @@
 
 /* System call interface */
 
-#include <stdint.h>
+#include <traindef.h>
 
-typedef uint32_t Tid;
+typedef u32 Tid;
 
 typedef enum {
     EVENT_NONE = 0,

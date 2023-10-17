@@ -2,6 +2,7 @@
 #define __ADDRSPACE_H__
 
 #include <stdint.h>
+#include <traindef.h>
 
 typedef unsigned char* Address;
 
@@ -17,7 +18,7 @@ typedef struct {
 } Addrspace;
 
 // bit mask for page table state
-typedef uint16_t PageTableEntry;
+typedef u16 PageTableEntry;
 #define PTE_ALLOCATED 0x1
 
 void pagetable_init(void);

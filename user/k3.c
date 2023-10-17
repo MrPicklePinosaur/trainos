@@ -14,8 +14,8 @@ awaitEventTest()
 }
 
 typedef struct {
-    uint32_t delay;
-    uint32_t num_delays;
+    u32 delay;
+    u32 num_delays;
 } K3Resp;
 
 typedef struct {
@@ -30,7 +30,7 @@ K3Client()
     Send(MyParentTid(), (char*)&dummy, sizeof(K3Resp), (char*)&resp_buf, sizeof(K3Resp));
 
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    for (uint32_t i = 0; i < resp_buf.num_delays; ++i) {
+    for (u32 i = 0; i < resp_buf.num_delays; ++i) {
         /* Delay(clock_server, resp_buf.delay); */
         println("Tid: %u, delay interval: %u, completed delays: %u", MyTid(), resp_buf.delay, i+1);
     }
@@ -49,10 +49,10 @@ K3()
     int from_tid;
     K3Msg dummy;
 
-    uint32_t delay[4] = {10, 23, 33, 71};
-    uint32_t num_delays[4] = {20, 9, 6, 3};
+    u32 delay[4] = {10, 23, 33, 71};
+    u32 num_delays[4] = {20, 9, 6, 3};
 
-    for (uint32_t i = 0; i < 4; i++) {
+    for (u32 i = 0; i < 4; i++) {
         Receive(&from_tid, (char*)&dummy, sizeof(K3Msg));
 
         K3Resp resp = (K3Resp) {

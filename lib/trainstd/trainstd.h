@@ -2,6 +2,7 @@
 #define __TRAINSTD_H__
 
 #include <stddef.h>
+#include <traindef.h>
 
 #include "list.h"
 #include "mem.h"
@@ -10,7 +11,6 @@
 #include "hashmap.h"
 #include "conv.h"
 #include "timer.h"
-#include "types.h"
 
 void println(char* format, ...);
 void print(char* format, ...);
