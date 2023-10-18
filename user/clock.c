@@ -278,12 +278,12 @@ int DelayUntil(Tid clock_server, int ticks) {
         return -2;
     }
 
-    return resp_buf.data.time.ticks;
+    return resp_buf.data.delay_until.ticks;
 }
 
 void Tick(Tid clock_server) {
     ClockResp resp_buf;
-    ClockMsg send_buf = {
+    ClockMsg send_buf = (ClockMsg) {
         .type = CLOCK_TICK,
         .data = {
             .tick = {}
