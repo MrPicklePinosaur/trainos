@@ -68,7 +68,7 @@ nameserverTask()
             // insert namespace into list
             // TODO we don't handle duplicate names (the later one is ignored)
             // TODO this structure is leaked
-            NsdbEntry* nsdb_entry = alloc(sizeof(nsdb_entry)); 
+            NsdbEntry* nsdb_entry = alloc(sizeof(NsdbEntry)); 
             *nsdb_entry = (NsdbEntry) {
                 // TODO this might be dangerous, should we copy the string? Since it technically belongs to another task?
                 .name = msg_buf.data.register_as.name,
