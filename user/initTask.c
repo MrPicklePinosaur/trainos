@@ -33,6 +33,9 @@ initTask()
     Create(1, &clockTask);
     Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
 
+    Create(5, &K3);
+    Yield();
+
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
         for (size_t i = 0; task_menu[i] != 0; ++i) {
@@ -40,7 +43,6 @@ initTask()
         }
         println("======================================================");
 
-#if 0
         int ch = getc() - '0';
 
         /* int ch; */
@@ -53,10 +55,8 @@ initTask()
         }
         Create(5, task_menu[ch]->taskFn);
         Yield();
-#endif
-        Create(5, &K3);
-        Yield();
     }
+
     Exit();
 }
 

@@ -11,6 +11,7 @@
 
 void testCbuf();
 void testHashmap();
+void testList();
 void testNameserver();
 void testAlloc();
 
@@ -20,6 +21,8 @@ testHarness()
     Create(1, &testCbuf);
     Yield();
     Create(1, &testHashmap);
+    Yield();
+    Create(1, &testList);
     Yield();
     Create(5, &testNameserver);
     Yield();
@@ -114,6 +117,13 @@ testHashmap()
     TEST(hashmap_get(map, "five", &success) == (void*)0);
     TEST(!success);
 
+    Exit();
+}
+
+void
+testList()
+{
+    println("Running test suite for list -----------------");
     Exit();
 }
 

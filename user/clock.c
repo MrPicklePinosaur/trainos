@@ -46,16 +46,13 @@ typedef struct {
 
 void Tick(Tid clock_server);
 
-u32 ticks;
 
 void notifierTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (;;) {
         AwaitEvent(EVENT_CLOCK_TICK); 
-        /* Tick(clock_server); */
-        ++ticks;
-        println("tick %d", ticks);
+        Tick(clock_server);
     }
 }
 
@@ -73,7 +70,7 @@ clockTask()
     timer_init_c1();
 
     List* clock_requests = list_init(); // TODO could make this sorted list
-    ticks = 0;
+    u32 ticks = 0;
 
     ClockMsg msg_buf;
     ClockResp reply_buf;
@@ -109,7 +106,7 @@ clockTask()
         }
         else if (msg_buf.type == CLOCK_DELAY) {
 
-            println("[CLOCK SERVER] DELAY request from %d", from_tid);
+            println("[CLOCK SERVER] DELAY request from %d, trigger at %d", from_tid, msg_buf.data.delay.ticks + ticks);
 
             // Delay() implementation
             ClockRequest* request = alloc(sizeof(ClockRequest));
@@ -123,7 +120,7 @@ clockTask()
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
 
-            println("[CLOCK SERVER] DELAY_UNTIL request from %d", from_tid);
+            println("[CLOCK SERVER] DELAY_UNTIL request from %d, trigger at %d", from_tid, msg_buf.data.delay_until.ticks);
 
             // DelayUntil() implementation
 
@@ -143,16 +140,19 @@ clockTask()
             }
 
             ClockRequest* request = alloc(sizeof(ClockRequest));
-            request->tid = from_tid;
-            request->target_delay = msg_buf.data.delay_until.ticks;
-            request->type = CLOCK_DELAY_UNTIL;
+            *request = (ClockRequest) {
+                .tid = from_tid,
+                .target_delay = msg_buf.data.delay_until.ticks,
+                .type = CLOCK_DELAY_UNTIL
+            };
             list_push_back(clock_requests, request);
 
         }
         else if (msg_buf.type == CLOCK_TICK) {
-            /* println("[CLOCK SERVER] tick"); */
 
             ++ticks;
+
+            println("[CLOCK SERVER] tick %d", ticks);
 
             reply_buf = (ClockResp) {
                 .type = CLOCK_TICK,
@@ -162,7 +162,6 @@ clockTask()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
 
-#if 0
             // check if any delays requests should be replied to
             ListIter* it = list_iter(clock_requests); 
             ClockRequest* clock_request;
@@ -190,13 +189,12 @@ clockTask()
                             }
                         };
                     }
+                    println("delay request done for %d", from_tid);
                     Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
                     listiter_delete_at(it);
                 }
             }
             listiter_deinit(it);
-#endif
-
 
         } else {
             println("[CLOCK SERVER] Invalid message type");

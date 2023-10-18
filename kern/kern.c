@@ -384,17 +384,19 @@ handle_interrupt(void)
 
     gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
 
-#if 0
     Tid next_tid = find_next_task();
     Task* next_task = tasktable_get_task(next_tid);
     tasktable_set_current_task(next_tid);
     asm_enter_usermode(next_task->sf);
-#endif
+
+#if 0
+    // currently only returning to task interrupt happened in to ensure there is no concurrency (otherwise we need mutual exclusion)
     Tid next_tid = tasktable_current_task();
     Task* next_task = tasktable_get_task(next_tid);
     tasktable_set_current_task(next_tid);
     /* PRINT("[INTERRUPT] returning to task %d", next_task->tid); */
     asm_enter_usermode(next_task->sf);
+#endif
 }
 
 void
