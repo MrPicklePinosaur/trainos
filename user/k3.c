@@ -25,9 +25,9 @@ typedef struct {
 void
 K3Client()
 {
-    K3Resp resp_buf;
     K3Msg dummy;
-    Send(MyParentTid(), (char*)&dummy, sizeof(K3Resp), (char*)&resp_buf, sizeof(K3Resp));
+    K3Resp resp_buf;
+    Send(MyParentTid(), (char*)&dummy, sizeof(K3Msg), (char*)&resp_buf, sizeof(K3Resp));
 
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (u32 i = 0; i < resp_buf.num_delays; ++i) {

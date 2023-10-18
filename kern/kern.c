@@ -100,6 +100,9 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
             PANIC("receiving task doesn't have initalized receive buffer");
         }
 
+        if (msglen != target_task->receive_buf->buf_len) {
+            LOG_WARN("sender (msglen %d) and receiver (receive_buf len %d) don't have same receive buf len", msglen, target_task->receive_buf->buf_len);
+        }
         int copylen = min(msglen, target_task->receive_buf->buf_len); 
         memcpy(target_task->receive_buf->buf, msg, copylen);
         
@@ -180,6 +183,9 @@ handle_svc_receive(int *tid, char *msg, int msglen)
             PANIC("send buf is not initalized");
         }
 
+        if (msglen != sender_task->send_buf->send_buf_len) {
+            LOG_WARN("sender (send_buf %d) and receiver (msglen %d) don't have same send buf len", sender_task->send_buf->send_buf_len, msglen);
+        }
         int copylen = min(sender_task->send_buf->send_buf_len, msglen); 
         memcpy(msg, sender_task->send_buf->send_buf, copylen);
 
