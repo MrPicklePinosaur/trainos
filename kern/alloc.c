@@ -31,7 +31,11 @@ cursor_alloc_init(void)
 void*
 cursor_alloc(size_t size)
 {
-    PRINT("alloc %d cursor %d", size, cursor);
+    /* PRINT("alloc %d cursor %d, bounds check %x %x", size, cursor, CURSOR_ALLOC_HEAP_BASE + cursor + size, CURSOR_ALLOC_HEAP_BASE+CURSOR_ALLOC_ALLOCATOR_SIZE); */
+
+    // align size to 8 bit word boundry
+    if (size % 8 != 0) size += (8 - size % 8);
+
     // bounds check
     if (CURSOR_ALLOC_HEAP_BASE + cursor + size >= CURSOR_ALLOC_HEAP_BASE+CURSOR_ALLOC_ALLOCATOR_SIZE) {
         PANIC("arena allocator is out of memory %d", cursor);

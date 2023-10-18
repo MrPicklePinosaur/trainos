@@ -55,22 +55,20 @@ void notifierTask()
         AwaitEvent(EVENT_CLOCK_TICK); 
         /* Tick(clock_server); */
         ++ticks;
+        println("tick %d", ticks);
     }
 }
+
+typedef struct {
+    Tid tid;
+    int target_delay;
+    ClockMsgType type;
+} ClockRequest;
 
 void
 clockTask()
 {
-    typedef struct {
-        Tid tid;
-        int target_delay;
-        ClockMsgType type;
-    } ClockRequest;
-
     RegisterAs(CLOCK_ADDRESS);
-
-    Create(1, &notifierTask);
-    Yield();
 
     timer_init_c1();
 
@@ -79,9 +77,13 @@ clockTask()
 
     ClockMsg msg_buf;
     ClockResp reply_buf;
+    int from_tid;
+
+    // TODO need to ensure clock is registered with nameserver
+    Create(1, &notifierTask);
+    Yield();
 
     for (;;) {
-        int from_tid;
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(ClockMsg));
         if (msg_len < 0) {
             println("[CLOCK SERVER] Error when receiving");
@@ -110,12 +112,14 @@ clockTask()
             println("[CLOCK SERVER] DELAY request from %d", from_tid);
 
             // Delay() implementation
-
             ClockRequest* request = alloc(sizeof(ClockRequest));
-            request->tid = from_tid;
-            request->target_delay = msg_buf.data.delay_until.ticks + ticks;
-            request->type = CLOCK_DELAY;
+            *request = (ClockRequest) {
+                .tid = from_tid,
+                .target_delay = msg_buf.data.delay.ticks + ticks,
+                .type = CLOCK_DELAY
+            };
             list_push_back(clock_requests, request);
+
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
 

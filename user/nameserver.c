@@ -63,7 +63,7 @@ nameserverTask()
         }
 
         if (msg_buf.type == NS_REGISTER_AS) {
-            // println("Got register as request from %d", from_tid);
+            println("Got register as request from %d for %s", from_tid, msg_buf.data.register_as.name);
 
             // insert namespace into list
             // TODO we don't handle duplicate names (the later one is ignored)
@@ -75,7 +75,7 @@ nameserverTask()
                 .tid = from_tid,
             };
             list_push_back(nsdb, nsdb_entry);
-            // println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
+            //println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_REGISTER_AS,
@@ -102,7 +102,7 @@ nameserverTask()
             }
             listiter_deinit(it);
 
-            // println("whois look up found %d", lookup_tid);
+            println("whois look up found tid %d for %s", lookup_tid, msg_buf.data.who_is.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_WHO_IS,
@@ -158,6 +158,10 @@ WhoIs(const char *name)
     if (ret < 0) return -1;
 
     if (resp_buf.type != NS_WHO_IS) return -1;
+
+    if (resp_buf.data.who_is.tid == 0) {
+        println("Couldn't find tid for name %s", name);
+    }
 
     // println("who is result is %d", resp_buf.data.who_is.tid);
 

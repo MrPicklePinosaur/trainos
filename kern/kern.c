@@ -369,7 +369,7 @@ handle_interrupt(void)
     u32 iar = gic_read_iar();
     u32 interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
-    // PRINT("[INTERRUPT] ID: %d, IAR: %d from task %d", interrupt_id, iar, tasktable_current_task());
+    /* PRINT("[INTERRUPT] ID: %d, IAR: %d from task %d", interrupt_id, iar, tasktable_current_task()); */
 
     // Timer task
     if (interrupt_id == 97) {
@@ -381,15 +381,20 @@ handle_interrupt(void)
 
     // Find next task to go to
     // TODO commenting for now since scheduler allocates memory and doesn't reclaim
+
+    gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
+
+#if 0
     Tid next_tid = find_next_task();
     Task* next_task = tasktable_get_task(next_tid);
     tasktable_set_current_task(next_tid);
-
-    // PRINT("[INTERRUPT] returning to task %d", next_tid);
-    gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
-
     asm_enter_usermode(next_task->sf);
-    // asm_enter_usermode(tasktable_get_task(tasktable_current_task())->sf); // TODO we might want to use the scheduler to find next task
+#endif
+    Tid next_tid = tasktable_current_task();
+    Task* next_task = tasktable_get_task(next_tid);
+    tasktable_set_current_task(next_tid);
+    /* PRINT("[INTERRUPT] returning to task %d", next_task->tid); */
+    asm_enter_usermode(next_task->sf);
 }
 
 void

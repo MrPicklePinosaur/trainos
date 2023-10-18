@@ -70,7 +70,7 @@ K3()
     Create(5, &K3Client);
     Create(6, &K3Client);
 
-    Create(15, &idleTask);
+    /* Create(15, &idleTask); */
 
     int from_tid;
     K3Msg dummy;

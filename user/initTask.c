@@ -40,6 +40,7 @@ initTask()
         }
         println("======================================================");
 
+#if 0
         int ch = getc() - '0';
 
         /* int ch; */
@@ -51,6 +52,9 @@ initTask()
             continue;
         }
         Create(5, task_menu[ch]->taskFn);
+        Yield();
+#endif
+        Create(5, &K3);
         Yield();
     }
     Exit();

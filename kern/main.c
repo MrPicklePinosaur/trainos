@@ -11,9 +11,9 @@
 
 int kmain() {
 
-    set_log_level(LOG_LEVEL_WARN);
-    
     kern_init();
+
+    set_log_level(LOG_LEVEL_DEBUG);
 
     // print the banner
     PRINT("");
