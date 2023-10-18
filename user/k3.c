@@ -31,11 +31,35 @@ K3Client()
 
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (u32 i = 0; i < resp_buf.num_delays; ++i) {
-        /* Delay(clock_server, resp_buf.delay); */
+        // Delay(clock_server, resp_buf.delay);
         println("Tid: %u, delay interval: %u, completed delays: %u", MyTid(), resp_buf.delay, i+1);
     }
 
     Exit();
+}
+
+void
+idleTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    uint32_t start_tick = Time(clock_server);
+    uint32_t target_tick = start_tick + 1;
+    uint32_t total_ticks = 0;
+
+    for (;;) {
+        uint32_t current_tick = DelayUntil(clock_server, target_tick);
+
+        ++total_ticks;
+        if (target_tick + 1 > current_tick) {
+            ++target_tick;
+        }
+        else {
+            target_tick = current_tick + 1;
+        }
+
+        println("Idle task percentage: %u", (total_ticks * 100) / (current_tick - start_tick));
+    }
 }
 
 void
@@ -45,6 +69,8 @@ K3()
     Create(4, &K3Client);
     Create(5, &K3Client);
     Create(6, &K3Client);
+
+    Create(15, &idleTask);
 
     int from_tid;
     K3Msg dummy;
