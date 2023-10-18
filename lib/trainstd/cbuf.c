@@ -51,7 +51,9 @@ cbuf_back(CBuf* cbuf)
 int
 cbuf_push_front(CBuf* cbuf, u8 byte)
 {
-    if (cbuf->len >= cbuf->max_len) return 1;
+    if (cbuf->len >= cbuf->max_len) {
+        return 1;
+    }
 
     cbuf->front_ptr = (cbuf->front_ptr-1) % cbuf->max_len;
     cbuf->data[cbuf->front_ptr] = byte;

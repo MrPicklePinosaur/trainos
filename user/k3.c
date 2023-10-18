@@ -31,7 +31,7 @@ K3Client()
 
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (u32 i = 0; i < resp_buf.num_delays; ++i) {
-        // Delay(clock_server, resp_buf.delay);
+        Delay(clock_server, resp_buf.delay);
         println("Tid: %u, delay interval: %u, completed delays: %u", MyTid(), resp_buf.delay, i+1);
     }
 

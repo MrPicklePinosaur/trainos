@@ -1,13 +1,26 @@
 #include "log.h"
 #include "kern/dev/uart.h"
 
-static LogLevel log_level = LOG_LEVEL_WARN;
+LogLevel log_level;
+
+void
+log_init(void)
+{
+    log_level = LOG_LEVEL_WARN;
+}
 
 void
 set_log_level(LogLevel level)
 {
     log_level = level;
 }
+
+int
+get_log_level()
+{
+    return log_level;
+}
+
 
 void
 _log(LogLevel level, char* prefix, char* format, ...)

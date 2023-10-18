@@ -11,45 +11,34 @@
 typedef struct ArenaAllocator ArenaAllocator;
 typedef struct AllocBlock AllocBlock;
 
-// TODO becareful that tasks don't run into the heap
-static unsigned char* const HEAP_BASE = (unsigned char*)0x00800000;
-static AllocBlock* free_list = NULL;
-
-// 1mb heap
-#define ARENA_ALLOCATOR_SIZE 0x10000
-
 typedef struct ArenaAllocator ArenaAllocator;
 
 // TODO becareful that tasks don't run into the heap
-static unsigned char* const CURSOR_ALLOC_HEAP_BASE = (unsigned char*)0x00800000;
-static ArenaAllocator* alloc = (ArenaAllocator*)CURSOR_ALLOC_HEAP_BASE;
+unsigned char* CURSOR_ALLOC_HEAP_BASE;
+
+size_t cursor;
 
 // 1mb heap
-#define CURSOR_ALLOC_ALLOCATOR_SIZE 0x10000
-struct ArenaAllocator {
-    size_t cursor;
-    unsigned int* buf[CURSOR_ALLOC_ALLOCATOR_SIZE];
-};
+#define CURSOR_ALLOC_ALLOCATOR_SIZE 0x00100000
 
 void
 cursor_alloc_init(void)
 {
-    *alloc = (ArenaAllocator) {
-        .cursor = 0
-    };
+    CURSOR_ALLOC_HEAP_BASE = (unsigned char*)0x00800000;
+    cursor = 0;
 }
 
 void*
 cursor_alloc(size_t size)
 {
-    PRINT("alloc %d", size);
+    PRINT("alloc %d cursor %d", size, cursor);
     // bounds check
-    if (alloc->cursor + size >= CURSOR_ALLOC_ALLOCATOR_SIZE) {
-        PANIC("arena allocator is out of memory");
+    if (CURSOR_ALLOC_HEAP_BASE + cursor + size >= CURSOR_ALLOC_HEAP_BASE+CURSOR_ALLOC_ALLOCATOR_SIZE) {
+        PANIC("arena allocator is out of memory %d", cursor);
     }
 
-    void* ptr = alloc->buf + alloc->cursor;
-    alloc->cursor += size;
+    void* ptr = CURSOR_ALLOC_HEAP_BASE + cursor;
+    cursor += size;
 
     return ptr;
 }
@@ -59,6 +48,13 @@ cursor_free(void* ptr)
 {
     /* NOP :D */
 }
+
+// TODO becareful that tasks don't run into the heap
+static unsigned char* const HEAP_BASE = (unsigned char*)0x00800000;
+static AllocBlock* free_list = NULL;
+
+// 1mb heap
+#define ARENA_ALLOCATOR_SIZE 0x10000
 
 struct AllocBlock {
     usize size;

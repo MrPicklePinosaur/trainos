@@ -46,12 +46,15 @@ typedef struct {
 
 void Tick(Tid clock_server);
 
+u32 ticks;
+
 void notifierTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (;;) {
         AwaitEvent(EVENT_CLOCK_TICK); 
-        Tick(clock_server);
+        /* Tick(clock_server); */
+        ++ticks;
     }
 }
 
@@ -66,13 +69,13 @@ clockTask()
 
     RegisterAs(CLOCK_ADDRESS);
 
-    Create(0, &notifierTask);
+    Create(1, &notifierTask);
     Yield();
 
     timer_init_c1();
 
     List* clock_requests = list_init(); // TODO could make this sorted list
-    u32 ticks = 0;
+    ticks = 0;
 
     ClockMsg msg_buf;
     ClockResp reply_buf;

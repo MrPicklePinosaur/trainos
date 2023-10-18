@@ -45,7 +45,7 @@ pagetable_createpage(void)
         }
     }
     // TODO return error
-    LOG_ERROR("Out of space in page table");
+    PANIC("Out of space in page table");
 }
 
 void

@@ -13,7 +13,9 @@ typedef enum {
     LOG_LEVEL_DEBUG = 4,
 } LogLevel;
 
+void log_init(void);
 void set_log_level(LogLevel level);
+int get_log_level(void);
 void _log(LogLevel level, char* prefix, char* format, ...);
 
 #define LOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)

@@ -10,7 +10,7 @@ static unsigned char* const KERN_BASE = (unsigned char*)0x00200000;
 static unsigned char* const USER_BASE = (unsigned char*)0x00220000;
 static const unsigned int USER_ADDRSPACE_SIZE = 0x00010000; // 1mb (in number of words)
 
-#define MAX_PAGES 1024
+#define MAX_PAGES 256
 
 typedef struct {
     Address base;

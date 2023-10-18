@@ -16,6 +16,7 @@ void
 kern_init(void)
 {
     uart_init();
+    log_init();
     arena_init();
     pagetable_init();
     tasktable_init();
@@ -62,18 +63,17 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
     Task* current_task = tasktable_get_task(current_tid);
 
     // TODO: disallow sending to self?
-    if (current_task->send_buf != 0) {
+    if (current_task->send_buf->in_use == true) {
         LOG_WARN("Own send buffer hasn't been cleaned up");
     }
 
-    SendBuf* send_buf = arena_alloc(sizeof(send_buf));
-    *send_buf = (SendBuf) {
+    *(current_task->send_buf) = (SendBuf) {
+        .in_use = true,
         .reply_buf = reply,
         .reply_buf_len = rplen,
         .send_buf = 0,
         .send_buf_len = 0,
     };
-    current_task->send_buf = send_buf;
 
     // Find the task in question
     Task* target_task = tasktable_get_task(tid);
@@ -96,7 +96,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         LOG_DEBUG("Sending message to task %d, in RECEIVE_WAIT", tid);
 
         // copy message to buffer
-        if (target_task->receive_buf == NULL) {
+        if (target_task->receive_buf->in_use == false) {
             PANIC("receiving task doesn't have initalized receive buffer");
         }
 
@@ -114,8 +114,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         *(target_task->receive_buf->sender_tid) = current_tid;
 
         // delete receive_buf
-        arena_free(target_task->receive_buf);
-        target_task->receive_buf = 0;
+        target_task->receive_buf->in_use = false;
 
     }
     else {
@@ -127,7 +126,9 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         // task is not in RECEIVE_WAIT, add sending task to recieving tasks' recieve queue 
         LOG_DEBUG("Sending message to task %d, not in RECEIVE_WAIT", tid);
         set_task_state(current_task, TASKSTATE_SEND_WAIT);
-        cbuf_push_front(target_task->receive_queue, (u8)current_tid);
+        if (cbuf_push_front(target_task->receive_queue, (u8)current_tid) == 1) {
+            PANIC("receive queue is full");
+        }
 
         // also buffer the data we are trying to send
         current_task->send_buf->send_buf = (char*)msg;
@@ -152,13 +153,13 @@ handle_svc_receive(int *tid, char *msg, int msglen)
 
         // if no pending messages, go into RECEIVE_WAIT
         set_task_state(current_task, TASKSTATE_RECEIVE_WAIT);
-        ReceiveBuf* receive_buf = arena_alloc(sizeof(ReceiveBuf));
-        *receive_buf = (ReceiveBuf) {
+        *(current_task->receive_buf) = (ReceiveBuf) {
+            .in_use = true,
             .buf = msg,
             .buf_len = msglen,
             .sender_tid = tid 
         };
-        current_task->receive_buf = receive_buf;
+
         LOG_DEBUG("empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
 
     } else {
@@ -174,7 +175,7 @@ handle_svc_receive(int *tid, char *msg, int msglen)
         LOG_DEBUG("got message from tid = %d", sender_tid);
 
         // copy sender's message
-        if (sender_task->send_buf == 0) {
+        if (sender_task->send_buf->in_use == false) {
             // this should not happen (hopefully)
             PANIC("send buf is not initalized");
         }
@@ -205,7 +206,7 @@ handle_svc_reply(int tid, const char *reply, int rplen)
         return -2;
     }
 
-    if (target_task->send_buf == 0) {
+    if (target_task->send_buf->in_use == false) {
         PANIC("sender's reply buf is not initalized");
     }
 
@@ -213,8 +214,8 @@ handle_svc_reply(int tid, const char *reply, int rplen)
     memcpy(target_task->send_buf->reply_buf, reply, copylen);
 
     // free the sender's buf
-    free(target_task->send_buf);
-    target_task->send_buf = 0;
+    // free(target_task->send_buf);
+    target_task->send_buf->in_use = false;
 
     // make sender ready again
     set_task_state(target_task, TASKSTATE_READY);
@@ -359,27 +360,30 @@ handle_svc(void)
 void
 handle_interrupt(void)
 {
-
     u32 iar = gic_read_iar();
     u32 interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
-    // LOG_DEBUG("[INTERRUPT] ID: %d from task %d", interrupt_id, tasktable_current_task());
+    // PRINT("[INTERRUPT] ID: %d, IAR: %d from task %d", interrupt_id, iar, tasktable_current_task());
 
     // Timer task
     if (interrupt_id == 97) {
         scheduler_unblock_event(EVENT_CLOCK_TICK);
         timer_set_c1_next_tick();
+    } else {
+        LOG_WARN("invalid interrupt id");
     }
-
-    gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
 
     // Find next task to go to
     // TODO commenting for now since scheduler allocates memory and doesn't reclaim
     Tid next_tid = find_next_task();
     Task* next_task = tasktable_get_task(next_tid);
     tasktable_set_current_task(next_tid);
+
+    // PRINT("[INTERRUPT] returning to task %d", next_tid);
+    gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
+
     asm_enter_usermode(next_task->sf);
-    /* asm_enter_usermode(tasktable_get_task(tasktable_current_task())->sf); // TODO we might want to use the scheduler to find next task */
+    // asm_enter_usermode(tasktable_get_task(tasktable_current_task())->sf); // TODO we might want to use the scheduler to find next task
 }
 
 void

@@ -23,6 +23,8 @@ typedef enum {
 
 // Store data for message senders
 typedef struct {
+    bool in_use;
+
     // used by receive to copy data to sender
     char* reply_buf;
     size_t reply_buf_len;
@@ -34,6 +36,8 @@ typedef struct {
 
 // Store data for message receivers
 typedef struct {
+    bool in_use;
+
     char* buf; // receive buffer
     size_t buf_len;
 

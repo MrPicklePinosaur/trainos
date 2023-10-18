@@ -30,7 +30,7 @@ initTask()
 
     // spawn init tasks
     initNameserverTask();
-    /* Create(1, &clockTask); */
+    Create(1, &clockTask);
     Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
 
     for (;;) {
@@ -42,9 +42,9 @@ initTask()
 
         int ch = getc() - '0';
 
-        // int ch;
-        // while ((ch = (int)getc_poll()) == 0) Yield();
-        // ch = ch - '0';
+        /* int ch; */
+        /* while ((ch = (int)getc_poll()) == 0) Yield(); */
+        /* ch = ch - '0'; */
 
         if (!(0 <= ch && ch < 9)) {
             println("invalid task");
