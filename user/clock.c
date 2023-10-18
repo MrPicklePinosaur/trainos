@@ -245,12 +245,12 @@ int Delay(Tid clock_server, int ticks) {
         println("[TID %d] WARNING, Delay()'s Send() call returned a negative value", MyTid());
         return -1;
     }
-    if (resp_buf.type != CLOCK_TIME) {
+    if (resp_buf.type != CLOCK_DELAY) {
         println("[TID %d] WARNING, the reply to Delay()'s Send() call is not the right type", MyTid());
         return -1;
     }
 
-    return resp_buf.data.time.ticks;
+    return resp_buf.data.delay.ticks;
 }
 
 int DelayUntil(Tid clock_server, int ticks) {
@@ -269,7 +269,7 @@ int DelayUntil(Tid clock_server, int ticks) {
         println("[TID %d] WARNING, DelayUntil()'s Send() call returned a negative value", MyTid());
         return -1;
     }
-    if (resp_buf.type != CLOCK_TIME) {
+    if (resp_buf.type != CLOCK_DELAY_UNTIL) {
         println("[TID %d] WARNING, the reply to DelayUntil()'s Send() call is not the right type", MyTid());
         return -1;
     }
