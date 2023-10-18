@@ -29,12 +29,9 @@ initTask()
     };
 
     // spawn init tasks
-    initNameserverTask();
-    Create(1, &clockTask);
-    Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
-
-    Create(5, &K3);
-    Yield();
+    //initNameserverTask();
+    //Create(1, &clockTask);
+    //Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");

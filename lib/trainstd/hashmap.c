@@ -5,6 +5,8 @@
 #include <string.h>
 #include <trainstd.h>
 
+#include "kern/log.h"
+
 typedef PAIR(key_t, value_t) HashMapPair;
 
 struct HashMap {
@@ -78,9 +80,9 @@ hashmap_contains(HashMap* hm, key_t key)
     size_t ind = hashfunction(hm, key);
 
     List* bucket = hm->buckets[ind];
-    ListIter* it = list_iter(bucket);
+    ListIter it = list_iter(bucket);
     HashMapPair* pair;
-    while((pair = (HashMapPair*)listiter_next(it)) != 0) {
+    while(listiter_next(&it, (void**)&pair)) {
         if (strcmp(pair->first, key) == 0) return true;
     }
     return false;
@@ -91,9 +93,9 @@ hashmap_remove(HashMap* hm, key_t key)
 {
     size_t ind = hashfunction(hm, key);
     List* bucket = hm->buckets[ind];
-    ListIter* it = list_iter(bucket);
+    ListIter it = list_iter(bucket);
     HashMapPair* pair;
-    while((pair = (HashMapPair*)listiter_next(it)) != 0) {
+    while(listiter_next(&it, (void**)&pair)) {
         if (strcmp(pair->first, key) == 0) {
             list_remove(bucket, pair);  // Slightly inefficient, since this searches the list for the item a second time
             --(hm->size);
@@ -109,9 +111,9 @@ hashmap_get(HashMap* hm, key_t key, bool* success)
     size_t ind = hashfunction(hm, key);
 
     List* bucket = hm->buckets[ind];
-    ListIter* it = list_iter(bucket);
+    ListIter it = list_iter(bucket);
     HashMapPair* pair;
-    while((pair = (HashMapPair*)listiter_next(it)) != 0) {
+    while(listiter_next(&it, (void**)&pair)) {
         if (strcmp(pair->first, key) == 0) {
             *success = true;
             return pair->second;

@@ -1,5 +1,8 @@
 #include "list.h"
-#include "trainstd.h"
+#include "mem.h"
+#include <traindef.h>
+
+#include "kern/log.h"
 
 typedef struct ListNode ListNode;
 
@@ -13,11 +16,6 @@ struct ListNode {
     ListNode* next;
     ListNode* prev;
     void* data;
-};
-
-struct ListIter {
-    List* list;
-    ListNode* node;
 };
 
 List*
@@ -124,6 +122,32 @@ list_pop_back(List* list)
     return data;
 }
 
+void*
+list_peek_front(List* list)
+{
+    if (list->head == NULL) {
+        // TODO temp use kernel panic
+        PANIC("can't get head of empty list");
+    }
+    return list->head->data;
+}
+
+void*
+list_peek_back(List* list)
+{
+    if (list->tail == NULL) {
+        // TODO temp use kernel panic
+        PANIC("can't get tail of empty list");
+    }
+    return list->tail->data;
+}
+
+size_t
+list_len(List* list)
+{
+    return list->size;
+}
+
 // TODO can't use this, closures are evil
 /*
 void*
@@ -140,6 +164,7 @@ list_find(List* list, ListFindFn pred)
 }
 */
 
+// removes first occurance of element
 bool
 list_remove(List* list, void* item)
 {
@@ -167,43 +192,60 @@ list_remove(List* list, void* item)
     return false;
 }
 
+#if 0
+// TODO untested
+bool
+list_remove_at(List* list, usize index)
+{
+    ListNode* node = list->head;
+    for (usize i = 0; i < index; ++i) {
+        if (node == NULL) return false;     
+        node = node->next;
+    }
+
+    if (node == list->head) {
+        list_pop_front(list);
+    }
+    else if (node == list->tail) {
+        list_pop_back(list);
+    }
+    else {
+        node->prev->next = node->next;
+        node->next->prev = node->prev;
+        void* data = node->data;
+        free(node);
+        --(list->size);
+    }
+
+    return true;
+}
+#endif
+
 void
 list_deinit(List* list)
 {
     // TODO free entire list
 }
 
-ListIter*
+ListIter
 list_iter(List* list) {
-    ListIter* it = alloc(sizeof(ListIter));
-    *it = (ListIter) {
+    return (ListIter) {
         .list = list,
         .node = list->head
     };
-    return it;
-}
-
-void*
-listiter_next(ListIter* it)
-{
-    if (it->node == 0) return 0;
-    void* data = it->node->data;
-    it->node = it->node->next;
-    return data;
 }
 
 bool
-listiter_end(ListIter* it)
+listiter_next(ListIter* it, void** item)
 {
-    return it->node == 0;
+    if (it->node == 0) return false;
+    *item = it->node->data;
+    it->node = it->node->next;
+    return true;
 }
 
-void
-listiter_deinit(ListIter* it)
-{
-    free(it);
-}
-
+#if 0
+// TODO untested
 // Insert item before item pointed to by iter
 void
 listiter_insert_before(ListIter* it, void* item)
@@ -222,10 +264,12 @@ listiter_insert_before(ListIter* it, void* item)
     // set head and tail accordinly
     if (it->node->prev == 0) it->list->head = new_node; 
     if (it->node->next == 0) it->list->tail = new_node; 
+
+    ++(it->list->size);
 }
 
 // Delete item at listiter
-// THE USER MUST ADVANCE THE LIST ITERATOR THEMSELVES
+// moves iterator to item after
 void
 listiter_delete_at(ListIter* it)
 {
@@ -234,6 +278,11 @@ listiter_delete_at(ListIter* it)
     if (it->node->prev == 0) it->list->head = it->node->next;
     if (it->node->next == 0) it->list->tail = it->node->prev;
 
-    if (it->node->prev != 0) it->node->prev = it->node->next;
-    if (it->node->next != 0) it->node->next = it->node->prev;
+    if (it->node->prev != 0) it->node->prev->next = it->node->next;
+    if (it->node->next != 0) it->node->next->prev = it->node->prev;
+
+    it->node = it->node->next;
+
+    --(it->list->size);
 }
+#endif

@@ -90,17 +90,15 @@ nameserverTask()
             // println("Got whois request from %d", from_tid);
 
             // TODO this is sus closure stuff
-            ListIter* it = list_iter(nsdb);
+            ListIter it = list_iter(nsdb);
             Tid lookup_tid = 0; // error state is tid of zero
-            for (;;) {
-                NsdbEntry* entry = (NsdbEntry*)listiter_next(it);
-                if (entry == 0) break;
+            NsdbEntry* entry;
+            while (listiter_next(&it, (void**)&entry)) {
                 // println("comparing %s and %s", entry->name, msg_buf.data.who_is.name);
                 if (strcmp(entry->name, msg_buf.data.who_is.name) == 0) {
                     lookup_tid = entry->tid;
                 }
             }
-            listiter_deinit(it);
 
             println("whois look up found tid %d for %s", lookup_tid, msg_buf.data.who_is.name);
 

@@ -3,6 +3,7 @@
 #include "nameserver.h"
 
 #include "kern/dev/timer.h" // not very nice to straight up include kernel code like this
+#include "kern/log.h"
 
 typedef enum {
     CLOCK_TIME = 1,
@@ -163,9 +164,9 @@ clockTask()
             Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
 
             // check if any delays requests should be replied to
-            ListIter* it = list_iter(clock_requests); 
+            ListIter it = list_iter(clock_requests); 
             ClockRequest* clock_request;
-            while ((clock_request = listiter_next(it)) != 0) {
+            while (listiter_next(&it, (void**)&clock_request)) {
 
                 if (clock_request->target_delay <= ticks) {
 
@@ -191,10 +192,12 @@ clockTask()
                     }
                     println("delay request done for %d", from_tid);
                     Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
-                    listiter_delete_at(it);
+
+                    PANIC("unimplemented");
+                    // TODO
+                    // listiter_delete_at(&it);
                 }
             }
-            listiter_deinit(it);
 
         } else {
             println("[CLOCK SERVER] Invalid message type");
