@@ -167,6 +167,9 @@ asm_enter_usermode:
     ldr x1, [x0, #256]
     msr SPSR_EL1, x1
 
+    # reset kernel stack ptr
+    mov sp, #0x00200000
+
     ldp x0, x1, [x0, #0]
 
     eret
