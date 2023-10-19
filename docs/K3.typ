@@ -107,7 +107,7 @@ Our clock server tracks time by counting the number of these messages.
 When a task calls `Delay()` or `DelayUntil()`, the task `Send()`s a message to the clock server.
 When the clock server `Receive()`s that message, it does not immediately `Reply()`.
 Instead, it stores that task's Tid and the tick it should be unblocked at in a linked list.
-(For `Delay()` calls, the tick to unblock at is calculated as `current_tick + ticks`).
+(For `Delay(ticks)` calls, the tick to unblock at is calculated as `current_tick + ticks`).
 Every tick, we loop through all tasks in this linked list, and `Reply()` to any that need to be unblocked on that tick.
 
 The linked list might be inefficient, but that can be optimized at a later point if necessary.
