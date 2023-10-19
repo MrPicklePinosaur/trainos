@@ -6,11 +6,23 @@
 #include <trainsys.h>
 #include <stddef.h>
 
+#include "kern/perf.h"
+
 typedef struct {
     char* name;
     void (*taskFn)(void);
 } TaskMenuEntry;
 
+void
+idleTask()
+{
+    for (;;) {
+        asm_wfi();
+        get_idle_time();
+    }
+
+    Exit();
+}
 
 // task selection menu
 void
@@ -58,8 +70,13 @@ initTask()
 
     Create(2, &K3);
     Yield();
+    
+    // Block init by receiving from no-one
+    char dummy;
+    Tid from_tid;
+    Receive(&from_tid, &dummy, sizeof(char));
 
-    println("returned to main");
+    println("attempting to exit init task");
     for (;;) {}
 
     Exit();

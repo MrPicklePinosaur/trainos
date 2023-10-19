@@ -4,15 +4,6 @@
 #include <trainsys.h>
 #include <trainstd.h>
 
-void
-awaitEventTest()
-{
-    for (;;) {
-        AwaitEvent(EVENT_CLOCK_TICK);
-        println("got clock tick event");
-    }
-}
-
 typedef struct {
     u32 delay;
     u32 num_delays;
@@ -28,7 +19,7 @@ K3Client()
     K3Msg dummy;
     K3Resp resp_buf;
     Send(MyParentTid(), (char*)&dummy, sizeof(K3Msg), (char*)&resp_buf, sizeof(K3Resp));
-    println("Got num_delays = %d, delay = %d", resp_buf.num_delays, resp_buf.delay);
+    // println("Got num_delays = %d, delay = %d", resp_buf.num_delays, resp_buf.delay);
 
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (u32 i = 0; i < resp_buf.num_delays; ++i) {
@@ -40,46 +31,12 @@ K3Client()
 }
 
 void
-idleTask()
-{
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-
-    uint32_t start_tick = Time(clock_server);
-    uint32_t target_tick = start_tick + 1;
-    uint32_t total_ticks = 0;
-
-    for (;;) {
-#if 0
-        println("entering idle mode"); 
-        asm_wfi();
-#endif
-        int current_tick = DelayUntil(clock_server, target_tick);
-        if (current_tick < 0) {
-            println("error with delay until");
-            continue;
-        }
-
-        ++total_ticks;
-        if (target_tick + 1 > current_tick) {
-            ++target_tick;
-        }
-        else {
-            target_tick = current_tick + 1;
-        }
-
-        println("Idle task percentage: %u", (total_ticks * 100) / (current_tick - start_tick));
-    }
-}
-
-void
 K3()
 {
     Create(3, &K3Client);
     Create(4, &K3Client);
     Create(5, &K3Client);
     Create(6, &K3Client);
-
-    Create(14, &idleTask);
 
     int from_tid;
     K3Msg dummy;

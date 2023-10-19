@@ -171,7 +171,7 @@ clockTask()
                             }
                         };
                     }
-                    println("delay request done for %d", clock_request->tid);
+                    // println("delay request done for %d", clock_request->tid);
                     Reply(clock_request->tid, (char*)&reply_buf, sizeof(ClockResp));
 
                     list_remove(clock_requests, clock_request);

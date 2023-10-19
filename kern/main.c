@@ -7,6 +7,7 @@
 #include "task.h"
 #include "alloc.h"
 #include "gacha.h"
+#include "perf.h"
 #include "user/usertasks.h"
 
 int kmain() {
@@ -32,7 +33,10 @@ int kmain() {
 
 
     // need to create first task using kernel primitives since we are in kernel mode right here
-    Tid init_tid = handle_svc_create(15, &initTask); // temp making starting task very low priority
+    Tid init_tid = handle_svc_create(14, &initTask); // temp making starting task very low priority
+    Tid idle_tid = handle_svc_create(15, &idleTask);
+    perf_init(idle_tid);
+
     /* Tid init_tid = handle_svc_create(4, &K2); */
     Task* init_task = tasktable_get_task(init_tid);
     asm_enter_usermode(init_task->sf);

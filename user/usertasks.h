@@ -3,6 +3,7 @@
 
 // Ths first user task to be run
 void initTask();
+void idleTask();
 
 // K1
 void firstUserTask();

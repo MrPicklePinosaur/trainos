@@ -11,6 +11,7 @@
 #include "util.h"
 #include "gic.h"
 #include "gacha.h"
+#include "perf.h"
 
 void
 kern_init(void)
@@ -32,6 +33,20 @@ void
 set_task_state(Task* task, TaskState state)
 {
     task->state = state;
+}
+
+// common code that should be ran when entering kernelmode
+void
+on_enter_kernelmode(Tid from_tid)
+{
+    if (from_tid == idle_tid()) end_idle();
+}
+
+// common code that should be ran when exiting kernelmode
+void
+on_exit_kernelmode(Tid to_tid)
+{
+    if (to_tid == idle_tid()) start_idle();
 }
 
 Tid
@@ -256,10 +271,11 @@ void
 handle_svc(void)
 {
     //PRINT("kernel stack %x", asm_sp_el1());
-
     Tid current_tid = tasktable_current_task();
     Task* current_task = tasktable_get_task(current_tid);
     SwitchFrame* sf = current_task->sf;
+
+    on_enter_kernelmode(current_tid);
 
     Tid next_tid;
 
@@ -362,12 +378,16 @@ handle_svc(void)
 
     LOG_DEBUG("returning to task %d", next_tid);
     tasktable_set_current_task(next_tid);
+
+    on_exit_kernelmode(next_tid);
     asm_enter_usermode(tasktable_get_task(next_tid)->sf);
 }
 
 void
 handle_interrupt(void)
 {
+    on_enter_kernelmode(tasktable_current_task());
+
     u32 iar = gic_read_iar();
     u32 interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
@@ -381,24 +401,16 @@ handle_interrupt(void)
         LOG_WARN("invalid interrupt id");
     }
 
-    // Find next task to go to
-    // TODO commenting for now since scheduler allocates memory and doesn't reclaim
-
     gic_write_eoir(iar); // TODO should this be iar or interrupt_id?
 
+    // Find next task to go to
     Tid next_tid = find_next_task();
     Task* next_task = tasktable_get_task(next_tid);
     tasktable_set_current_task(next_tid);
-    asm_enter_usermode(next_task->sf);
-
-#if 0
-    // currently only returning to task interrupt happened in to ensure there is no concurrency (otherwise we need mutual exclusion)
-    Tid next_tid = tasktable_current_task();
-    Task* next_task = tasktable_get_task(next_tid);
-    tasktable_set_current_task(next_tid);
     /* PRINT("[INTERRUPT] returning to task %d", next_task->tid); */
+
+    on_exit_kernelmode(next_tid);
     asm_enter_usermode(next_task->sf);
-#endif
 }
 
 void

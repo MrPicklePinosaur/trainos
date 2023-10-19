@@ -65,7 +65,7 @@ nameserverTask()
         }
 
         if (msg_buf.type == NS_REGISTER_AS) {
-            println("Got register as request from %d for %s", from_tid, msg_buf.data.register_as.name);
+            // println("Got register as request from %d for %s", from_tid, msg_buf.data.register_as.name);
 
             // insert namespace into list
             // TODO we don't handle duplicate names (the later one is ignored)
@@ -102,7 +102,7 @@ nameserverTask()
                 }
             }
 
-            println("whois look up found tid %d for %s", lookup_tid, msg_buf.data.who_is.name);
+            // println("whois look up found tid %d for %s", lookup_tid, msg_buf.data.who_is.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_WHO_IS,
