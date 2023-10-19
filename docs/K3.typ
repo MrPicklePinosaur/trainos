@@ -39,7 +39,7 @@
 
 Gitlab repository name: `d278liu/trainos`
 
-Commit SHA: f2ba77c0df906c2b83fce98ce57b04e0dc19de2a
+Commit SHA: 85fd6ff1402cb9263bc4605d5ab6ea82a4fe03c3
 
 = Kernel Features
 
