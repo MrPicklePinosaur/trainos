@@ -23,9 +23,9 @@ This should generate a `trainos.img` file. Upload this image file to [https://cs
 
 Turn on the Raspberry Pi (or restart it if it's already on). Wait for the TrainOS kernel to boot up.
 
-Below the TrainOS logo and the UW course gacha, there should be a prompt asking you to `SELECT TASK TO RUN`. Each task is assigned a number; type in the corresponding number to run that task. The RPS test is the task called `K2` while the performance test is the task called `K2Perf`.
+<!-- Below the TrainOS logo and the UW course gacha, there should be a prompt asking you to `SELECT TASK TO RUN`. Each task is assigned a number; type in the corresponding number to run that task. The RPS test is the task called `K2` while the performance test is the task called `K2Perf`. -->
 
-You can find the CSV file for the K2 performance test at `docs/K2Perf.csv`.
+<!-- You can find the CSV file for the K2 performance test at `docs/K2Perf.csv`. -->
 
 ## Running in simulator
 
@@ -37,10 +37,10 @@ have the following installed:
 - qemu-system-aarch64
 - gdb-multiarch
 
-First build the image with the `QEMU=true`. You can set the value in your
+First build the image with the `QEMU=1`. You can set the value in your
 `config.mk` or pass it to make when building:
 ```sh
-make clean; make QEMU=true
+make clean; make QEMU=1
 ```
 
 Start qemu with the trainos image:
