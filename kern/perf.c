@@ -30,10 +30,10 @@ end_idle(void)
     idle_time += timer_get() - last_idle_time;
 }
 
-void
+usize
 get_idle_time(void)
 {
-    PRINT("Idle time %d percent", (idle_time*100)/(timer_get()-init_time));
+    return (idle_time*100)/(timer_get()-init_time);
 }
 
 Tid

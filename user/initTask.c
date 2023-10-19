@@ -18,7 +18,19 @@ idleTask()
 {
     for (;;) {
         asm_wfi();
-        get_idle_time();
+    }
+
+    Exit();
+}
+
+// periodically prints out performance metrics
+void
+perfTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    for (;;) {
+        Delay(clock_server, 100); 
+        println("Idle time %d percent", get_idle_time());
     }
 
     Exit();
@@ -44,6 +56,8 @@ initTask()
     initNameserverTask();
     Create(1, &clockTask);
     Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
+    Create(5, &perfTask);
+    Yield();
 
     /*
     for (;;) {
