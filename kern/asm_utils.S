@@ -44,3 +44,9 @@ asm_sp_el0:
 asm_spsr_el1:
     mrs x0, SPSR_EL1
     br x30
+
+.global	asm_wfi
+.type asm_wfi, %function
+asm_wfi:
+    wfi
+    br x30

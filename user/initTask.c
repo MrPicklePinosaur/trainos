@@ -56,9 +56,10 @@ initTask()
     }
     */
 
-    Create(5, &K3);
+    Create(2, &K3);
     Yield();
 
+    println("returned to main");
     for (;;) {}
 
     Exit();

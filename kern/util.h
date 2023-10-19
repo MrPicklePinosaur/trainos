@@ -41,5 +41,6 @@ extern u32 asm_esr_el1(void);
 extern u32 asm_elr_el1(void);
 extern u32 asm_sp_el0(void);
 extern u32 asm_spsr_el1(void);
+extern void asm_wfi(void);
 
 #endif // __UTIL_H__

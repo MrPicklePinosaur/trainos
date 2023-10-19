@@ -28,8 +28,11 @@ int kmain() {
     // gacha current does not work on simulator (no timer)
     gacha_print_roll();
 
+    // PRINT("kernel stack in kmain %x", asm_sp_el1());
+
+
     // need to create first task using kernel primitives since we are in kernel mode right here
-    Tid init_tid = handle_svc_create(10, &initTask); // temp making starting task very low priority
+    Tid init_tid = handle_svc_create(15, &initTask); // temp making starting task very low priority
     /* Tid init_tid = handle_svc_create(4, &K2); */
     Task* init_task = tasktable_get_task(init_tid);
     asm_enter_usermode(init_task->sf);

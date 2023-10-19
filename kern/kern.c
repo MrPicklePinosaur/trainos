@@ -255,6 +255,8 @@ find_next_task(void)
 void
 handle_svc(void)
 {
+    //PRINT("kernel stack %x", asm_sp_el1());
+
     Tid current_tid = tasktable_current_task();
     Task* current_task = tasktable_get_task(current_tid);
     SwitchFrame* sf = current_task->sf;

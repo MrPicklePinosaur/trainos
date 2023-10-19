@@ -49,7 +49,15 @@ idleTask()
     uint32_t total_ticks = 0;
 
     for (;;) {
-        uint32_t current_tick = DelayUntil(clock_server, target_tick);
+#if 0
+        println("entering idle mode"); 
+        asm_wfi();
+#endif
+        int current_tick = DelayUntil(clock_server, target_tick);
+        if (current_tick < 0) {
+            println("error with delay until");
+            continue;
+        }
 
         ++total_ticks;
         if (target_tick + 1 > current_tick) {
@@ -71,7 +79,7 @@ K3()
     Create(5, &K3Client);
     Create(6, &K3Client);
 
-    /* Create(15, &idleTask); */
+    Create(14, &idleTask);
 
     int from_tid;
     K3Msg dummy;

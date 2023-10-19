@@ -38,7 +38,6 @@ typedef struct {
         } delay;
         struct {
             int ticks;
-            bool valid_delay;
         } delay_until;
         struct {} tick;
     } data;
@@ -88,7 +87,7 @@ clockTask()
 
         if (msg_buf.type == CLOCK_TIME) {
 
-            println("[CLOCK SERVER] TIME request from %d", from_tid);
+            // println("[CLOCK SERVER] TIME request from %d", from_tid);
 
             // Time() implementation
 
@@ -105,7 +104,7 @@ clockTask()
         }
         else if (msg_buf.type == CLOCK_DELAY) {
 
-            println("[CLOCK SERVER] DELAY request from %d, trigger at %d", from_tid, msg_buf.data.delay.ticks + ticks);
+            // println("[CLOCK SERVER] DELAY request from %d, trigger at %d", from_tid, msg_buf.data.delay.ticks + ticks);
 
             // Delay() implementation
             ClockRequest* request = alloc(sizeof(ClockRequest));
@@ -119,24 +118,9 @@ clockTask()
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
 
-            println("[CLOCK SERVER] DELAY_UNTIL request from %d, trigger at %d", from_tid, msg_buf.data.delay_until.ticks);
+            // println("[CLOCK SERVER] DELAY_UNTIL request from %d, trigger at %d", from_tid, msg_buf.data.delay_until.ticks);
 
             // DelayUntil() implementation
-
-            // TODO return error if delay until request tick is invalid
-            if (msg_buf.data.delay_until.ticks <= ticks) {
-                reply_buf = (ClockResp) {
-                    .type = CLOCK_DELAY_UNTIL,
-                    .data = {
-                        .delay_until = {
-                            .ticks = ticks,
-                            .valid_delay = false,
-                        }
-                    }
-                };
-                Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
-                continue;
-            }
 
             ClockRequest* request = alloc(sizeof(ClockRequest));
             *request = (ClockRequest) {
@@ -151,7 +135,7 @@ clockTask()
 
             ++ticks;
 
-            println("[CLOCK SERVER] tick %d", ticks);
+            // println("[CLOCK SERVER] tick %d", ticks);
 
             reply_buf = (ClockResp) {
                 .type = CLOCK_TICK,
@@ -183,13 +167,12 @@ clockTask()
                             .data = {
                                 .delay_until = {
                                     .ticks = ticks,
-                                    .valid_delay = true,
                                 }
                             }
                         };
                     }
-                    println("delay request done for %d", from_tid);
-                    Reply(from_tid, (char*)&reply_buf, sizeof(ClockResp));
+                    println("delay request done for %d", clock_request->tid);
+                    Reply(clock_request->tid, (char*)&reply_buf, sizeof(ClockResp));
 
                     list_remove(clock_requests, clock_request);
                 }
@@ -258,7 +241,7 @@ int DelayUntil(Tid clock_server, int ticks) {
     ClockMsg send_buf = (ClockMsg) {
         .type = CLOCK_DELAY_UNTIL,
         .data = {
-            .delay = {
+            .delay_until = {
                 .ticks = ticks
             }
         }
@@ -272,10 +255,6 @@ int DelayUntil(Tid clock_server, int ticks) {
     if (resp_buf.type != CLOCK_DELAY_UNTIL) {
         println("[TID %d] WARNING, the reply to DelayUntil()'s Send() call is not the right type", MyTid());
         return -1;
-    }
-    if (!resp_buf.data.delay_until.valid_delay) {
-        println("[TID %d] WARNING, tried to pass a past time to DelayUntil()", MyTid());
-        return -2;
     }
 
     return resp_buf.data.delay_until.ticks;
