@@ -14,7 +14,7 @@
 
 void println(char* format, ...);
 void print(char* format, ...);
-char getc(void);
-char getc_poll(void);
+unsigned char getc(void);
+unsigned char getc_poll(void);
 
 #endif // __TRAINSTD_H__

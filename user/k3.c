@@ -28,6 +28,7 @@ K3Client()
     K3Msg dummy;
     K3Resp resp_buf;
     Send(MyParentTid(), (char*)&dummy, sizeof(K3Msg), (char*)&resp_buf, sizeof(K3Resp));
+    println("Got num_delays = %d, delay = %d", resp_buf.num_delays, resp_buf.delay);
 
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     for (u32 i = 0; i < resp_buf.num_delays; ++i) {

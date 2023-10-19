@@ -5,6 +5,8 @@
 #include "usertasks.h"
 #include "nameserver.h"
 
+#include "kern/log.h"
+
 typedef struct NsdbEntry NsdbEntry;
 
 static Tid nameserver_tid;
@@ -158,7 +160,7 @@ WhoIs(const char *name)
     if (resp_buf.type != NS_WHO_IS) return -1;
 
     if (resp_buf.data.who_is.tid == 0) {
-        println("Couldn't find tid for name %s", name);
+        PANIC("Couldn't find tid for name %s", name);
     }
 
     // println("who is result is %d", resp_buf.data.who_is.tid);
@@ -175,7 +177,7 @@ initNameserverTask()  // Please do not call this more than once
     int ret = Create(2, &nameserverTask);
 
     if (ret < 0) {
-        println("failed to initalized nameserver");
+        PANIC("failed to initalized nameserver");
     }
 
     // set globally acessible nameserverTid
