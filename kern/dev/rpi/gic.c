@@ -1,5 +1,9 @@
+
+#include "kern/dev/gic.h"
+
+#if QEMU == 0
+
 #include <traindef.h>
-#include "gic.h"
 
 #define GIC_BASE 0xFF840000
 
@@ -50,3 +54,4 @@ void gic_write_eoir(u32 iar)
     u32* eoir = (u32*) (GICC_BASE + GICC_EOIR);
     (*eoir) = iar;
 }
+#endif

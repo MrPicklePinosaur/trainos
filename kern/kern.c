@@ -8,8 +8,8 @@
 #include "alloc.h"
 #include "kern/dev/uart.h"
 #include "kern/dev/timer.h"
+#include "kern/dev/gic.h"
 #include "util.h"
-#include "gic.h"
 #include "gacha.h"
 #include "perf.h"
 

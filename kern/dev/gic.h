@@ -1,7 +1,7 @@
 #ifndef __GIC_H__
 #define __GIC_H__
 
-#include <stdint.h>
+#include <traindef.h>
 
 void gic_init(void);
 u32 gic_read_iar(void);
