@@ -17,9 +17,11 @@ INCLUDEDIR  = include
 
 # COMPILE OPTIONS
 # -ffunction-sections causes each function to be in a separate section (linker script relies on this)
-WARNINGS=-Wall -Wextra -Wpedantic -Wno-unused-const-variable
-CFLAGS:=-g -pipe -static $(WARNINGS) -ffreestanding -nostartfiles\
-	-mcpu=$(ARCH) -static-pie -mstrict-align -fno-builtin -mgeneral-regs-only\
+WARNINGS=-Wall -Wextra -Wconversion -Wno-unused-const-variable -Wno-unused-parameter -Wno-unused-function
+CFLAGS:=-g3 -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
+	-mcpu=$(ARCH) -static-pie -mstrict-align \
+	-fno-builtin \
+	-mgeneral-regs-only \
 	-I./$(INCLUDEDIR) -I./ -DQEMU=$(QEMU)
 
 # -Wl,option tells g++ to pass 'option' to the linker with commas replaced by spaces
