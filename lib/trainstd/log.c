@@ -24,9 +24,9 @@ get_log_level()
 }
 
 void
-set_log_mask(LogMask log_mask)
+set_log_mask(LogMask mask)
 {
-
+    log_mask = mask;
 }
 
 LogMask
@@ -38,7 +38,7 @@ get_log_mask(void)
 void
 _log(LogLevel level, LogMask mask, char* prefix, char* format, ...)
 {
-    if (level <= log_level && (log_mask & mask) == log_mask) {
+    if (level <= log_level && (log_mask & mask) == mask) {
         va_list args;
         va_start(args, format);
 

@@ -81,13 +81,13 @@ clockTask()
     for (;;) {
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(ClockMsg));
         if (msg_len < 0) {
-            println("[CLOCK SERVER] Error when receiving");
+            ULOG_WARN("[CLOCK SERVER] Error when receiving");
             continue;
         }
 
         if (msg_buf.type == CLOCK_TIME) {
 
-            // println("[CLOCK SERVER] TIME request from %d", from_tid);
+            ULOG_INFO_M(LOG_MASK_CLOCK, "[CLOCK SERVER] TIME request from %d", from_tid);
 
             // Time() implementation
 
@@ -104,7 +104,7 @@ clockTask()
         }
         else if (msg_buf.type == CLOCK_DELAY) {
 
-            // println("[CLOCK SERVER] DELAY request from %d, trigger at %d", from_tid, msg_buf.data.delay.ticks + ticks);
+            ULOG_INFO_M(LOG_MASK_CLOCK, "[CLOCK SERVER] DELAY request from %d, trigger at %d", from_tid, msg_buf.data.delay.ticks + ticks);
 
             // Delay() implementation
             ClockRequest* request = alloc(sizeof(ClockRequest));
@@ -118,7 +118,7 @@ clockTask()
         }
         else if (msg_buf.type == CLOCK_DELAY_UNTIL) {
 
-            // println("[CLOCK SERVER] DELAY_UNTIL request from %d, trigger at %d", from_tid, msg_buf.data.delay_until.ticks);
+            ULOG_INFO_M(LOG_MASK_CLOCK, "[CLOCK SERVER] DELAY_UNTIL request from %d, trigger at %d", from_tid, msg_buf.data.delay_until.ticks);
 
             // DelayUntil() implementation
 
@@ -178,7 +178,7 @@ clockTask()
                 }
             }
         } else {
-            println("[CLOCK SERVER] Invalid message type");
+            ULOG_WARN("[CLOCK SERVER] Invalid message type");
             continue;
         }
     }
@@ -196,11 +196,11 @@ int Time(Tid clock_server) {
 
     int ret = Send(clock_server, (const char*)&send_buf, sizeof(ClockMsg), (char*)&resp_buf, sizeof(ClockResp));
     if (ret < 0) {
-        println("[TID %d] WARNING, Time()'s Send() call returned a negative value", MyTid());
+        ULOG_WARN("[TID %d] WARNING, Time()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != CLOCK_TIME) {
-        println("[TID %d] WARNING, the reply to Time()'s Send() call is not the right type", MyTid());
+        ULOG_WARN("[TID %d] WARNING, the reply to Time()'s Send() call is not the right type", MyTid());
         return -2;  // -2 is not in the kernel description for Time()
     }
 
@@ -209,7 +209,7 @@ int Time(Tid clock_server) {
 
 int Delay(Tid clock_server, int ticks) {
     if (ticks < 0) {
-        println("[TID %d] WARNING, tried to pass negative ticks to Delay()", MyTid());
+        ULOG_WARN("[TID %d] WARNING, tried to pass negative ticks to Delay()", MyTid());
         return -2;
     }
 
@@ -225,11 +225,11 @@ int Delay(Tid clock_server, int ticks) {
 
     int ret = Send(clock_server, (const char*)&send_buf, sizeof(ClockMsg), (char*)&resp_buf, sizeof(ClockResp));
     if (ret < 0) {
-        println("[TID %d] WARNING, Delay()'s Send() call returned a negative value", MyTid());
+        ULOG_WARN("[TID %d] WARNING, Delay()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != CLOCK_DELAY) {
-        println("[TID %d] WARNING, the reply to Delay()'s Send() call is not the right type", MyTid());
+        ULOG_WARN("[TID %d] WARNING, the reply to Delay()'s Send() call is not the right type", MyTid());
         return -1;
     }
 
@@ -249,11 +249,11 @@ int DelayUntil(Tid clock_server, int ticks) {
 
     int ret = Send(clock_server, (const char*)&send_buf, sizeof(ClockMsg), (char*)&resp_buf, sizeof(ClockResp));
     if (ret < 0) {
-        println("[TID %d] WARNING, DelayUntil()'s Send() call returned a negative value", MyTid());
+        ULOG_WARN("[TID %d] WARNING, DelayUntil()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != CLOCK_DELAY_UNTIL) {
-        println("[TID %d] WARNING, the reply to DelayUntil()'s Send() call is not the right type", MyTid());
+        ULOG_WARN("[TID %d] WARNING, the reply to DelayUntil()'s Send() call is not the right type", MyTid());
         return -1;
     }
 
@@ -271,6 +271,6 @@ void Tick(Tid clock_server) {
 
     int ret = Send(clock_server, (const char*)&send_buf, sizeof(ClockMsg), (char*)&resp_buf, sizeof(ClockResp));
     if (ret < 0) {
-        println("Something went wrong when calling Tick()");
+        ULOG_WARN("Something went wrong when calling Tick()");
     }
 }

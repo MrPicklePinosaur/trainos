@@ -58,12 +58,12 @@ nameserverTask()
         int from_tid;
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(NameserverMsg));
         if (msg_len < 0) {
-            println("Error when receiving");
+            ULOG_WARN("Error when receiving");
             continue;
         }
 
         if (msg_buf.type == NS_REGISTER_AS) {
-            // println("Got register as request from %d for %s", from_tid, msg_buf.data.register_as.name);
+            // ULOG_DEBUG("Got register as request from %d for %s", from_tid, msg_buf.data.register_as.name);
 
             // insert namespace into list
             // TODO we don't handle duplicate names (the later one is ignored)
@@ -75,7 +75,7 @@ nameserverTask()
                 .tid = from_tid,
             };
             list_push_back(nsdb, nsdb_entry);
-            //println("Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
+            ULOG_INFO_M(LOG_MASK_NS, "Registered %d as '%s'", from_tid, msg_buf.data.register_as.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_REGISTER_AS,
@@ -100,7 +100,7 @@ nameserverTask()
                 }
             }
 
-            // println("whois look up found tid %d for %s", lookup_tid, msg_buf.data.who_is.name);
+            ULOG_INFO_M(LOG_MASK_NS, "whois look up found tid %d for %s", lookup_tid, msg_buf.data.who_is.name);
 
             reply_buf = (NameserverResp) {
                 .type = NS_WHO_IS,

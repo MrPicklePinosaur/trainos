@@ -14,11 +14,19 @@ typedef enum {
     LOG_LEVEL_DEBUG = 4,
 } LogLevel;
 
-typedef u8 LogMask;
+typedef u16 LogMask;
 typedef enum {
-    LOG_MASK_ALL  = 0b00000000,
-    LOG_MASK_USER = 0b00000001,
-    LOG_MASK_KERN = 0b00000010,
+    LOG_MASK_ALL     = 0,
+    LOG_MASK_USER    = 1,
+    LOG_MASK_KERN    = 2,
+
+    LOG_MASK_SYSCALL = 4,
+    LOG_MASK_ISR     = 8,
+    LOG_MASK_MSG     = 16,
+
+    LOG_MASK_CLOCK   = 32,
+    LOG_MASK_IO      = 64,
+    LOG_MASK_NS      = 128,
 } LogMaskBits;
 
 void log_init(void);
@@ -33,10 +41,16 @@ void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);
 #define ULOG_INFO(str, ...) _log(LOG_LEVEL_INFO, LOG_MASK_USER, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
 #define ULOG_DEBUG(str, ...) _log(LOG_LEVEL_DEBUG, LOG_MASK_USER, "[DEBUG] ", (str), ##__VA_ARGS__)
 
+#define ULOG_INFO_M(mask, str, ...) _log(LOG_LEVEL_INFO, mask|LOG_MASK_USER, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
+#define ULOG_DEBUG_M(mask, str, ...) _log(LOG_LEVEL_DEBUG, mask|LOG_MASK_USER, "[DEBUG] ", (str), ##__VA_ARGS__)
+
 #define KLOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_KERN, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
 #define KLOG_WARN(str, ...) _log(LOG_LEVEL_WARN, LOG_MASK_KERN, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
 #define KLOG_INFO(str, ...) _log(LOG_LEVEL_INFO, LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
 #define KLOG_DEBUG(str, ...) _log(LOG_LEVEL_DEBUG, LOG_MASK_KERN, "[DEBUG] ", (str), ##__VA_ARGS__)
+
+#define KLOG_INFO_M(mask, str, ...) _log(LOG_LEVEL_INFO, mask|LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
+#define KLOG_DEBUG_M(mask, str, ...) _log(LOG_LEVEL_DEBUG, mask|LOG_MASK_KERN, "[DEBUG] ", (str), ##__VA_ARGS__)
 
 #define PRINT(str, ...) _log(LOG_LEVEL_ALWAYS, LOG_MASK_ALL, "", (str), ##__VA_ARGS__)
 

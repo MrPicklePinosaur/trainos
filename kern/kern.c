@@ -52,7 +52,7 @@ on_exit_kernelmode(Tid to_tid)
 Tid
 handle_svc_create(u32 priority, void (*entrypoint)())
 {
-    KLOG_INFO("[SYSCALL] Create task");
+    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Create task");
     Tid current_tid = tasktable_current_task();
 
     Tid new_tid = tasktable_create_task(priority, entrypoint);
@@ -62,7 +62,7 @@ handle_svc_create(u32 priority, void (*entrypoint)())
     if (new_tid == 1) new_task->parent_tid = 0;
     else new_task->parent_tid = current_tid;
 
-    KLOG_INFO("[SYSCALL] Created new task %d", new_tid);
+    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Created new task %d", new_tid);
 
     scheduler_insert(new_tid, priority);
     set_task_state(new_task, TASKSTATE_READY);
@@ -93,7 +93,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
     // Find the task in question
     Task* target_task = tasktable_get_task(tid);
     if (target_task == 0) {
-        KLOG_DEBUG("Invalid task %d", tid);
+        KLOG_ERROR("Invalid task %d", tid);
         return -1;
     }
     
@@ -108,7 +108,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
         // RECEIVE_WAIT tasks exists, directly copy message
         set_task_state(current_task, TASKSTATE_REPLY_WAIT);
 
-        KLOG_DEBUG("Sending message to task %d, in RECEIVE_WAIT", tid);
+        KLOG_DEBUG_M(LOG_MASK_MSG, "Sending message to task %d, in RECEIVE_WAIT", tid);
 
         // copy message to buffer
         if (target_task->receive_buf->in_use == false) {
@@ -142,7 +142,7 @@ handle_svc_send(int tid, const char* msg, int msglen, char* reply, int rplen)
          */
 
         // task is not in RECEIVE_WAIT, add sending task to recieving tasks' recieve queue 
-        KLOG_DEBUG("Sending message to task %d, not in RECEIVE_WAIT", tid);
+        KLOG_DEBUG_M(LOG_MASK_MSG, "Sending message to task %d, not in RECEIVE_WAIT", tid);
         set_task_state(current_task, TASKSTATE_SEND_WAIT);
         if (cbuf_push_front(target_task->receive_queue, (u8)current_tid) == 1) {
             PANIC("receive queue is full");
@@ -178,7 +178,7 @@ handle_svc_receive(int *tid, char *msg, int msglen)
             .sender_tid = tid 
         };
 
-        KLOG_DEBUG("empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
+        KLOG_DEBUG_M(LOG_MASK_MSG, "empty receive queue, blocking, in tid %d state %d", current_task->tid, current_task->state);
 
     } else {
 
@@ -190,7 +190,7 @@ handle_svc_receive(int *tid, char *msg, int msglen)
         // if there is pending messages, take the first and copy it
         Tid sender_tid = (Tid)cbuf_pop_back(current_task->receive_queue);
         Task* sender_task = tasktable_get_task(sender_tid);
-        KLOG_DEBUG("got message from tid = %d", sender_tid);
+        KLOG_DEBUG_M(LOG_MASK_MSG, "got message from tid = %d", sender_tid);
 
         // copy sender's message
         if (sender_task->send_buf->in_use == false) {
@@ -284,7 +284,7 @@ handle_svc(void)
 
     u32 opcode = asm_esr_el1() & 0x1FFFFFF;
     /* KLOG_DEBUG("jumped to vector table handler with opcode = %x", opcode); */
-    KLOG_INFO("[SYSCALL] In task %d", current_tid);
+    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] In task %d", current_tid);
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {
@@ -297,19 +297,19 @@ handle_svc(void)
         next_tid = current_tid;
     }
     else if (opcode == OPCODE_MY_TID) {
-        KLOG_INFO("[SYSCALL] MyTid");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] MyTid");
 
         sf->x0 = tasktable_current_task();
         next_tid = current_tid;
     }
     else if (opcode == OPCODE_MY_PARENT_TID) {
-        KLOG_INFO("[SYSCALL] MyParentTid");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] MyParentTid");
 
         sf->x0 = current_task->parent_tid;
         next_tid = current_tid;
     }
     else if (opcode == OPCODE_YIELD) {
-        KLOG_INFO("[SYSCALL] Yield");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Yield");
 
         next_tid = find_next_task();
 
@@ -317,7 +317,7 @@ handle_svc(void)
         KLOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
     }
     else if (opcode == OPCODE_EXIT) {
-        KLOG_INFO("[SYSCALL] Exit");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Exit");
 
         // NOTE: maybe don't allow task 1 to be deleted?
         if (current_tid == 1) {
@@ -334,7 +334,7 @@ handle_svc(void)
 
     } else if (opcode == OPCODE_SEND) {
 
-        KLOG_INFO("[SYSCALL] SEND");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] SEND");
 
         int ret = handle_svc_send(sf->x0, (const char*)sf->x1, sf->x2, (char*)sf->x3, sf->x4);
         if (ret < 0) {
@@ -348,7 +348,7 @@ handle_svc(void)
 
     } else if (opcode == OPCODE_RECEIVE) {
 
-        KLOG_INFO("[SYSCALL] RECEIVE");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] RECEIVE");
 
         handle_svc_receive((int*)sf->x0, (char*)sf->x1, sf->x2);
 
@@ -356,7 +356,7 @@ handle_svc(void)
 
     } else if (opcode == OPCODE_REPLY) {
 
-        KLOG_INFO("[SYSCALL] REPLY");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] REPLY");
 
         sf->x0 = handle_svc_reply((int)sf->x0, (const char*)sf->x1, sf->x2);
 
@@ -364,7 +364,7 @@ handle_svc(void)
 
     } else if (opcode == OPCODE_AWAITEVENT) {
 
-        KLOG_INFO("[SYSCALL] AWAIT EVENT");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] AWAIT EVENT");
 
         handle_svc_await_event((EventId)sf->x0);
         sf->x0 = 0; // TODO set proper return value
@@ -376,7 +376,7 @@ handle_svc(void)
         next_tid = current_tid;
     }
 
-    KLOG_DEBUG("returning to task %d", next_tid);
+    KLOG_DEBUG_M(LOG_MASK_SYSCALL, "returning to task %d", next_tid);
     tasktable_set_current_task(next_tid);
 
     on_exit_kernelmode(next_tid);
@@ -391,7 +391,7 @@ handle_interrupt(void)
     u32 iar = gic_read_iar();
     u32 interrupt_id = iar & 0x3FF;  // Get last 10 bits
 
-    /* PRINT("[INTERRUPT] ID: %d, IAR: %d from task %d", interrupt_id, iar, tasktable_current_task()); */
+    KLOG_INFO_M(LOG_MASK_ISR, "[INTERRUPT] ID: %d, IAR: %d from task %d", interrupt_id, iar, tasktable_current_task());
 
     // Timer task
     if (interrupt_id == 97) {

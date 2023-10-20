@@ -44,11 +44,11 @@ Getc(Tid io_server, int channel)
 
     int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
     if (ret < 0) {
-        println("[TID %d] WARNING, Getc()'s Send() call returned a negative value", MyTid());
+        ULOG_WARN("[TID %d] WARNING, Getc()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != IO_GETC) {
-        println("[TID %d] WARNING, the reply to Getc()'s Send() call is not the right type", MyTid());
+        ULOG_WARN("[TID %d] WARNING, the reply to Getc()'s Send() call is not the right type", MyTid());
         return -2;  // -2 is not in the kernel description for Getc()
     }
 
@@ -71,11 +71,11 @@ Putc(Tid io_server, int channel, unsigned char ch)
 
     int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
     if (ret < 0) {
-        println("[TID %d] WARNING, Putc()'s Send() call returned a negative value", MyTid());
+        ULOG_WARN("[TID %d] WARNING, Putc()'s Send() call returned a negative value", MyTid());
         return -1;
     }
     if (resp_buf.type != IO_GETC) {
-        println("[TID %d] WARNING, the reply to Putc()'s Send() call is not the right type", MyTid());
+        ULOG_WARN("[TID %d] WARNING, the reply to Putc()'s Send() call is not the right type", MyTid());
         return -2;  // -2 is not in the kernel description for Putc()
     }
 
@@ -91,7 +91,7 @@ marklinIO(void)
     for (;;) {
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(IOMsg));
         if (msg_len < 0) {
-            println("[IO SERVER] Error when receiving");
+            ULOG_WARN("[IO SERVER] Error when receiving");
             continue;
         }
 
@@ -102,7 +102,7 @@ marklinIO(void)
             // Putc() implementation
         }
         else {
-            println("[IO SERVER] Invalid message type");
+            ULOG_WARN("[IO SERVER] Invalid message type");
             continue;
         }
     }
