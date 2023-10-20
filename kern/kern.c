@@ -1,8 +1,8 @@
+#include <trainstd.h>
 #include "kern.h"
 #include "addrspace.h"
 #include "switchframe.h"
 #include "task.h"
-#include "log.h"
 #include "util.h"
 #include "scheduler.h"
 #include "alloc.h"

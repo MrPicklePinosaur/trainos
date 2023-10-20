@@ -1,5 +1,4 @@
 #include "io.h"
-#include <trainsys.h>
 
 typedef enum {
     IO_GETC = 1,

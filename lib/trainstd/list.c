@@ -1,8 +1,7 @@
 #include "list.h"
 #include "mem.h"
 #include <traindef.h>
-
-#include "kern/log.h"
+#include <trainstd.h>
 
 typedef struct ListNode ListNode;
 

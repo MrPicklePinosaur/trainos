@@ -1,7 +1,7 @@
+#include <trainstd.h>
 #include "task.h"
 #include "addrspace.h"
 #include "alloc.h"
-#include "log.h"
 
 #define RECEIVE_QUEUE_MAX_LEN 32
 

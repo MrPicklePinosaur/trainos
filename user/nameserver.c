@@ -5,8 +5,6 @@
 #include "usertasks.h"
 #include "nameserver.h"
 
-#include "kern/log.h"
-
 typedef struct NsdbEntry NsdbEntry;
 
 static Tid nameserver_tid;

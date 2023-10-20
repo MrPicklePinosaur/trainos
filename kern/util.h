@@ -2,9 +2,7 @@
 #define __UTIL_H__
 
 #include <traindef.h>
-#include <stddef.h>
-#include <stdint.h>
-#include "log.h"
+#include <trainstd.h>
 
 // ansi codes
 #define ANSI_CLEAR "\033[2J"

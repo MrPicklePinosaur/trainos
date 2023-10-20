@@ -1,6 +1,6 @@
+#include <trainstd.h>
 #include "scheduler.h"
 #include "kern/dev/uart.h"
-#include "log.h"
 #include "alloc.h"
 
 SchedulerNode* mlq[NUM_PRIORITY_LEVELS];

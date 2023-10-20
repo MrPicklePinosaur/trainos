@@ -1,6 +1,6 @@
 #include <traindef.h>
+#include <trainstd.h>
 #include "gacha.h"
-#include "log.h"
 #include "kern/dev/timer.h"
 
 u32 gacha_rand_num;

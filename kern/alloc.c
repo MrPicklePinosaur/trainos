@@ -1,7 +1,7 @@
 #include <traindef.h>
+#include <trainstd.h>
 #include "alloc.h"
 #include "dev/uart.h"
-#include "log.h"
 
 #define MEMORY_DEBUG 0
 

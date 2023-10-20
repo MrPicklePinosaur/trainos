@@ -5,8 +5,6 @@
 #include <string.h>
 #include <trainstd.h>
 
-#include "kern/log.h"
-
 typedef PAIR(key_t, value_t) HashMapPair;
 
 struct HashMap {

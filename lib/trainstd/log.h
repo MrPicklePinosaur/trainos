@@ -1,5 +1,5 @@
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef __TRAINSTD_LOG_H__
+#define __TRAINSTD_LOG_H__
 
 /* Simple logger with a couple of logging levels */
 
@@ -28,6 +28,11 @@ void set_log_mask(LogMask log_mask);
 LogMask get_log_mask(void);
 void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);
 
+#define ULOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_USER, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
+#define ULOG_WARN(str, ...) _log(LOG_LEVEL_WARN, LOG_MASK_USER, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
+#define ULOG_INFO(str, ...) _log(LOG_LEVEL_INFO, LOG_MASK_USER, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
+#define ULOG_DEBUG(str, ...) _log(LOG_LEVEL_DEBUG, LOG_MASK_USER, "[DEBUG] ", (str), ##__VA_ARGS__)
+
 #define KLOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_KERN, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
 #define KLOG_WARN(str, ...) _log(LOG_LEVEL_WARN, LOG_MASK_KERN, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
 #define KLOG_INFO(str, ...) _log(LOG_LEVEL_INFO, LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
@@ -36,6 +41,11 @@ void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);
 #define PRINT(str, ...) _log(LOG_LEVEL_ALWAYS, LOG_MASK_ALL, "", (str), ##__VA_ARGS__)
 
 #define PANIC(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[PANIC] ", (str), ##__VA_ARGS__); _panic();
+// Used to mark places where code is unimplemented and is a work in progress
+#define UNIMPLEMENTED(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[UNIMPLEMENTED] ", (str), ##__VA_ARGS__); _panic();
+// Assert that the code indicated should not be reachable via standard execution
+#define UNREACHABLE(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[UNREACHABLE] ", (str), ##__VA_ARGS__); _panic();
+
 void _panic(void);
 
-#endif // __LOG_H__
+#endif // __TRAINSTD_LOG_H__

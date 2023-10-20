@@ -1,5 +1,5 @@
+#include <trainstd.h>
 #include "perf.h"
-#include "log.h"
 #include "dev/timer.h"
 
 Tid _idle_tid; // tid of the idle task

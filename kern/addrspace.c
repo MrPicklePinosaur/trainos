@@ -1,9 +1,8 @@
-#include <stddef.h>
 #include <traindef.h>
+#include <trainstd.h>
 
 #include "addrspace.h"
 #include "kern/dev/uart.h"
-#include "log.h"
 
 typedef struct PageTable PageTable;
 

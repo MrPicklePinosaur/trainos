@@ -1,6 +1,6 @@
+#include <trainstd.h>
 #include "switchframe.h"
 #include "kern/dev/uart.h"
-#include "log.h"
 
 SwitchFrame
 switchframe_new(Address sp, void (*entrypoint)())

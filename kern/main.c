@@ -1,8 +1,8 @@
+#include <trainstd.h>
 #include "kern/dev/uart.h"
 #include "kern.h"
 #include "task.h"
 #include "util.h"
-#include "log.h"
 #include "switchframe.h"
 #include "task.h"
 #include "alloc.h"
