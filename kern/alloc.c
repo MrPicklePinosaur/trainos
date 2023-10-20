@@ -146,7 +146,7 @@ freelist_free(void* ptr)
 
     // tiny sanitation check
     if (block->next != NULL) {
-        LOG_WARN("Potentially corrupted malloc data structure or invalid ptr to free");
+        KLOG_WARN("Potentially corrupted malloc data structure or invalid ptr to free");
         return;
     }
 

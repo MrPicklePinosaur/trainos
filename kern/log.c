@@ -2,11 +2,13 @@
 #include "kern/dev/uart.h"
 
 LogLevel log_level;
+LogMask log_mask;
 
 void
 log_init(void)
 {
     log_level = LOG_LEVEL_WARN;
+    log_mask = LOG_MASK_KERN;
 }
 
 void
@@ -15,17 +17,28 @@ set_log_level(LogLevel level)
     log_level = level;
 }
 
-int
+LogLevel
 get_log_level()
 {
     return log_level;
 }
 
+void
+set_log_mask(LogMask log_mask)
+{
+
+}
+
+LogMask
+get_log_mask(void)
+{
+    return log_mask;
+}
 
 void
-_log(LogLevel level, char* prefix, char* format, ...)
+_log(LogLevel level, LogMask mask, char* prefix, char* format, ...)
 {
-    if (level <= log_level) {
+    if (level <= log_level && (log_mask & mask) == log_mask) {
         va_list args;
         va_start(args, format);
 

@@ -39,7 +39,7 @@ pagetable_createpage(void)
             pagetable.entries[i] |= PTE_ALLOCATED;
 
             Address base = USER_BASE + USER_ADDRSPACE_SIZE * i;
-            /* LOG_DEBUG("base %x", (unsigned char*)base); */
+            /* KLOG_DEBUG("base %x", (unsigned char*)base); */
             return addrspace_new(base);
 
         }
