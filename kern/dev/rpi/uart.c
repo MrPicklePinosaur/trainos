@@ -69,6 +69,7 @@ static const u32 UART_LCRH = 0x2c;
 static const u32 UART_CR   = 0x30;
 static const u32 UART_ILFS = 0x34;
 static const u32 UART_IMSC = 0x38;
+static const u32 UART_MIS  = 0x40;
 static const u32 UART_ICR  = 0x44;
 
 #define UART_REG(line, offset) (*(volatile u32*)(line_uarts[line] + offset))
@@ -94,10 +95,19 @@ static const u32 UART_LCRH_FEN = 0x10;
 static const u32 UART_LCRH_WLEN_LOW = 0x20;
 static const u32 UART_LCRH_WLEN_HIGH = 0x40;
 
-static const u32 UART_IMSC_RXIM = 0x10; // receive interrupt mask
-static const u32 UART_IMSC_TXIM = 0x20; // transmit interrupt mask
+static const u32 UART_IMSC_CTSMIM = 0x02; // transmit interrupt mask
+static const u32 UART_IMSC_RXIM   = 0x10; // receive interrupt mask
+static const u32 UART_IMSC_TXIM   = 0x20; // transmit interrupt mask
 
-void uart_config_and_enable(size_t line, u32 baudrate, u32 control);
+static const u32 UART_MIS_CTSMMIS = 0x02;
+static const u32 UART_MIS_RXMIS   = 0x10;
+static const u32 UART_MIS_TXMIS   = 0x20;
+
+static const u32 UART_ICR_CTSMIC = 0x02;
+static const u32 UART_ICR_RXIC   = 0x10;
+static const u32 UART_ICR_TXIC   = 0x20;
+
+void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_interrupt);
 
 // UART initialization, to be called before other UART functions
 // Nothing to do for UART0, for which GPIO is configured during boot process
@@ -113,15 +123,15 @@ void uart_init() {
 
     // not strictly necessary, since line 1 is configured during boot
     // but we'll configure the line anyways, so we know what state it is in
-    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW);
-    uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2);
+    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW, true);
+    /* uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2, true); */
 }
 
 static const u32 UARTCLK = 48000000;
 
 // Configure the line properties (e.g, parity, baud rate) of a UART
 // and ensure that it is enabled
-void uart_config_and_enable(size_t line, u32 baudrate, u32 control) {
+void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_interrupt) {
     u32 cr_state;
     // to avoid floating point, this computes 64 times the required baud divisor
     u32 baud_divisor = (u32)((((u64)UARTCLK)*4)/baudrate);
@@ -138,7 +148,10 @@ void uart_config_and_enable(size_t line, u32 baudrate, u32 control) {
     UART_REG(line, UART_LCRH) = control;
 
     // enable interrupts
-    UART_REG(line, UART_IMSC) = UART_IMSC_RXIM | UART_IMSC_TXIM;
+    if (enable_interrupt) {
+        /* UART_REG(line, UART_IMSC) = UART_IMSC_CTSMIM | UART_IMSC_RXIM | UART_IMSC_TXIM; */
+        UART_REG(line, UART_IMSC) = UART_IMSC_CTSMIM | UART_IMSC_RXIM;
+    }
 
     // re-enable the UART
     // enable both transmit and receive regardless of previous state
@@ -193,6 +206,23 @@ void uart_puts(size_t line, const char* buf) {
 
 bool uart_busy(size_t line) {
   return UART_REG(line, UART_FR) & UART_FR_TXFF;
+}
+
+// clears all interrupts
+void
+uart_clear_interrupts(size_t line) {
+    // read MIS to find out which interrupt was thrown
+    u32 mis_reg = UART_REG(line, UART_MIS);
+    if ((mis_reg & UART_MIS_RXMIS) == UART_MIS_RXMIS) {
+        
+    }
+    if ((mis_reg & UART_MIS_TXMIS) == UART_MIS_TXMIS) {
+
+    }
+    if ((mis_reg & UART_MIS_CTSMMIS) == UART_MIS_CTSMMIS) {
+
+    }
+    UART_REG(line, UART_ICR) = ~(UART_ICR_RXIC|UART_ICR_TXIC|UART_ICR_CTSMIC);
 }
 
 #endif

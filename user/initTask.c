@@ -54,11 +54,11 @@ initTask()
     };
 
     // spawn init tasks
-    initNameserverTask();
-    Create(1, &clockTask);
-    Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
-    Create(5, &perfTask);
-    Yield();
+    //initNameserverTask();
+    //Create(1, &clockTask);
+    //Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
+    //Create(5, &perfTask);
+    //Yield();
 
     /*
     for (;;) {
@@ -83,10 +83,13 @@ initTask()
     }
     */
 
-    Create(2, &K3);
-    Yield();
+    /* Create(2, &K3); */
+    /* Yield(); */
 
-    uart_putc(MARKLIN, 'A');
+    for (;;) {
+        int ch = getc();
+        println("got %x", ch);
+    }
     
     // Block init by receiving from no-one
     char dummy;

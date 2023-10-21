@@ -21,5 +21,6 @@ void uart_puts(size_t line, const char* buf);
 void uart_printf(size_t line, char *fmt, ...);
 void uart_format_print (size_t line, char *fmt, va_list va );
 
+void uart_clear_interrupts(size_t line);
 
 #endif // __DEV_UART_H__

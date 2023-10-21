@@ -37,9 +37,11 @@ void
 gic_init(void)
 {
     gic_target(0, 97);
+    gic_target(0, 153);
     // gic_target(0, 99);
 
     gic_enable(97);
+    gic_enable(153);
     // gic_enable(99);
 }
 

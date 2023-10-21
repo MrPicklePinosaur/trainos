@@ -398,7 +398,7 @@ handle_interrupt(void)
         scheduler_unblock_event(EVENT_CLOCK_TICK);
         timer_set_c1_next_tick();
     } else if (interrupt_id == 153) {
-        PANIC("uart interrupt"); 
+        uart_clear_interrupts(CONSOLE);
     } else {
         PANIC("invalid interrupt id");
     }
