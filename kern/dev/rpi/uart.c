@@ -107,8 +107,8 @@ static const u32 UART_ICR_CTSMIC = 0x02;
 static const u32 UART_ICR_RXIC   = 0x10;
 static const u32 UART_ICR_TXIC   = 0x20;
 
-List* input_fifo;
-List* output_fifo;
+CBuf* input_fifo;
+CBuf* output_fifo;
 
 void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_interrupt);
 
@@ -118,8 +118,8 @@ void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_
 // the uart control and data signals to the GPIO pins expected by the hat
 void uart_init() {
 
-    List* input_fifo = list_init();
-    List* output_fifo = list_init();
+    input_fifo = cbuf_new(64);
+    output_fifo = cbuf_new(64);
 
     setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
     setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
@@ -223,33 +223,34 @@ uart_clear_interrupts(size_t line) {
     if ((mis_reg & UART_MIS_RXMIS) == UART_MIS_RXMIS) {
 
         unsigned char data;
-        if (uart_getc_poll(line, &data) == 0) {
+        if (uart_getc_poll(line, &data) == 1) {
             PANIC("no data on receive line");
         }
-        PRINT("got %d", data);
-        list_push_back(input_fifo, (void*)data);
+        cbuf_push_back(input_fifo, data); // TODO this may need mutual exclusion (since this interrupt may happen inside a cbuf operation)
+        UART_REG(line, UART_ICR) = UART_ICR_RXIC;
 
     }
     if ((mis_reg & UART_MIS_TXMIS) == UART_MIS_TXMIS) {
 
+        UART_REG(line, UART_ICR) = UART_ICR_TXIC;
     }
     if ((mis_reg & UART_MIS_CTSMMIS) == UART_MIS_CTSMMIS) {
 
+        UART_REG(line, UART_ICR) = UART_ICR_CTSMIC;
     }
-    UART_REG(line, UART_ICR) = ~(UART_ICR_RXIC|UART_ICR_TXIC|UART_ICR_CTSMIC);
 }
 
 unsigned char
 uart_getc_buffered(size_t line)
 {
-    if (list_len(input_fifo) == 0) return 0;
-    return (unsigned char)list_pop_front(input_fifo);
+    if (cbuf_len(input_fifo) == 0) return 0;
+    return (unsigned char)cbuf_pop_front(input_fifo);
 }
 
 void
 uart_putc_buffered(size_t line, unsigned char c)
 {
-    list_push_back(output_fifo, (void*)c);
+    cbuf_push_back(output_fifo, c);
 }
 
 #endif

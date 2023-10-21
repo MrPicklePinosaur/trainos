@@ -98,12 +98,14 @@ marklinIO(void)
     getc_tasks = list_init();
 
     RegisterAs(IO_ADDRESS);
-    Create(5, &inFifoTask);
-    Yield();
 
     IOMsg msg_buf;
     IOResp reply_buf;
     int from_tid;
+
+    Create(5, &inFifoTask);
+    Yield();
+
     for (;;) {
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(IOMsg));
         if (msg_len < 0) {
@@ -161,7 +163,8 @@ inFifoTask(void)
         // reply to all tasks that are waiting for character
         ListIter it = list_iter(getc_tasks);
         Tid tid;
-        while (listiter_next(&it, (void*)&tid)) {
+        while (list_len(getc_tasks) > 0) {
+            Tid tid = list_pop_front(getc_tasks);
 
             reply_buf = (IOResp) {
                 .type = IO_GETC,
@@ -172,8 +175,9 @@ inFifoTask(void)
                 }
             };
             Reply(tid, (char*)&reply_buf, sizeof(IOResp));
-
         }
+
+
 
     }
 }

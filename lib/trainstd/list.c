@@ -243,6 +243,14 @@ listiter_next(ListIter* it, void** item)
     return true;
 }
 
+void
+list_clear(List* list)
+{
+    list->head = 0;
+    list->tail = 0;
+    list->size = 0;
+}
+
 #if 0
 // TODO untested
 // Insert item before item pointed to by iter

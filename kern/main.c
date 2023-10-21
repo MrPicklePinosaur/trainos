@@ -15,7 +15,7 @@ int kmain() {
     kern_init();
 
     set_log_level(LOG_LEVEL_DEBUG);
-    set_log_mask(LOG_MASK_KERN);
+    set_log_mask(LOG_MASK_KERN|LOG_MASK_USER|LOG_MASK_IO);
 
     // print the banner
     PRINT("");
@@ -31,7 +31,7 @@ int kmain() {
     gacha_print_roll();
 
     // PRINT("kernel stack in kmain %x", asm_sp_el1());
-
+    PRINT("Running at debug level %d with log mask 0x%x", get_log_level(), get_log_mask());
 
     // need to create first task using kernel primitives since we are in kernel mode right here
     Tid init_tid = handle_svc_create(14, &initTask); // temp making starting task very low priority
