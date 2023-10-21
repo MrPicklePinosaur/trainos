@@ -107,6 +107,9 @@ static const u32 UART_ICR_CTSMIC = 0x02;
 static const u32 UART_ICR_RXIC   = 0x10;
 static const u32 UART_ICR_TXIC   = 0x20;
 
+List* input_fifo;
+List* output_fifo;
+
 void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_interrupt);
 
 // UART initialization, to be called before other UART functions
@@ -114,6 +117,10 @@ void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_
 // For UART3 (line 2 on the RPi hat), we need to configure the GPIO to route
 // the uart control and data signals to the GPIO pins expected by the hat
 void uart_init() {
+
+    List* input_fifo = list_init();
+    List* output_fifo = list_init();
+
     setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
     setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
     setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
@@ -214,7 +221,14 @@ uart_clear_interrupts(size_t line) {
     // read MIS to find out which interrupt was thrown
     u32 mis_reg = UART_REG(line, UART_MIS);
     if ((mis_reg & UART_MIS_RXMIS) == UART_MIS_RXMIS) {
-        
+
+        unsigned char data;
+        if (uart_getc_poll(line, &data) == 0) {
+            PANIC("no data on receive line");
+        }
+        PRINT("got %d", data);
+        list_push_back(input_fifo, (void*)data);
+
     }
     if ((mis_reg & UART_MIS_TXMIS) == UART_MIS_TXMIS) {
 
@@ -223,6 +237,19 @@ uart_clear_interrupts(size_t line) {
 
     }
     UART_REG(line, UART_ICR) = ~(UART_ICR_RXIC|UART_ICR_TXIC|UART_ICR_CTSMIC);
+}
+
+unsigned char
+uart_getc_buffered(size_t line)
+{
+    if (list_len(input_fifo) == 0) return 0;
+    return (unsigned char)list_pop_front(input_fifo);
+}
+
+void
+uart_putc_buffered(size_t line, unsigned char c)
+{
+    list_push_back(output_fifo, (void*)c);
 }
 
 #endif

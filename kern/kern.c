@@ -16,9 +16,9 @@
 void
 kern_init(void)
 {
+    arena_init();
     uart_init();
     log_init();
-    arena_init();
     pagetable_init();
     tasktable_init();
     vector_table_init();
@@ -288,7 +288,7 @@ handle_svc(void)
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {
-            KLOG_DEBUG("Invalid task priority %d", sf->x0);
+            KLOG_WARN("Invalid task priority %d", sf->x0);
             sf->x0 = -1;
         }
         else {
@@ -314,7 +314,7 @@ handle_svc(void)
         next_tid = find_next_task();
 
         set_task_state(current_task, TASKSTATE_READY);
-        KLOG_DEBUG("yield context switch task_id from = %d to = %d", current_tid, next_tid);
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "yield context switch task_id from = %d to = %d", current_tid, next_tid);
     }
     else if (opcode == OPCODE_EXIT) {
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Exit");

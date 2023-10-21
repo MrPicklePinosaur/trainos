@@ -1,6 +1,7 @@
 #include "usertasks.h"
 #include "nameserver.h"
 #include "clock.h"
+#include "io.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
@@ -54,11 +55,13 @@ initTask()
     };
 
     // spawn init tasks
-    //initNameserverTask();
-    //Create(1, &clockTask);
-    //Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
+    initNameserverTask();
+    Create(1, &clockTask);
+    Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
     //Create(5, &perfTask);
     //Yield();
+    Tid io_server = Create(5, &marklinIO);
+    Yield();
 
     /*
     for (;;) {
@@ -86,11 +89,9 @@ initTask()
     /* Create(2, &K3); */
     /* Yield(); */
 
-    for (;;) {
-        int ch = getc();
-        println("got %x", ch);
-    }
-    
+    char ch = Getc(io_server, CONSOLE);
+    println("got ch %d", ch);
+
     // Block init by receiving from no-one
     char dummy;
     Tid from_tid;

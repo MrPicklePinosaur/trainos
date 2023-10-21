@@ -59,10 +59,10 @@ do_scheduler_insert(SchedulerNode* node)
 void
 scheduler_insert(Tid tid, u32 priority)
 {
-    KLOG_DEBUG("inserting task id %d, with priority %d, previous task_count = %d", tid, priority, task_count);
+    KLOG_DEBUG_M(LOG_MASK_SCHED, "inserting task id %d, with priority %d, previous task_count = %d", tid, priority, task_count);
 
     if (priority >= NUM_PRIORITY_LEVELS) {
-        KLOG_DEBUG("invalid priority");
+        KLOG_ERROR("invalid priority");
         return;
     }
 
@@ -97,9 +97,9 @@ scheduler_next(void)
 void
 scheduler_remove(Tid tid)
 {
-    KLOG_DEBUG("removing task id %d, previous task_count = %d", tid, task_count);
+    KLOG_DEBUG_M(LOG_MASK_SCHED, "removing task id %d, previous task_count = %d", tid, task_count);
     if (task_count == 0) {
-        KLOG_DEBUG("cannot remove task id %d because scheduler is empty", tid);
+        KLOG_ERROR("cannot remove task id %d because scheduler is empty", tid);
         return;
     }
 
@@ -123,7 +123,7 @@ scheduler_remove(Tid tid)
         }
     }
 
-    KLOG_DEBUG("could not find task id %d in scheduler", tid);
+    KLOG_ERROR("could not find task id %d in scheduler", tid);
 }
 
 void scheduler_unblock_event(int eventid) {

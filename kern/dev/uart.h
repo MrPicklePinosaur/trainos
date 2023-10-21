@@ -23,4 +23,7 @@ void uart_format_print (size_t line, char *fmt, va_list va );
 
 void uart_clear_interrupts(size_t line);
 
+unsigned char uart_getc_buffered(size_t line);
+void uart_putc_buffered(size_t line, unsigned char c);
+
 #endif // __DEV_UART_H__

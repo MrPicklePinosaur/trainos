@@ -23,10 +23,11 @@ typedef enum {
     LOG_MASK_SYSCALL = 4,
     LOG_MASK_ISR     = 8,
     LOG_MASK_MSG     = 16,
+    LOG_MASK_SCHED   = 32,
 
-    LOG_MASK_CLOCK   = 32,
     LOG_MASK_IO      = 64,
     LOG_MASK_NS      = 128,
+    LOG_MASK_CLOCK   = 256,
 } LogMaskBits;
 
 void log_init(void);

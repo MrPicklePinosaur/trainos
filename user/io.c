@@ -1,4 +1,8 @@
+#include <trainstd.h>
 #include "io.h"
+#include "clock.h"
+#include "nameserver.h"
+#include "kern/dev/uart.h"
 
 typedef enum {
     IO_GETC = 1,
@@ -28,6 +32,9 @@ typedef struct {
         struct { } putc;
     } data;
 } IOResp;
+
+void inFifoTask(void);
+void outFifoTask(void);
 
 int
 Getc(Tid io_server, int channel)
@@ -82,17 +89,18 @@ Putc(Tid io_server, int channel, unsigned char ch)
     return 0;
 }
 
-List* output_fifo;
-
-void
-io_init()
-{
-    output_fifo = list_init();
-}
+    
+List* getc_tasks; // all tasks waiting to get a character
 
 void
 marklinIO(void)
 {
+    getc_tasks = list_init();
+
+    RegisterAs(IO_ADDRESS);
+    Create(5, &inFifoTask);
+    Yield();
+
     IOMsg msg_buf;
     IOResp reply_buf;
     int from_tid;
@@ -105,10 +113,15 @@ marklinIO(void)
 
         if (msg_buf.type == IO_GETC) {
             // Getc() implementation
+
+            ULOG_INFO_M(LOG_MASK_IO, "Getc request from %d", from_tid);
+
+            list_push_back(getc_tasks, (void*)from_tid);
+
         }
         else if (msg_buf.type == IO_PUTC) {
             // Putc() implementation
-            list_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
+            /* list_push_back(output_fifo, (void*)msg_buf.data.putc.ch); */
         }
         else {
             ULOG_WARN("[IO SERVER] Invalid message type");
@@ -118,16 +131,49 @@ marklinIO(void)
 }
 
 
-// writes to uart if there is data in our FIFO
+// task that writes to outbuf if it is avaliable
 void
-ioTask(void)
+outFifoTask(void)
 {
     for (;;) {
 
-        if (list_len(output_fifo) == 0) continue;
+    }
+}
 
-        char next_ch = (char)list_peek_front(output_fifo);
+// task that queries for new input if it is avaliable
+void
+inFifoTask(void)
+{
+    IOResp reply_buf;
 
-        list_pop_front(output_fifo);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    u32 delay_time = Time(clock_server);
+    for (;;) {
+        delay_time += 10; // arbritry choose read poll for every 10 ticks
+        DelayUntil(clock_server, delay_time);
+
+        unsigned char ch = uart_getc_buffered(CONSOLE);
+        if (ch == 0) continue;
+
+        ULOG_DEBUG_M(LOG_MASK_IO, "got buffered character %d", ch);
+
+        // reply to all tasks that are waiting for character
+        ListIter it = list_iter(getc_tasks);
+        Tid tid;
+        while (listiter_next(&it, (void*)&tid)) {
+
+            reply_buf = (IOResp) {
+                .type = IO_GETC,
+                .data = {
+                    .getc = {
+                        .ch = ch
+                    }
+                }
+            };
+            Reply(tid, (char*)&reply_buf, sizeof(IOResp));
+
+        }
+
     }
 }
