@@ -82,6 +82,14 @@ Putc(Tid io_server, int channel, unsigned char ch)
     return 0;
 }
 
+List* output_fifo;
+
+void
+io_init()
+{
+    output_fifo = list_init();
+}
+
 void
 marklinIO(void)
 {
@@ -100,10 +108,26 @@ marklinIO(void)
         }
         else if (msg_buf.type == IO_PUTC) {
             // Putc() implementation
+            list_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
         }
         else {
             ULOG_WARN("[IO SERVER] Invalid message type");
             continue;
         }
+    }
+}
+
+
+// writes to uart if there is data in our FIFO
+void
+ioTask(void)
+{
+    for (;;) {
+
+        if (list_len(output_fifo) == 0) continue;
+
+        char next_ch = (char)list_peek_front(output_fifo);
+
+        list_pop_front(output_fifo);
     }
 }

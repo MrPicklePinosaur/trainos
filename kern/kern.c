@@ -397,8 +397,10 @@ handle_interrupt(void)
     if (interrupt_id == 97) {
         scheduler_unblock_event(EVENT_CLOCK_TICK);
         timer_set_c1_next_tick();
+    } else if (interrupt_id == 153) {
+        PANIC("uart interrupt"); 
     } else {
-        KLOG_WARN("invalid interrupt id");
+        PANIC("invalid interrupt id");
     }
 
     gic_write_eoir(iar); // TODO should this be iar or interrupt_id?

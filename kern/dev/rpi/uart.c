@@ -66,7 +66,10 @@ static const u32 UART_FR =   0x18;
 static const u32 UART_IBRD = 0x24;
 static const u32 UART_FBRD = 0x28;
 static const u32 UART_LCRH = 0x2c;
-static const u32 UART_CR =   0x30;
+static const u32 UART_CR   = 0x30;
+static const u32 UART_ILFS = 0x34;
+static const u32 UART_IMSC = 0x38;
+static const u32 UART_ICR  = 0x44;
 
 #define UART_REG(line, offset) (*(volatile u32*)(line_uarts[line] + offset))
 
@@ -91,6 +94,9 @@ static const u32 UART_LCRH_FEN = 0x10;
 static const u32 UART_LCRH_WLEN_LOW = 0x20;
 static const u32 UART_LCRH_WLEN_HIGH = 0x40;
 
+static const u32 UART_IMSC_RXIM = 0x10; // receive interrupt mask
+static const u32 UART_IMSC_TXIM = 0x20; // transmit interrupt mask
+
 void uart_config_and_enable(size_t line, u32 baudrate, u32 control);
 
 // UART initialization, to be called before other UART functions
@@ -107,9 +113,8 @@ void uart_init() {
 
     // not strictly necessary, since line 1 is configured during boot
     // but we'll configure the line anyways, so we know what state it is in
-    uart_config_and_enable(CONSOLE, 115200, 0x70);
-
-    // TODO configure marklin uart
+    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW);
+    uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2);
 }
 
 static const u32 UARTCLK = 48000000;
@@ -117,23 +122,27 @@ static const u32 UARTCLK = 48000000;
 // Configure the line properties (e.g, parity, baud rate) of a UART
 // and ensure that it is enabled
 void uart_config_and_enable(size_t line, u32 baudrate, u32 control) {
-  u32 cr_state;
-  // to avoid floating point, this computes 64 times the required baud divisor
-  u32 baud_divisor = (u32)((((u64)UARTCLK)*4)/baudrate);
+    u32 cr_state;
+    // to avoid floating point, this computes 64 times the required baud divisor
+    u32 baud_divisor = (u32)((((u64)UARTCLK)*4)/baudrate);
 
-  // line control registers should not be changed while the UART is enabled, so disable it
-  cr_state = UART_REG(line, UART_CR);
-  UART_REG(line, UART_CR) = cr_state & ~UART_CR_UARTEN;
+    // line control registers should not be changed while the UART is enabled, so disable it
+    cr_state = UART_REG(line, UART_CR);
+    UART_REG(line, UART_CR) = cr_state & ~UART_CR_UARTEN;
 
-  // set the line control registers: 8 bit, no parity, 1 stop bit, FIFOs enabled
-  UART_REG(line, UART_LCRH) = control;
+    // set the baud rate
+    UART_REG(line, UART_IBRD) = baud_divisor >> 6;
+    UART_REG(line, UART_FBRD) = baud_divisor & 0x3f;
 
-  // set the baud rate
-  UART_REG(line, UART_IBRD) = baud_divisor >> 6;
-  UART_REG(line, UART_FBRD) = baud_divisor & 0x3f;
-  // re-enable the UART
-  // enable both transmit and receive regardless of previous state
-  UART_REG(line, UART_CR) = cr_state | UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
+    // set the line control registers: 8 bit, no parity, 1 stop bit, FIFOs enabled
+    UART_REG(line, UART_LCRH) = control;
+
+    // enable interrupts
+    UART_REG(line, UART_IMSC) = UART_IMSC_RXIM | UART_IMSC_TXIM;
+
+    // re-enable the UART
+    // enable both transmit and receive regardless of previous state
+    UART_REG(line, UART_CR) = cr_state | UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
 }
 
 unsigned char uart_getc(size_t line) {

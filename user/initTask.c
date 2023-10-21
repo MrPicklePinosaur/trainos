@@ -7,6 +7,7 @@
 #include <stddef.h>
 
 #include "kern/perf.h"
+#include "kern/dev/uart.h"
 
 typedef struct {
     char* name;
@@ -84,6 +85,8 @@ initTask()
 
     Create(2, &K3);
     Yield();
+
+    uart_putc(MARKLIN, 'A');
     
     // Block init by receiving from no-one
     char dummy;
