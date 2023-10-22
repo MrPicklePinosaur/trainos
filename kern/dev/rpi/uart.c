@@ -110,7 +110,7 @@ static const u32 UART_ICR_TXIC   = 0x20;
 CBuf* input_fifo;
 CBuf* output_fifo;
 
-void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_interrupt);
+void uart_config_and_enable(size_t line, u32 baudrate, u32 control, u32 interrupts);
 
 // UART initialization, to be called before other UART functions
 // Nothing to do for UART0, for which GPIO is configured during boot process
@@ -130,15 +130,15 @@ void uart_init() {
 
     // not strictly necessary, since line 1 is configured during boot
     // but we'll configure the line anyways, so we know what state it is in
-    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW, true);
-    /* uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2, true); */
+    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW, UART_IMSC_CTSMIM | UART_IMSC_RXIM);
+    uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2, UART_IMSC_CTSMIM);
 }
 
 static const u32 UARTCLK = 48000000;
 
 // Configure the line properties (e.g, parity, baud rate) of a UART
 // and ensure that it is enabled
-void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_interrupt) {
+void uart_config_and_enable(size_t line, u32 baudrate, u32 control, u32 interrupts) {
     u32 cr_state;
     // to avoid floating point, this computes 64 times the required baud divisor
     u32 baud_divisor = (u32)((((u64)UARTCLK)*4)/baudrate);
@@ -155,10 +155,7 @@ void uart_config_and_enable(size_t line, u32 baudrate, u32 control, bool enable_
     UART_REG(line, UART_LCRH) = control;
 
     // enable interrupts
-    if (enable_interrupt) {
-        /* UART_REG(line, UART_IMSC) = UART_IMSC_CTSMIM | UART_IMSC_RXIM | UART_IMSC_TXIM; */
-        UART_REG(line, UART_IMSC) = UART_IMSC_CTSMIM | UART_IMSC_RXIM;
-    }
+    UART_REG(line, UART_IMSC) = interrupts;
 
     // re-enable the UART
     // enable both transmit and receive regardless of previous state
@@ -245,12 +242,6 @@ uart_getc_buffered(size_t line)
 {
     if (cbuf_len(input_fifo) == 0) return 0;
     return (unsigned char)cbuf_pop_front(input_fifo);
-}
-
-void
-uart_putc_buffered(size_t line, unsigned char c)
-{
-    cbuf_push_back(output_fifo, c);
 }
 
 #endif

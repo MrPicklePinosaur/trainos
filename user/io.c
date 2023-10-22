@@ -7,6 +7,7 @@
 typedef enum {
     IO_GETC = 1,
     IO_PUTC,
+    IO_UPDATE_CTS
 } IOMsgType;
 
 typedef struct {
@@ -19,6 +20,7 @@ typedef struct {
             int channel;
             unsigned char ch;
         } putc;
+        struct { } update_cts;
     } data;
 } IOMsg;
 
@@ -30,6 +32,7 @@ typedef struct {
             unsigned char ch;
         } getc;
         struct { } putc;
+        struct { } update_cts;
     } data;
 } IOResp;
 
@@ -89,12 +92,64 @@ Putc(Tid io_server, int channel, unsigned char ch)
     return 0;
 }
 
-    
+void
+UpdateCTS(Tid io_server)
+{
+    IOResp resp_buf;
+    IOMsg send_buf = (IOMsg) {
+        .type = IO_UPDATE_CTS,
+        .data = {
+            .update_cts = {}
+        }
+    };
+
+    int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
+    if (ret < 0) {
+        ULOG_WARN("[TID %d] WARNING, UpdateCTS()'s Send() call returned a negative value", MyTid());
+        return -1;
+    }
+    if (resp_buf.type != IO_UPDATE_CTS) {
+        ULOG_WARN("[TID %d] WARNING, the reply to UpdateCTS()'s Send() call is not the right type", MyTid());
+        return -2;
+    }
+
+    return 0;
+}
+
+void
+ctsNotifier(void)
+{
+    Tid io_server = WhoIs(IO_ADDRESS);
+    for (;;) {
+        AwaitEvent(EVENT_MARKLIN_CTS);
+        UpdateCTS(io_server);
+    }
+}
+
+void
+putcTestTask(void)
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid io_server = WhoIs(IO_ADDRESS);
+    for (;;) {
+        Delay(clock_server, 500);
+        Putc(io_server, MARKLIN, 26);
+        Delay(clock_server, 500);
+        Putc(io_server, MARKLIN, 77);
+        Delay(clock_server, 500);
+        Putc(io_server, MARKLIN, 0);
+        Delay(clock_server, 500);
+        Putc(io_server, MARKLIN, 77);
+    }
+}
+
 List* getc_tasks; // all tasks waiting to get a character
 
 void
 marklinIO(void)
 {
+    bool cts = true;
+
     getc_tasks = list_init();
 
     RegisterAs(IO_ADDRESS);
@@ -103,6 +158,10 @@ marklinIO(void)
     IOResp reply_buf;
     int from_tid;
 
+    List* output_fifo = list_init();
+
+    Create(5, &ctsNotifier);  // Not sure about these priorities at the moment
+    Create(4, &putcTestTask);
     Create(5, &inFifoTask);
     Yield();
 
@@ -123,7 +182,37 @@ marklinIO(void)
         }
         else if (msg_buf.type == IO_PUTC) {
             // Putc() implementation
-            /* list_push_back(output_fifo, (void*)msg_buf.data.putc.ch); */
+
+            ULOG_INFO_M(LOG_MASK_IO, "Putc request from %d", from_tid);
+
+            if (cts) {
+                ULOG_INFO_M(LOG_MASK_IO, "CTS on, sent immediately");
+                uart_putc(MARKLIN, msg_buf.data.putc.ch);
+                cts = false;
+            }
+            else {
+                ULOG_INFO_M(LOG_MASK_IO, "CTS off, queued");
+                list_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
+            }
+
+            reply_buf = (IOResp) {
+                .type = IO_PUTC,
+                .data = {
+                    .putc = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
+        }
+        else if (msg_buf.type == IO_UPDATE_CTS) {
+            // UpdateCTS() implementation
+            if (list_len(output_fifo) > 0) {
+                ULOG_INFO_M(LOG_MASK_IO, "CTS signal received, there is a queued char, printing");
+                uart_putc(MARKLIN, list_pop_front(output_fifo));
+            }
+            else {
+                ULOG_INFO_M(LOG_MASK_IO, "CTS signal received, there is no queued char");
+                cts = true;
+            }
         }
         else {
             ULOG_WARN("[IO SERVER] Invalid message type");
