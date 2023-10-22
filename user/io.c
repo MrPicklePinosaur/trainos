@@ -81,7 +81,7 @@ Putc(Tid io_server, int channel, unsigned char ch)
         ULOG_WARN("[TID %d] WARNING, Putc()'s Send() call returned a negative value", MyTid());
         return -1;
     }
-    if (resp_buf.type != IO_GETC) {
+    if (resp_buf.type != IO_PUTC) {
         ULOG_WARN("[TID %d] WARNING, the reply to Putc()'s Send() call is not the right type", MyTid());
         return -2;  // -2 is not in the kernel description for Putc()
     }
