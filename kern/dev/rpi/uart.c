@@ -32,6 +32,22 @@ static const u32 GPIO_NONE = 0x00;
 static const u32 GPIO_PUP  = 0x01;
 static const u32 GPIO_PDP  = 0x02;
 
+uint32_t query_gpio_func(uint32_t pin) {
+  uint32_t reg   =  pin / 10;
+  uint32_t shift = (pin % 10) * 3;
+  uint32_t status = GPFSEL_REG(reg);   // read status
+  status = (status >> shift) & 0x7;     // get the pin we want
+  return(status);
+}
+
+uint32_t query_gpio_puppdn(uint32_t pin) {
+  uint32_t reg   =  pin / 16;
+  uint32_t shift = (pin % 16) * 2;
+  uint32_t status = GPIO_PUP_PDN_CNTRL_REG(reg); // read status
+  status = (status >> shift) & 0x3;
+  return(status);
+}
+
 static void setup_gpio(u32 pin, u32 setting, u32 resistor) {
   u32 reg   =  pin / 10;
   u32 shift = (pin % 10) * 3;
@@ -122,11 +138,11 @@ void uart_init() {
     output_fifo = cbuf_new(64);
 
     setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
-    setup_gpio(5, GPIO_ALTFN4, GPIO_NONE);
-    setup_gpio(6, GPIO_ALTFN4, GPIO_NONE);
+    setup_gpio(5, GPIO_ALTFN4, GPIO_PUP);
+    setup_gpio(6, GPIO_ALTFN4, GPIO_PUP);
     setup_gpio(7, GPIO_ALTFN4, GPIO_NONE);
     setup_gpio(14, GPIO_ALTFN0, GPIO_NONE);
-    setup_gpio(15, GPIO_ALTFN0, GPIO_NONE);
+    setup_gpio(15, GPIO_ALTFN0, GPIO_PUP);
 
     // not strictly necessary, since line 1 is configured during boot
     // but we'll configure the line anyways, so we know what state it is in
