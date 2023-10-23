@@ -213,6 +213,14 @@ marklinIO(void)
                 ULOG_INFO_M(LOG_MASK_IO, "CTS signal received, there is no queued char");
                 cts = true;
             }
+
+            reply_buf = (IOResp) {
+                .type = IO_UPDATE_CTS,
+                .data = {
+                    .update_cts = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
         }
         else {
             ULOG_WARN("[IO SERVER] Invalid message type");

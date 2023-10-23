@@ -228,6 +228,14 @@ bool uart_busy(size_t line) {
   return UART_REG(line, UART_FR) & UART_FR_TXFF;
 }
 
+bool
+uart_is_marklin_cts_interrupt(void) {
+    if (UART_REG(MARKLIN, UART_MIS) & UART_MIS_CTSMMIS) {
+        return true;
+    }
+    return false;
+}
+
 // clears all interrupts
 void
 uart_clear_interrupts(size_t line) {
