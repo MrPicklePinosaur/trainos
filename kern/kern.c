@@ -383,7 +383,7 @@ handle_svc(void)
         next_tid = current_tid;
     }
 
-    KLOG_DEBUG_M(LOG_MASK_SYSCALL, "returning to task %d", next_tid);
+    KLOG_DEBUG_M(LOG_MASK_SYSCALL, "returning to task %d with name %s", next_tid, tasktable_get_task(next_tid)->name);
     tasktable_set_current_task(next_tid);
 
     on_exit_kernelmode(next_tid);
