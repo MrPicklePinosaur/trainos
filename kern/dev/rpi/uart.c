@@ -229,7 +229,7 @@ bool uart_busy(size_t line) {
 }
 
 bool uart_is_cts_interrupt(size_t line) {
-    return UART_REG(MARKLIN, UART_MIS) & UART_MIS_CTSMMIS;
+    return UART_REG(line, UART_MIS) & UART_MIS_CTSMMIS;
 }
 
 bool uart_get_cts(size_t line) {
