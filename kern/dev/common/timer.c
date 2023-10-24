@@ -27,7 +27,7 @@ u64 timer_get(void) {
 void
 timer_set_c1_next_tick()
 {
-    TIMER_REG(TIMER_C1) = TIMER_REG(TIMER_C1) + TICK_TIME;
+    TIMER_REG(TIMER_C1) = TIMER_REG(TIMER_C1) + ((timer_get() - TIMER_REG(TIMER_C1))/TICK_TIME + 1) * TICK_TIME;
     TIMER_REG(TIMER_CS) |= (0x1 << 1);
 }
 
