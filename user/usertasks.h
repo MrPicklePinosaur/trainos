@@ -20,6 +20,9 @@ void K2Perf();
 // K3
 void K3();
 
+// K4
+void uiTask();
+
 // Other
 void graphicsTask();
 void testHarness();
