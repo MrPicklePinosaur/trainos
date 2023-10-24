@@ -10,6 +10,7 @@ typedef u32 Tid;
 typedef enum {
     EVENT_NONE = 0,
     EVENT_CLOCK_TICK,
+    EVENT_MARKLIN_RX,
     EVENT_MARKLIN_CTS,
 } EventId;
 

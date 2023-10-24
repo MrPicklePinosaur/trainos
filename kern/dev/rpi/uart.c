@@ -147,8 +147,8 @@ void uart_init() {
 
     // not strictly necessary, since line 1 is configured during boot
     // but we'll configure the line anyways, so we know what state it is in
-    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW, UART_IMSC_CTSMIM | UART_IMSC_RXIM);
-    uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2, UART_IMSC_CTSMIM);
+    uart_config_and_enable(CONSOLE, 115200, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW, UART_IMSC_CTSMIM|UART_IMSC_RXIM);
+    uart_config_and_enable(MARKLIN, 2400, UART_LCRH_WLEN_HIGH|UART_LCRH_WLEN_LOW|UART_LCRH_STP2, UART_IMSC_CTSMIM|UART_IMSC_RXIM);
 }
 
 static const u32 UARTCLK = 48000000;
@@ -226,6 +226,10 @@ void uart_puts(size_t line, const char* buf) {
 
 bool uart_busy(size_t line) {
     return UART_REG(line, UART_FR) & UART_FR_TXFF;
+}
+
+bool uart_is_rx_interrupt(size_t line) {
+    return UART_REG(line, UART_MIS) & UART_MIS_RXMIS;
 }
 
 bool uart_is_cts_interrupt(size_t line) {

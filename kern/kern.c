@@ -398,15 +398,29 @@ handle_interrupt(void)
         scheduler_unblock_event(EVENT_CLOCK_TICK);
         timer_set_c1_next_tick();
     } else if (interrupt_id == 153) {
+        bool marklin_interrupted = false;
+        bool console_interrupted = false;
+
+        // Handle whatever interrupts occurred
         if (uart_is_cts_interrupt(MARKLIN)) {
             KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin CTS interrupt");
             if (uart_get_cts(MARKLIN)) {  // If CTS is high
-                scheduler_unblock_event(EVENT_MARKLIN_CTS);
                 KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Unblocking CTS");
+                scheduler_unblock_event(EVENT_MARKLIN_CTS);
             }
+            marklin_interrupted = true;
+        }
+        if (uart_is_rx_interrupt(MARKLIN)) {
+            KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin RX interrupt");
+            scheduler_unblock_event(EVENT_MARKLIN_RX);
+            marklin_interrupted = true;
+        }
+
+        // Clear interrupts
+        if (marklin_interrupted) {
             uart_clear_interrupts(MARKLIN);
         }
-        else {
+        if (console_interrupted) {
             uart_clear_interrupts(CONSOLE);
         }
     } else {

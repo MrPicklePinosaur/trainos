@@ -21,6 +21,7 @@ void uart_puts(size_t line, const char* buf);
 void uart_printf(size_t line, char *fmt, ...);
 void uart_format_print (size_t line, char *fmt, va_list va );
 
+bool uart_is_rx_interrupt(size_t line);
 bool uart_is_cts_interrupt(size_t line);
 bool uart_get_cts(size_t line);
 void uart_clear_interrupts(size_t line);

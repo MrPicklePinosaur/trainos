@@ -7,6 +7,7 @@
 typedef enum {
     IO_GETC = 1,
     IO_PUTC,
+    IO_RX,
     IO_CTS,
 } IOMsgType;
 
@@ -20,6 +21,7 @@ typedef struct {
             int channel;
             unsigned char ch;
         } putc;
+        struct { } rx;
         struct { } cts;
     } data;
 } IOMsg;
@@ -32,12 +34,10 @@ typedef struct {
             unsigned char ch;
         } getc;
         struct { } putc;
+        struct { } rx;
         struct { } cts;
     } data;
 } IOResp;
-
-void inFifoTask(void);
-void outFifoTask(void);
 
 int
 Getc(Tid io_server, int channel)
@@ -93,6 +93,30 @@ Putc(Tid io_server, int channel, unsigned char ch)
 }
 
 void
+SendRX(Tid io_server)
+{
+    IOResp resp_buf;
+    IOMsg send_buf = (IOMsg) {
+        .type = IO_RX,
+        .data = {
+            .rx = {}
+        }
+    };
+
+    int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
+    if (ret < 0) {
+        ULOG_WARN("[TID %d] WARNING, SendRX()'s Send() call returned a negative value", MyTid());
+        return -1;
+    }
+    if (resp_buf.type != IO_RX) {
+        ULOG_WARN("[TID %d] WARNING, the reply to SendRX()'s Send() call is not the right type", MyTid());
+        return -2;
+    }
+
+    return 0;
+}
+
+void
 SendCTS(Tid io_server)
 {
     IOResp resp_buf;
@@ -117,6 +141,16 @@ SendCTS(Tid io_server)
 }
 
 void
+rxNotifierMarklin(void)
+{
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    for (;;) {
+        AwaitEvent(EVENT_MARKLIN_RX);
+        SendRX(io_server);
+    }
+}
+
+void
 ctsNotifierMarklin(void)
 {
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
@@ -131,33 +165,35 @@ putcTestTask(void)
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Putc(io_server, MARKLIN, 26);
+    Putc(io_server, MARKLIN, 77);
     for (;;) {
-        Putc(io_server, MARKLIN, 26);
-        Putc(io_server, MARKLIN, 77);
-        Delay(clock_server, 500);
-        Putc(io_server, MARKLIN, 0);
-        Putc(io_server, MARKLIN, 77);
-        Delay(clock_server, 500);
+        Putc(io_server, MARKLIN, 133);
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        Delay(clock_server, 1000);
     }
 }
-
-List* getc_tasks; // all tasks waiting to get a character
 
 void
 ioServer(size_t line)
 {
     bool cts = true;
 
-    getc_tasks = list_init();
-
     IOMsg msg_buf;
     IOResp reply_buf;
     int from_tid;
 
+    List* getc_tasks = list_init();  // all tasks waiting to get a character
     List* output_fifo = list_init();
-
-    Create(5, &inFifoTask);
-    Yield();
 
     for (;;) {
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(IOMsg));
@@ -197,6 +233,38 @@ ioServer(size_t line)
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
         }
+        else if (msg_buf.type == IO_RX) {
+
+            // Respond to notifier that you're done
+            reply_buf = (IOResp) {
+                .type = IO_RX,
+                .data = {
+                    .rx = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
+
+            unsigned char ch = uart_getc_buffered(line);
+            if (ch == 0) {
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d RX interrupt received but no data in receive buffer", line);
+                continue;
+            }
+
+            // Respond to all tasks waiting on Getc()
+            while (list_len(getc_tasks) > 0) {
+                Tid tid = list_pop_front(getc_tasks);
+
+                reply_buf = (IOResp) {
+                    .type = IO_GETC,
+                    .data = {
+                        .getc = {
+                            .ch = ch
+                        }
+                    }
+                };
+                Reply(tid, (char*)&reply_buf, sizeof(IOResp));
+            }
+        }
         else if (msg_buf.type == IO_CTS) {
             // SendCTS() implementation
             if (list_len(output_fifo) > 0) {
@@ -235,55 +303,7 @@ marklinIO(void)
 {
     RegisterAs(IO_ADDRESS_MARKLIN);
     Create(5, &ctsNotifierMarklin);
+    Create(5, &rxNotifierMarklin);
     Create(4, &putcTestTask);
     ioServer(MARKLIN);
-}
-
-// task that writes to outbuf if it is avaliable
-void
-outFifoTask(void)
-{
-    for (;;) {
-
-    }
-}
-
-// task that queries for new input if it is avaliable
-void
-inFifoTask(void)
-{
-    IOResp reply_buf;
-
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-
-    u32 delay_time = Time(clock_server);
-    for (;;) {
-        delay_time += 10; // arbritry choose read poll for every 10 ticks
-        DelayUntil(clock_server, delay_time);
-
-        unsigned char ch = uart_getc_buffered(CONSOLE);
-        if (ch == 0) continue;
-
-        ULOG_DEBUG_M(LOG_MASK_IO, "got buffered character %d", ch);
-
-        // reply to all tasks that are waiting for character
-        ListIter it = list_iter(getc_tasks);
-        Tid tid;
-        while (list_len(getc_tasks) > 0) {
-            Tid tid = list_pop_front(getc_tasks);
-
-            reply_buf = (IOResp) {
-                .type = IO_GETC,
-                .data = {
-                    .getc = {
-                        .ch = ch
-                    }
-                }
-            };
-            Reply(tid, (char*)&reply_buf, sizeof(IOResp));
-        }
-
-
-
-    }
 }
