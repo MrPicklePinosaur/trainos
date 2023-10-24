@@ -23,6 +23,6 @@ extern int Send(int tid, const char* msg, int msglen, char* reply, int rplen);
 extern int Receive(int* tid, char* msg, int msglen);
 extern int Reply(int tid, const char* reply, int rplen);
 extern int AwaitEvent(EventId eventid);
-extern char* MyTaskName(void);
+extern char* TaskName(int tid);
 
 #endif // __TRAINSYS_H__

@@ -16,7 +16,7 @@ typedef enum {
     OPCODE_RECEIVE = 6,
     OPCODE_REPLY = 7,
     OPCODE_AWAITEVENT = 8,
-    OPCODE_MY_TASK_NAME = 9,
+    OPCODE_TASK_NAME = 9,
 } OpCode;
 
 // Initalize kernel data structurea

@@ -205,7 +205,7 @@ ioServer(size_t line)
         if (msg_buf.type == IO_GETC) {
             // Getc() implementation
 
-            ULOG_INFO_M(LOG_MASK_IO, "Line %d Getc request from %d", line, from_tid);
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Getc request from %d with name %s", line, from_tid, TaskName(from_tid));
 
             list_push_back(getc_tasks, (void*)from_tid);
 
@@ -213,7 +213,7 @@ ioServer(size_t line)
         else if (msg_buf.type == IO_PUTC) {
             // Putc() implementation
 
-            ULOG_INFO_M(LOG_MASK_IO, "Line %d Putc request from %d", line, from_tid);
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Putc request from %d with name %s", line, from_tid, TaskName(from_tid));
 
             if (cts) {
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, sent immediately", line);

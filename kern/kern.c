@@ -371,11 +371,11 @@ handle_svc(void)
 
         next_tid = find_next_task();
 
-    } else if (opcode == OPCODE_MY_TASK_NAME) {
+    } else if (opcode == OPCODE_TASK_NAME) {
 
-        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] MY TASK NAME");
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] TASK NAME");
 
-        sf->x0 = current_task->name;
+        sf->x0 = tasktable_get_task(sf->x0)->name;
         next_tid = current_tid;
 
     } else {

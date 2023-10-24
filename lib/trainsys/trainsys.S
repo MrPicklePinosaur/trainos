@@ -55,8 +55,8 @@ AwaitEvent:
     svc 0x8
     br x30
 
-.global MyTaskName
-.type MyTaskName, %function
-MyTaskName:
+.global TaskName
+.type TaskName, %function
+TaskName:
     svc 0x9
     br x30
