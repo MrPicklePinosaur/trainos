@@ -7,7 +7,7 @@
 typedef enum {
     IO_GETC = 1,
     IO_PUTC,
-    IO_UPDATE_CTS
+    IO_CTS,
 } IOMsgType;
 
 typedef struct {
@@ -20,7 +20,7 @@ typedef struct {
             int channel;
             unsigned char ch;
         } putc;
-        struct { } update_cts;
+        struct { } cts;
     } data;
 } IOMsg;
 
@@ -32,7 +32,7 @@ typedef struct {
             unsigned char ch;
         } getc;
         struct { } putc;
-        struct { } update_cts;
+        struct { } cts;
     } data;
 } IOResp;
 
@@ -93,23 +93,23 @@ Putc(Tid io_server, int channel, unsigned char ch)
 }
 
 void
-UpdateCTS(Tid io_server)
+SendCTS(Tid io_server)
 {
     IOResp resp_buf;
     IOMsg send_buf = (IOMsg) {
-        .type = IO_UPDATE_CTS,
+        .type = IO_CTS,
         .data = {
-            .update_cts = {}
+            .cts = {}
         }
     };
 
     int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
     if (ret < 0) {
-        ULOG_WARN("[TID %d] WARNING, UpdateCTS()'s Send() call returned a negative value", MyTid());
+        ULOG_WARN("[TID %d] WARNING, SendCTS()'s Send() call returned a negative value", MyTid());
         return -1;
     }
-    if (resp_buf.type != IO_UPDATE_CTS) {
-        ULOG_WARN("[TID %d] WARNING, the reply to UpdateCTS()'s Send() call is not the right type", MyTid());
+    if (resp_buf.type != IO_CTS) {
+        ULOG_WARN("[TID %d] WARNING, the reply to SendCTS()'s Send() call is not the right type", MyTid());
         return -2;
     }
 
@@ -122,7 +122,7 @@ ctsNotifierMarklin(void)
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     for (;;) {
         AwaitEvent(EVENT_MARKLIN_CTS);
-        UpdateCTS(io_server);
+        SendCTS(io_server);
     }
 }
 
@@ -197,8 +197,8 @@ ioServer(size_t line)
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
         }
-        else if (msg_buf.type == IO_UPDATE_CTS) {
-            // UpdateCTS() implementation
+        else if (msg_buf.type == IO_CTS) {
+            // SendCTS() implementation
             if (list_len(output_fifo) > 0) {
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is a queued char, printing", line);
                 uart_putc(line, list_pop_front(output_fifo));
@@ -209,9 +209,9 @@ ioServer(size_t line)
             }
 
             reply_buf = (IOResp) {
-                .type = IO_UPDATE_CTS,
+                .type = IO_CTS,
                 .data = {
-                    .update_cts = {}
+                    .cts = {}
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
