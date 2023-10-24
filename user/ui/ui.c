@@ -1,9 +1,9 @@
 #include <trainstd.h>
 #include <trainsys.h>
 #include <ctype.h>
-#include "clock.h"
-#include "io.h"
-#include "nameserver.h"
+#include "user/clock.h"
+#include "user/io.h"
+#include "user/nameserver.h"
 
 #define CH_ENTER     0x0d
 #define CH_BACKSPACE 0x08

@@ -9,4 +9,8 @@ typedef struct {
     usize length;
 } str8;
 
+str8 str8_substr(str8 s, usize start, usize end);
+u8 str8_at(str8 s, usize index);
+bool str8_cmp(str8 a, str8 b);
+
 #endif // __TRAINSTD_STRING_H__

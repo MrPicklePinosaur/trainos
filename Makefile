@@ -29,7 +29,7 @@ CFLAGS:=-g3 -pipe -static $(WARNINGS) -ffreestanding -nostartfiles \
 LDFLAGS:=-Wl,-nmagic -Wl,-Tlinker.ld
 
 # Source files and include dirs
-SOURCES := $(wildcard $(KERNDIR)/*.[cS]) $(wildcard $(KERNDIR)/**/*.[cS]) $(wildcard $(KERNDIR)/**/**/*.[cS]) $(wildcard $(USERDIR)/*.[cS]) $(wildcard $(LIBDIR)/**/*.[cS])
+SOURCES := $(wildcard $(KERNDIR)/*.[cS]) $(wildcard $(KERNDIR)/**/*.[cS]) $(wildcard $(KERNDIR)/**/**/*.[cS]) $(wildcard $(USERDIR)/*.[cS]) $(wildcard $(USERDIR)/**/*.[cS]) $(wildcard $(LIBDIR)/**/*.[cS])
 
 # Create .o and .d files for every .cc and .S (hand-written assembly) file
 OBJECTS := $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(SOURCES)))
