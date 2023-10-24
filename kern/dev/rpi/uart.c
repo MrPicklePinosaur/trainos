@@ -91,6 +91,7 @@ static const u32 UART_ICR  = 0x44;
 #define UART_REG(line, offset) (*(volatile u32*)(line_uarts[line] + offset))
 
 // masks for specific fields in the UART registers
+static const u32 UART_FR_CTS = 0x01;
 static const u32 UART_FR_RXFE = 0x10;
 static const u32 UART_FR_TXFF = 0x20;
 static const u32 UART_FR_RXFF = 0x40;
@@ -227,8 +228,12 @@ bool uart_busy(size_t line) {
     return UART_REG(line, UART_FR) & UART_FR_TXFF;
 }
 
-bool uart_is_marklin_cts_interrupt(void) {
+bool uart_is_cts_interrupt(size_t line) {
     return UART_REG(MARKLIN, UART_MIS) & UART_MIS_CTSMMIS;
+}
+
+bool uart_get_cts(size_t line) {
+    return UART_REG(line, UART_FR) & UART_FR_CTS;
 }
 
 // clears all interrupts

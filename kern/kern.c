@@ -398,8 +398,12 @@ handle_interrupt(void)
         scheduler_unblock_event(EVENT_CLOCK_TICK);
         timer_set_c1_next_tick();
     } else if (interrupt_id == 153) {
-        if (uart_is_marklin_cts_interrupt()) {
-            scheduler_unblock_event(EVENT_MARKLIN_CTS);
+        if (uart_is_cts_interrupt(MARKLIN)) {
+            KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin CTS interrupt");
+            if (uart_get_cts(MARKLIN)) {  // If CTS is high
+                scheduler_unblock_event(EVENT_MARKLIN_CTS);
+                KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Unblocking CTS");
+            }
             uart_clear_interrupts(MARKLIN);
         }
         else {
