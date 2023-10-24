@@ -60,7 +60,8 @@ initTask()
     Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
     //Create(5, &perfTask, "Idle Percentage Printer");
     //Yield();
-    Tid io_server = Create(5, &marklinIO, "Marklin IO Server");
+    Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
+    Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
     Yield();
 
     /*
@@ -89,7 +90,7 @@ initTask()
     /* Create(2, &K3, "K3"); */
     /* Yield(); */
 
-    char ch = Getc(io_server, CONSOLE);
+    char ch = Getc(io_server_console, CONSOLE);
     println("got ch %d", ch);
 
     // Block init by receiving from no-one
