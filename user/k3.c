@@ -33,10 +33,10 @@ K3Client()
 void
 K3()
 {
-    Create(3, &K3Client);
-    Create(4, &K3Client);
-    Create(5, &K3Client);
-    Create(6, &K3Client);
+    Create(3, &K3Client, "K3 Delayer 1");
+    Create(4, &K3Client, "K3 Delayer 2");
+    Create(5, &K3Client, "K3 Delayer 3");
+    Create(6, &K3Client, "K3 Delayer 4");
 
     int from_tid;
     K3Msg dummy;

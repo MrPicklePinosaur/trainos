@@ -40,8 +40,8 @@ receiverTask()
 void
 sendReceiveReplyTestTask()
 {
-    receive_tid = Create(1, &receiverTask);
-    sender_tid = Create(1, &senderTask);
+    receive_tid = Create(1, &receiverTask, "K2 Receive Tester");
+    sender_tid = Create(1, &senderTask, "K2 Send Tester");
     Yield();
     Exit(); 
 }
@@ -101,33 +101,33 @@ void
 K2Perf()
 {
     println("Send-first, 4 bytes");
-    sender_tid = Create(1, &send4);
-    receive_tid = Create(2, &receive4);
+    sender_tid = Create(1, &send4, "K2 Send-First Sender (4 Bytes)");
+    receive_tid = Create(2, &receive4, "K2 Send-First Receiver (4 Bytes)");
     Yield();
 
     println("Send-first, 64 bytes");
-    sender_tid = Create(1, &send64);
-    receive_tid = Create(2, &receive64);
+    sender_tid = Create(1, &send64, "K2 Send-First Sender (64 Bytes)");
+    receive_tid = Create(2, &receive64, "K2 Send-First Receiver (64 Bytes)");
     Yield();
 
     println("Send-first, 256 bytes");
-    sender_tid = Create(1, &send256);
-    receive_tid = Create(2, &receive256);
+    sender_tid = Create(1, &send256, "K2 Send-First Sender (256 Bytes)");
+    receive_tid = Create(2, &receive256, "K2 Send-First Receiver (256 Bytes)");
     Yield();
 
     println("Receive-first, 4 bytes");
-    sender_tid = Create(2, &send4);
-    receive_tid = Create(1, &receive4);
+    sender_tid = Create(2, &send4, "K2 Receive-First Sender (4 Bytes)");
+    receive_tid = Create(1, &receive4, "K2 Receive-First Receiver (4 Bytes)");
     Yield();
 
     println("Receive-first, 64 bytes");
-    sender_tid = Create(2, &send64);
-    receive_tid = Create(1, &receive64);
+    sender_tid = Create(2, &send64, "K2 Receive-First Sender (64 Bytes)");
+    receive_tid = Create(1, &receive64, "K2 Receive-First Receiver (64 Bytes)");
     Yield();
 
     println("Receive-first, 256 bytes");
-    sender_tid = Create(2, &send256);
-    receive_tid = Create(1, &receive256);
+    sender_tid = Create(2, &send256, "K2 Receive-First Sender (256 Bytes)");
+    receive_tid = Create(1, &receive256, "K2 Receive-First Receiver (256 Bytes)");
     Yield();
 
     Exit();

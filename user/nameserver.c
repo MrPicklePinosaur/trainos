@@ -172,7 +172,7 @@ initNameserverTask()  // Please do not call this more than once
     // initalize namespace db
     nsdb = list_init();
 
-    int ret = Create(2, &nameserverTask);
+    int ret = Create(2, &nameserverTask, "Name Server");
 
     if (ret < 0) {
         PANIC("failed to initalized nameserver");

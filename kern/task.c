@@ -29,7 +29,7 @@ tasktable_init(void)
 
 // TODO should introduce error codes
 Tid
-tasktable_create_task(u32 priority, void (*entrypoint)())
+tasktable_create_task(u32 priority, void (*entrypoint)(), const char* name)
 {
     Addrspace addrspace = pagetable_createpage();
 
@@ -52,6 +52,7 @@ tasktable_create_task(u32 priority, void (*entrypoint)())
     *new_task = (Task) {
         .tid = new_task_id,
         .parent_tid = 0,
+        .name = name,
         .state = TASKSTATE_READY,
         .priority = priority,
         .addrspace = addrspace,

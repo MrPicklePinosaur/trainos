@@ -14,7 +14,7 @@ typedef enum {
     EVENT_MARKLIN_CTS,
 } EventId;
 
-extern int Create(int priority, void (*function)());
+extern int Create(int priority, void (*function)(), const char* name);
 extern int MyTid(void);
 extern int MyParentTid(void);
 extern void Yield(void);
@@ -23,5 +23,6 @@ extern int Send(int tid, const char* msg, int msglen, char* reply, int rplen);
 extern int Receive(int* tid, char* msg, int msglen);
 extern int Reply(int tid, const char* reply, int rplen);
 extern int AwaitEvent(EventId eventid);
+extern char* MyTaskName(void);
 
 #endif // __TRAINSYS_H__

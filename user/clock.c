@@ -75,7 +75,7 @@ clockTask()
     int from_tid;
 
     // TODO need to ensure clock is registered with nameserver
-    Create(1, &notifierTask);
+    Create(1, &notifierTask, "Clock Notifier");
     Yield();
 
     for (;;) {

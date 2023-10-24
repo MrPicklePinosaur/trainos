@@ -56,11 +56,11 @@ initTask()
 
     // spawn init tasks
     initNameserverTask();
-    Create(1, &clockTask);
+    Create(1, &clockTask, "Clock Server");
     Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
-    //Create(5, &perfTask);
+    //Create(5, &perfTask, "Idle Percentage Printer");
     //Yield();
-    Tid io_server = Create(5, &marklinIO);
+    Tid io_server = Create(5, &marklinIO, "Marklin IO Server");
     Yield();
 
     /*
@@ -81,12 +81,12 @@ initTask()
             println("invalid task");
             continue;
         }
-        Create(5, task_menu[ch]->taskFn);
+        Create(5, task_menu[ch]->taskFn, "Menu-Started Task");
         Yield();
     }
     */
 
-    /* Create(2, &K3); */
+    /* Create(2, &K3, "K3"); */
     /* Yield(); */
 
     char ch = Getc(io_server, CONSOLE);

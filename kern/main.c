@@ -34,11 +34,11 @@ int kmain() {
     PRINT("Running at debug level %d with log mask 0x%x", get_log_level(), get_log_mask());
 
     // need to create first task using kernel primitives since we are in kernel mode right here
-    Tid init_tid = handle_svc_create(14, &initTask); // temp making starting task very low priority
-    Tid idle_tid = handle_svc_create(15, &idleTask);
+    Tid init_tid = handle_svc_create(14, &initTask, "Init Task"); // temp making starting task very low priority
+    Tid idle_tid = handle_svc_create(15, &idleTask, "Idle Task");
     perf_init(idle_tid);
 
-    /* Tid init_tid = handle_svc_create(4, &K2); */
+    /* Tid init_tid = handle_svc_create(4, &K2, "K2"); */
     Task* init_task = tasktable_get_task(init_tid);
     asm_enter_usermode(init_task->sf);
 

@@ -410,35 +410,35 @@ RPSClientTask3(void)
 void
 RPSTask(void)
 {
-    Create(3, &RPSServerTask);
+    Create(3, &RPSServerTask, "RPS Server");
 
     println("");
     println("======================");
     println("======= TEST 1 =======");
     println("======================");
-    Create(3, &RPSClientTask1);
-    Create(3, &RPSClientTask2);
+    Create(3, &RPSClientTask1, "RPS Test 1 AI-A");
+    Create(3, &RPSClientTask2, "RPS Test 1 AI-B");
     Yield();
 
     println("");
     println("======================");
     println("======= TEST 2 =======");
     println("======================");
-    Create(3, &RPSClientTask1);
-    Create(3, &RPSClientTask2);
-    Create(3, &RPSClientTask1);
-    Create(3, &RPSClientTask1);
-    Create(3, &RPSClientTask2);
-    Create(3, &RPSClientTask2);
+    Create(3, &RPSClientTask1, "RPS Test 2 AI-A #1");
+    Create(3, &RPSClientTask2, "RPS Test 2 AI-B #1");
+    Create(3, &RPSClientTask1, "RPS Test 2 AI-A #2");
+    Create(3, &RPSClientTask1, "RPS Test 2 AI-A #3");
+    Create(3, &RPSClientTask2, "RPS Test 2 AI-B #2");
+    Create(3, &RPSClientTask2, "RPS Test 2 AI-B #3");
     Yield();
 
     println("");
     println("======================");
     println("======= TEST 3 =======");
     println("======================");
-    Create(3, &RPSClientTask3);
-    Create(3, &RPSClientTask3);
-    Create(3, &RPSClientTask3);
+    Create(3, &RPSClientTask3, "RPS Test 3 AI-C #1");
+    Create(3, &RPSClientTask3, "RPS Test 3 AI-C #2");
+    Create(3, &RPSClientTask3, "RPS Test 3 AI-C #3");
 
     Exit();
 }

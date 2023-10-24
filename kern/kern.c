@@ -50,12 +50,12 @@ on_exit_kernelmode(Tid to_tid)
 }
 
 Tid
-handle_svc_create(u32 priority, void (*entrypoint)())
+handle_svc_create(u32 priority, void (*entrypoint)(), const char* name)
 {
     KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Create task");
     Tid current_tid = tasktable_current_task();
 
-    Tid new_tid = tasktable_create_task(priority, entrypoint);
+    Tid new_tid = tasktable_create_task(priority, entrypoint, name);
     Task* new_task = tasktable_get_task(new_tid);
 
     // if first task, set parent to null
@@ -284,7 +284,7 @@ handle_svc(void)
 
     u32 opcode = asm_esr_el1() & 0x1FFFFFF;
     /* KLOG_DEBUG("jumped to vector table handler with opcode = %x", opcode); */
-    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] In task %d", current_tid);
+    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] In task %d with name %s", current_tid, current_task->name);
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {
@@ -292,7 +292,7 @@ handle_svc(void)
             sf->x0 = -1;
         }
         else {
-            sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1);
+            sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1, sf->x2);
         }
         next_tid = current_tid;
     }
@@ -370,6 +370,13 @@ handle_svc(void)
         sf->x0 = 0; // TODO set proper return value
 
         next_tid = find_next_task();
+
+    } else if (opcode == OPCODE_MY_TASK_NAME) {
+
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] MY TASK NAME");
+
+        sf->x0 = current_task->name;
+        next_tid = current_tid;
 
     } else {
         KLOG_WARN("Uncaught syscall with opcode %x", opcode);

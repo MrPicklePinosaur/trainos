@@ -18,15 +18,15 @@ void testAlloc();
 void
 testHarness()
 {
-    Create(1, &testCbuf);
+    Create(1, &testCbuf, "Test Suite CBuf");
     Yield();
-    Create(1, &testList);
+    Create(1, &testList, "Test Suite List");
     Yield();
-    Create(1, &testHashmap);
+    Create(1, &testHashmap, "Test Suite Hashmap");
     Yield();
-    Create(5, &testNameserver);
+    Create(5, &testNameserver, "Test Suite Name Server");
     Yield();
-    Create(1, &testAlloc);
+    Create(1, &testAlloc, "Test Suite Alloc");
     Yield();
 
     Exit();
@@ -189,8 +189,8 @@ testNameserver()
 {
     println("Running test suite for nameserver -----------------");
 
-    Tid task1 = Create(1, &testingTask1);
-    Tid task2 = Create(1, &testingTask2);
+    Tid task1 = Create(1, &testingTask1, "Test Suite Task 1");
+    Tid task2 = Create(1, &testingTask2, "Test Suite Task 2");
     Yield();
 
     // TODO we need to wait for task1 and task2 to run, so sorta sus

@@ -51,6 +51,8 @@ typedef struct {
 
     Tid tid;
     Tid parent_tid;
+    const char* name;
+
     TaskState state;
     u32 priority;
     Addrspace addrspace;
@@ -70,7 +72,7 @@ struct TaskNode {
 };
 
 void tasktable_init(void);
-Tid tasktable_create_task(u32 priority, void (*entrypoint)());
+Tid tasktable_create_task(u32 priority, void (*entrypoint)(), const char* name);
 Task* tasktable_get_task(Tid tid);
 
 // Update the current active tasks. If a task was active before, it will be made into ready

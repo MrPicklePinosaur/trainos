@@ -16,6 +16,7 @@ typedef enum {
     OPCODE_RECEIVE = 6,
     OPCODE_REPLY = 7,
     OPCODE_AWAITEVENT = 8,
+    OPCODE_MY_TASK_NAME = 9,
 } OpCode;
 
 // Initalize kernel data structurea
@@ -25,7 +26,7 @@ void kern_init(void);
 extern void vector_table_init(void);
 void handle_svc(void);
 void handle_interrupt(void);
-Tid handle_svc_create(u32 priority, void (*entrypoint)());
+Tid handle_svc_create(u32 priority, void (*entrypoint)(), const char* name);
 
 void unhandled_vector_table(int number);
 

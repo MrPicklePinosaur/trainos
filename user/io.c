@@ -302,8 +302,8 @@ void
 marklinIO(void)
 {
     RegisterAs(IO_ADDRESS_MARKLIN);
-    Create(5, &ctsNotifierMarklin);
-    Create(5, &rxNotifierMarklin);
-    Create(4, &putcTestTask);
+    Create(5, &ctsNotifierMarklin, "Marklin IO Server CTS Notifier");
+    Create(5, &rxNotifierMarklin, "Marklin IO Server RX Notifier");
+    Create(4, &putcTestTask, "Marklin IO Server Putc Test");
     ioServer(MARKLIN);
 }
