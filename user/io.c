@@ -117,9 +117,9 @@ UpdateCTS(Tid io_server)
 }
 
 void
-ctsNotifier(void)
+ctsNotifierMarklin(void)
 {
-    Tid io_server = WhoIs(IO_ADDRESS);
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     for (;;) {
         AwaitEvent(EVENT_MARKLIN_CTS);
         UpdateCTS(io_server);
@@ -130,29 +130,25 @@ void
 putcTestTask(void)
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid io_server = WhoIs(IO_ADDRESS);
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     for (;;) {
-        Delay(clock_server, 500);
         Putc(io_server, MARKLIN, 26);
-        Delay(clock_server, 500);
         Putc(io_server, MARKLIN, 77);
         Delay(clock_server, 500);
         Putc(io_server, MARKLIN, 0);
-        Delay(clock_server, 500);
         Putc(io_server, MARKLIN, 77);
+        Delay(clock_server, 500);
     }
 }
 
 List* getc_tasks; // all tasks waiting to get a character
 
 void
-marklinIO(void)
+ioServer(size_t line)
 {
     bool cts = true;
 
     getc_tasks = list_init();
-
-    RegisterAs(IO_ADDRESS);
 
     IOMsg msg_buf;
     IOResp reply_buf;
@@ -160,22 +156,20 @@ marklinIO(void)
 
     List* output_fifo = list_init();
 
-    Create(5, &ctsNotifier);  // Not sure about these priorities at the moment
-    Create(4, &putcTestTask);
     Create(5, &inFifoTask);
     Yield();
 
     for (;;) {
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(IOMsg));
         if (msg_len < 0) {
-            ULOG_WARN("[IO SERVER] Error when receiving");
+            ULOG_WARN("[LINE %d IO SERVER] Error when receiving", line);
             continue;
         }
 
         if (msg_buf.type == IO_GETC) {
             // Getc() implementation
 
-            ULOG_INFO_M(LOG_MASK_IO, "Getc request from %d", from_tid);
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Getc request from %d", line, from_tid);
 
             list_push_back(getc_tasks, (void*)from_tid);
 
@@ -183,15 +177,15 @@ marklinIO(void)
         else if (msg_buf.type == IO_PUTC) {
             // Putc() implementation
 
-            ULOG_INFO_M(LOG_MASK_IO, "Putc request from %d", from_tid);
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Putc request from %d", line, from_tid);
 
             if (cts) {
-                ULOG_INFO_M(LOG_MASK_IO, "CTS on, sent immediately");
-                uart_putc(MARKLIN, msg_buf.data.putc.ch);
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, sent immediately", line);
+                uart_putc(line, msg_buf.data.putc.ch);
                 cts = false;
             }
             else {
-                ULOG_INFO_M(LOG_MASK_IO, "CTS off, queued");
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued", line);
                 list_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
             }
 
@@ -206,11 +200,11 @@ marklinIO(void)
         else if (msg_buf.type == IO_UPDATE_CTS) {
             // UpdateCTS() implementation
             if (list_len(output_fifo) > 0) {
-                ULOG_INFO_M(LOG_MASK_IO, "CTS signal received, there is a queued char, printing");
-                uart_putc(MARKLIN, list_pop_front(output_fifo));
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is a queued char, printing", line);
+                uart_putc(line, list_pop_front(output_fifo));
             }
             else {
-                ULOG_INFO_M(LOG_MASK_IO, "CTS signal received, there is no queued char");
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is no queued char", line);
                 cts = true;
             }
 
@@ -223,12 +217,27 @@ marklinIO(void)
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
         }
         else {
-            ULOG_WARN("[IO SERVER] Invalid message type");
+            ULOG_WARN("[LINE %d IO SERVER] Invalid message type", line);
             continue;
         }
     }
 }
 
+void
+consoleIO(void)
+{
+    RegisterAs(IO_ADDRESS_CONSOLE);
+    ioServer(CONSOLE);
+}
+
+void
+marklinIO(void)
+{
+    RegisterAs(IO_ADDRESS_MARKLIN);
+    Create(5, &ctsNotifierMarklin);
+    Create(4, &putcTestTask);
+    ioServer(MARKLIN);
+}
 
 // task that writes to outbuf if it is avaliable
 void

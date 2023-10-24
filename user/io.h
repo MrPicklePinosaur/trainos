@@ -4,7 +4,8 @@
 #include <trainsys.h>
 #include <trainstd.h>
 
-#define IO_ADDRESS "io"
+#define IO_ADDRESS_MARKLIN "iom"
+#define IO_ADDRESS_CONSOLE "ioc"
 
 int Getc(Tid tid, int channel);
 int Putc(Tid tid, int channel, unsigned char ch);
