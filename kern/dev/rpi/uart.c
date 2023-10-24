@@ -33,35 +33,35 @@ static const u32 GPIO_PUP  = 0x01;
 static const u32 GPIO_PDP  = 0x02;
 
 uint32_t query_gpio_func(uint32_t pin) {
-  uint32_t reg   =  pin / 10;
-  uint32_t shift = (pin % 10) * 3;
-  uint32_t status = GPFSEL_REG(reg);   // read status
-  status = (status >> shift) & 0x7;     // get the pin we want
-  return(status);
+    uint32_t reg   =  pin / 10;
+    uint32_t shift = (pin % 10) * 3;
+    uint32_t status = GPFSEL_REG(reg);   // read status
+    status = (status >> shift) & 0x7;     // get the pin we want
+    return(status);
 }
 
 uint32_t query_gpio_puppdn(uint32_t pin) {
-  uint32_t reg   =  pin / 16;
-  uint32_t shift = (pin % 16) * 2;
-  uint32_t status = GPIO_PUP_PDN_CNTRL_REG(reg); // read status
-  status = (status >> shift) & 0x3;
-  return(status);
+    uint32_t reg   =  pin / 16;
+    uint32_t shift = (pin % 16) * 2;
+    uint32_t status = GPIO_PUP_PDN_CNTRL_REG(reg); // read status
+    status = (status >> shift) & 0x3;
+    return(status);
 }
 
 static void setup_gpio(u32 pin, u32 setting, u32 resistor) {
-  u32 reg   =  pin / 10;
-  u32 shift = (pin % 10) * 3;
-  u32 status = GPFSEL_REG(reg);   // read status
-  status &= ~(7u << shift);              // clear bits
-  status |=  (setting << shift);         // set bits
-  GPFSEL_REG(reg) = status;
+    u32 reg   =  pin / 10;
+    u32 shift = (pin % 10) * 3;
+    u32 status = GPFSEL_REG(reg);   // read status
+    status &= ~(7u << shift);              // clear bits
+    status |=  (setting << shift);         // set bits
+    GPFSEL_REG(reg) = status;
 
-  reg   =  pin / 16;
-  shift = (pin % 16) * 2;
-  status = GPIO_PUP_PDN_CNTRL_REG(reg); // read status
-  status &= ~(3u << shift);              // clear bits
-  status |=  (resistor << shift);        // set bits
-  GPIO_PUP_PDN_CNTRL_REG(reg) = status; // write back
+    reg   =  pin / 16;
+    shift = (pin % 16) * 2;
+    status = GPIO_PUP_PDN_CNTRL_REG(reg); // read status
+    status &= ~(3u << shift);              // clear bits
+    status |=  (resistor << shift);        // set bits
+    GPIO_PUP_PDN_CNTRL_REG(reg) = status; // write back
 }
 
 /*********** UART CONTROL ************************ ************/
@@ -179,66 +179,60 @@ void uart_config_and_enable(size_t line, u32 baudrate, u32 control, u32 interrup
 }
 
 unsigned char uart_getc(size_t line) {
-  unsigned char ch;
-  /* wait for data if necessary */
-  while(UART_REG(line, UART_FR) & UART_FR_RXFE);
-  ch = UART_REG(line, UART_DR);
-  return(ch);
+    unsigned char ch;
+    /* wait for data if necessary */
+    while(UART_REG(line, UART_FR) & UART_FR_RXFE);
+    ch = UART_REG(line, UART_DR);
+    return(ch);
 }
 
 // Poll for input, return status is 1 if no data, 0 if data
-int
-uart_getc_poll(size_t line, unsigned char* data) {
+int uart_getc_poll(size_t line, unsigned char* data) {
 
-  // return immediately if no data
-  if (UART_REG(line, UART_FR) & UART_FR_RXFE) return (1);
+    // return immediately if no data
+    if (UART_REG(line, UART_FR) & UART_FR_RXFE) return (1);
 
-  *data = UART_REG(line, UART_DR);
-  return(0);
+    *data = UART_REG(line, UART_DR);
+    return(0);
 }
 
 void uart_putc(size_t line, unsigned char c) {
-  // make sure there is room to write more data
-  while(UART_REG(line, UART_FR) & UART_FR_TXFF);
-  UART_REG(line, UART_DR) = c;
+    // make sure there is room to write more data
+    while(UART_REG(line, UART_FR) & UART_FR_TXFF);
+    UART_REG(line, UART_DR) = c;
 }
 
 // Return status 1 if byte was not written, 0 is successfully written
 int uart_try_putc(size_t line, unsigned char c) {
-  if (UART_REG(line, UART_FR) & UART_FR_TXFF) return (1);
-  UART_REG(line, UART_DR) = c;
-  return (0);
+    if (UART_REG(line, UART_FR) & UART_FR_TXFF) return (1);
+    UART_REG(line, UART_DR) = c;
+    return (0);
 }
 
 void uart_putl(size_t line, const char* buf, size_t blen) {
-  u32 i;
-  for(i=0; i < blen; i++) {
-    uart_putc(line, *(buf+i));
-  }
+    u32 i;
+    for(i=0; i < blen; i++) {
+        uart_putc(line, *(buf+i));
+    }
 }
 
 void uart_puts(size_t line, const char* buf) {
-  while (*buf) {
-    uart_putc(line, *buf);
-    buf++;
-  }
+    while (*buf) {
+        uart_putc(line, *buf);
+        buf++;
+    }
 }
 
 bool uart_busy(size_t line) {
-  return UART_REG(line, UART_FR) & UART_FR_TXFF;
+    return UART_REG(line, UART_FR) & UART_FR_TXFF;
 }
 
-bool
-uart_is_marklin_cts_interrupt(void) {
-    if (UART_REG(MARKLIN, UART_MIS) & UART_MIS_CTSMMIS) {
-        return true;
-    }
-    return false;
+bool uart_is_marklin_cts_interrupt(void) {
+    return UART_REG(MARKLIN, UART_MIS) & UART_MIS_CTSMMIS;
 }
 
 // clears all interrupts
-void
-uart_clear_interrupts(size_t line) {
+void uart_clear_interrupts(size_t line) {
     // read MIS to find out which interrupt was thrown
     u32 mis_reg = UART_REG(line, UART_MIS);
     if ((mis_reg & UART_MIS_RXMIS) == UART_MIS_RXMIS) {
@@ -261,9 +255,7 @@ uart_clear_interrupts(size_t line) {
     }
 }
 
-unsigned char
-uart_getc_buffered(size_t line)
-{
+unsigned char uart_getc_buffered(size_t line) {
     if (cbuf_len(input_fifo) == 0) return 0;
     return (unsigned char)cbuf_pop_front(input_fifo);
 }
