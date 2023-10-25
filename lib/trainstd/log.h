@@ -29,6 +29,7 @@ typedef enum {
     LOG_MASK_NS      = 128,
     LOG_MASK_CLOCK   = 256,
     LOG_MASK_PARSER  = 512,
+    LOG_MASK_MARKLIN = 1024,
 } LogMaskBits;
 
 void log_init(void);
