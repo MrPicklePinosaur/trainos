@@ -165,6 +165,7 @@ putcTestTask(void)
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Putc(io_server, MARKLIN, 192);
     Putc(io_server, MARKLIN, 26);
     Putc(io_server, MARKLIN, 77);
     for (;;) {
