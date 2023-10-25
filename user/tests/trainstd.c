@@ -1,35 +1,13 @@
-#include "usertasks.h"
-#include "nameserver.h"
-#include <trainsys.h>
 #include <trainstd.h>
-#include <stdbool.h>
+#include "tester.h"
 
-/* user tasks for running userland tests such as data structures */
-
-#define TEST(expr) { if (expr) { println("\033[32m[PASSED]\033[0m "#expr); } else { println("\033[31m[FAILED]\033[0m "#expr); } }
-
-
-void testCbuf();
-void testList();
-void testHashmap();
-void testNameserver();
-void testAlloc();
+// test standard library
 
 void
-testHarness()
+testString()
 {
-    Create(1, &testCbuf, "Test Suite CBuf");
-    Yield();
-    Create(1, &testList, "Test Suite List");
-    Yield();
-    Create(1, &testHashmap, "Test Suite Hashmap");
-    Yield();
-    Create(5, &testNameserver, "Test Suite Name Server");
-    Yield();
-    Create(1, &testAlloc, "Test Suite Alloc");
-    Yield();
-
-    Exit();
+    println("Running test suite for string -----------------");
+    
 }
 
 void
@@ -164,40 +142,6 @@ testHashmap()
     TEST(!success);
     TEST(hashmap_get(map, "five", &success) == (void*)0);
     TEST(!success);
-
-    Exit();
-}
-
-void
-testingTask1()
-{
-    TEST(RegisterAs("firstTask") == 0);
-    Yield();
-    Exit();
-}
-
-void
-testingTask2()
-{
-    TEST(RegisterAs("secondTask") == 0);
-    Yield();
-    Exit();
-}
-
-void
-testNameserver()
-{
-    println("Running test suite for nameserver -----------------");
-
-    Tid task1 = Create(1, &testingTask1, "Test Suite Task 1");
-    Tid task2 = Create(1, &testingTask2, "Test Suite Task 2");
-    Yield();
-
-    // TODO we need to wait for task1 and task2 to run, so sorta sus
-
-    TEST((Tid)WhoIs("firstTask") == task1);
-    TEST((Tid)WhoIs("secondTask") == task2);
-    TEST((Tid)WhoIs("thirdTask") == 0); // should be not found
 
     Exit();
 }

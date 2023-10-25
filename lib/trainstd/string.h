@@ -3,6 +3,8 @@
 
 #include <traindef.h>
 
+// TODO (add concept of owned string? - implemented as vector)
+
 #define str8(s) (str8){(u8*)s, lengthof(s)}
 typedef struct {
     u8 *data;
