@@ -17,8 +17,7 @@ promptTask()
     CBuf* line = cbuf_new(32);
 
     for (;;) {
-        // TODO export value of CONSOLE from uart.c
-        int c = Getc(io_server, 1);
+        int c = Getc(io_server);
 
         if (isalnum(c) || isblank(c)) {
             cbuf_push_back(line, c);

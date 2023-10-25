@@ -15,10 +15,8 @@ typedef struct {
     IOMsgType type;
     union {
         struct {
-            int channel;
         } getc;
         struct {
-            int channel;
             unsigned char ch;
         } putc;
         struct { } rx;
@@ -40,14 +38,13 @@ typedef struct {
 } IOResp;
 
 int
-Getc(Tid io_server, int channel)
+Getc(Tid io_server)
 {
     IOResp resp_buf;
     IOMsg send_buf = (IOMsg) {
         .type = IO_GETC,
         .data = {
             .getc = {
-                .channel = channel
             }
         }
     };
@@ -66,14 +63,13 @@ Getc(Tid io_server, int channel)
 }
 
 int
-Putc(Tid io_server, int channel, unsigned char ch)
+Putc(Tid io_server, unsigned char ch)
 {
     IOResp resp_buf;
     IOMsg send_buf = (IOMsg) {
         .type = IO_PUTC,
         .data = {
             .putc = {
-                .channel = channel,
                 .ch = ch
             }
         }
@@ -165,21 +161,21 @@ putcTestTask(void)
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
-    Putc(io_server, MARKLIN, 192);
-    Putc(io_server, MARKLIN, 26);
-    Putc(io_server, MARKLIN, 77);
+    Putc(io_server, 192);
+    Putc(io_server, 26);
+    Putc(io_server, 77);
     for (;;) {
-        Putc(io_server, MARKLIN, 133);
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
-        println("DATA GOTTEN: %d", Getc(io_server, MARKLIN));
+        Putc(io_server, 133);
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
+        println("DATA GOTTEN: %d", Getc(io_server));
         Delay(clock_server, 1000);
     }
 }

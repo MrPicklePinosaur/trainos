@@ -7,8 +7,8 @@
 #define IO_ADDRESS_MARKLIN "iom"
 #define IO_ADDRESS_CONSOLE "ioc"
 
-int Getc(Tid tid, int channel);
-int Putc(Tid tid, int channel, unsigned char ch);
+int Getc(Tid tid);
+int Putc(Tid tid, unsigned char ch);
 
 void marklinIO(void);
 void consoleIO(void);
