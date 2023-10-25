@@ -277,8 +277,6 @@ handle_svc(void)
 
     on_enter_kernelmode(current_tid);
 
-    Tid next_tid;
-
     /* switchframe_debug(sf); */
     /* KLOG_DEBUG("current task tid = %d", current_tid); */
 
@@ -294,27 +292,21 @@ handle_svc(void)
         else {
             sf->x0 = handle_svc_create(sf->x0, (void (*)()) sf->x1, sf->x2);
         }
-        next_tid = current_tid;
     }
     else if (opcode == OPCODE_MY_TID) {
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] MyTid");
 
         sf->x0 = tasktable_current_task();
-        next_tid = current_tid;
     }
     else if (opcode == OPCODE_MY_PARENT_TID) {
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] MyParentTid");
 
         sf->x0 = current_task->parent_tid;
-        next_tid = current_tid;
     }
     else if (opcode == OPCODE_YIELD) {
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Yield");
 
-        next_tid = find_next_task();
-
         set_task_state(current_task, TASKSTATE_READY);
-        KLOG_INFO_M(LOG_MASK_SYSCALL, "yield context switch task_id from = %d to = %d", current_tid, next_tid);
     }
     else if (opcode == OPCODE_EXIT) {
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Exit");
@@ -328,23 +320,15 @@ handle_svc(void)
         set_task_state(current_task, TASKSTATE_EXITED);
         tasktable_delete_task(current_tid);
 
-        next_tid = find_next_task();
-
-        KLOG_DEBUG("exit context switch task_id from = %d to = %d", current_tid, next_tid);
-
     } else if (opcode == OPCODE_SEND) {
 
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] SEND");
 
         int ret = handle_svc_send(sf->x0, (const char*)sf->x1, sf->x2, (char*)sf->x3, sf->x4);
         if (ret < 0) {
-            // if error return to caller immediately (TODO is this a good design idea?)
+            // set error code
             sf->x0 = ret;
-            next_tid = current_tid;
-        } else {
-            next_tid = find_next_task();
         }
-
 
     } else if (opcode == OPCODE_RECEIVE) {
 
@@ -352,15 +336,11 @@ handle_svc(void)
 
         handle_svc_receive((int*)sf->x0, (char*)sf->x1, sf->x2);
 
-        next_tid = find_next_task();
-
     } else if (opcode == OPCODE_REPLY) {
 
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] REPLY");
 
         sf->x0 = handle_svc_reply((int)sf->x0, (const char*)sf->x1, sf->x2);
-
-        next_tid = find_next_task();
 
     } else if (opcode == OPCODE_AWAITEVENT) {
 
@@ -369,19 +349,17 @@ handle_svc(void)
         handle_svc_await_event((EventId)sf->x0);
         sf->x0 = 0; // TODO set proper return value
 
-        next_tid = find_next_task();
-
     } else if (opcode == OPCODE_TASK_NAME) {
 
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] TASK NAME");
 
         sf->x0 = tasktable_get_task(sf->x0)->name;
-        next_tid = current_tid;
 
     } else {
         KLOG_WARN("Uncaught syscall with opcode %x", opcode);
-        next_tid = current_tid;
     }
+
+    Tid next_tid = find_next_task();
 
     KLOG_DEBUG_M(LOG_MASK_SYSCALL, "returning to task %d with name %s", next_tid, tasktable_get_task(next_tid)->name);
     tasktable_set_current_task(next_tid);
