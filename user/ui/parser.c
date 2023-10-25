@@ -12,8 +12,144 @@ parse_command(str8 command)
     // read until first whitespace character
     u32 it = 0;
 
+    eat_whitespace(command, &it);
+
     str8 cmd_name = get_word(command, &it);
-    ULOG_DEBUG("%s\n ", str8_to_cstr(cmd_name));
+
+    if (str8_cmp(cmd_name, str8("tr"))) {
+
+        eat_whitespace(command, &it);
+
+        u32 train = get_number(command, &it);
+
+        eat_whitespace(command, &it);
+
+        u32 speed = get_number(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed TR command: train = %d, speed = %d", train, speed);
+
+        return (ParserResult) {
+            ._type = PARSER_RESULT_TRAIN_SPEED,
+            ._data = {
+                .train_speed = {
+                    .train = train,
+                    .speed = speed,
+                }
+            }
+        };
+    }
+    else if (str8_cmp(cmd_name, str8("rv"))) {
+
+        eat_whitespace(command, &it);
+
+        int train = get_number(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed RV command: train = %d", train);
+
+        return (ParserResult) {
+            ._type = PARSER_RESULT_REVERSE,
+            ._data = {
+                .reverse = {
+                    .train = train,
+                }
+            }
+        };
+    }
+    else if (str8_cmp(cmd_name, str8("sw"))) {
+
+        eat_whitespace(command, &it);
+
+        int switch_id = get_number(command, &it);
+
+        eat_whitespace(command, &it);
+
+        str8 mode_str = get_word(command, &it);
+
+        if (str8_cmp(mode_str, str8("S"))) {
+            ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed SW command: switch_id = %d, mode = straight", switch_id);
+            return (ParserResult) {
+                ._type = PARSER_RESULT_SWITCH,
+                ._data = {
+                    .switch_control = {
+                        .switch_id = switch_id,
+                        .switch_mode = SWITCH_MODE_STRAIGHT
+                    }
+                },
+            };
+        }
+        else if (str8_cmp(mode_str, str8("C"))) {
+            ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed SW command: switch_id = %d, mode = curved", switch_id);
+            return (ParserResult) {
+                ._type = PARSER_RESULT_SWITCH,
+                    ._data = {
+                        .switch_control = {
+                            .switch_id = switch_id,
+                            .switch_mode = SWITCH_MODE_CURVED
+                        }
+                    },
+                };
+            }
+        else {
+            return (ParserResult) {
+                ._type = PARSER_RESULT_ERROR,
+            };
+        }
+
+    }
+    else if (str8_cmp(cmd_name, str8("light"))) {
+        eat_whitespace(command, &it);
+
+        int train = get_number(command, &it);
+
+        eat_whitespace(command, &it);
+
+        str8 light_mode = get_word(command, &it);
+
+        if (str8_cmp(light_mode, str8("on"))) {
+            ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed LIGHT command: traind = %d, mode = on", train);
+            return (ParserResult) {
+                ._type = PARSER_RESULT_LIGHTS,
+                ._data = {
+                    .lights = {
+                        .train = train,
+                        .state = true,
+                    }
+                },
+            };
+        } else if (str8_cmp(light_mode, str8("off"))) {
+            ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed LIGHT command: traind = %d, mode = off", train);
+            return (ParserResult) {
+                ._type = PARSER_RESULT_LIGHTS,
+                ._data = {
+                    .lights = {
+                        .train = train,
+                        .state = false,
+                    }
+                },
+            };
+        }
+        return (ParserResult) {
+            ._type = PARSER_RESULT_ERROR,
+        };
+    }
+    else if (str8_cmp(cmd_name, str8("go"))) {
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed GO command");
+        return (ParserResult) {
+            ._type = PARSER_RESULT_GO,
+        };
+    }
+    else if (str8_cmp(cmd_name, str8("stop"))) {
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed STOP command");
+        return (ParserResult) {
+            ._type = PARSER_RESULT_STOP,
+        };
+    }
+    else if (str8_cmp(cmd_name, str8("q"))) {
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed QUIT command");
+        return (ParserResult) {
+            ._type = PARSER_RESULT_QUIT,
+        };
+    }
 
     return (ParserResult) {
         ._type = PARSER_RESULT_ERROR,
