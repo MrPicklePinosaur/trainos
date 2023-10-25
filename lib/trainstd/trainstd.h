@@ -13,6 +13,7 @@
 #include "conv.h"
 #include "timer.h"
 #include "log.h"
+#include "util.h"
 
 void println(char* format, ...);
 void print(char* format, ...);

@@ -1,3 +1,4 @@
+#include <trainstd.h>
 #include <ctype.h>
 #include "parser.h"
 
@@ -12,6 +13,7 @@ parse_command(str8 command)
     u32 it = 0;
 
     str8 cmd_name = get_word(command, &it);
+    ULOG_DEBUG("%s\n ", str8_to_cstr(cmd_name));
 
     return (ParserResult) {
         ._type = PARSER_RESULT_ERROR,

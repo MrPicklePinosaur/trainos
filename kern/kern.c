@@ -3,13 +3,11 @@
 #include "addrspace.h"
 #include "switchframe.h"
 #include "task.h"
-#include "util.h"
 #include "scheduler.h"
 #include "alloc.h"
 #include "kern/dev/uart.h"
 #include "kern/dev/timer.h"
 #include "kern/dev/gic.h"
-#include "util.h"
 #include "gacha.h"
 #include "perf.h"
 

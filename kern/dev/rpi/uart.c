@@ -3,7 +3,6 @@
 
 #if QEMU == 0
 
-#include "kern/util.h"
 #include "kern/dev/dev.h"
 #include <stdarg.h>
 #include <trainstd.h>
