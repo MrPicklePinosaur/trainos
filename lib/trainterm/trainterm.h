@@ -1,14 +1,14 @@
 #ifndef __TRAINTERM_H__
 #define __TRAINTERM_H__
 
-#include <stddef.h>
+#include <traindef.h>
 
 /* Library for manipulating the terminal */
 
 #define ANSI_CLEAR "\033[2J"
 #define ANSI_HIDE "\033[?25l"
 #define ANSI_ORIGIN "\033[H"
-#define ANSI_MOVE(r, c) "\033[" r ";" c "H"
+#define ANSI_MOVE "\033[%d;%dH"
 #define ANSI_CLEAR_LINE "\033[K"
 
 #define ANSI_BLACK "\033[30m"
@@ -23,10 +23,10 @@
 #define ANSI_RESET "\033[0m"
 
 typedef struct {
-    size_t x;
-    size_t y;
-    size_t w;
-    size_t h;
+    usize x;
+    usize y;
+    usize w;
+    usize h;
 } Window;
 
 // initialize screen for tui mode
@@ -39,7 +39,15 @@ void term_clear(void);
 void term_render(void);
 
 // window commands
-Window win_init(size_t x, size_t y, size_t w, size_t h);
+Window win_init(usize x, usize y, usize w, usize h);
 void win_draw(Window* win);
+
+// canvas commands
+void c_mv(usize x, usize y);
+void c_putc(char ch);
+void c_putc_mv(char ch, usize x, usize y);
+
+// window commands
+void w_putc_mv(Window* win, char ch, usize x, usize y);
 
 #endif // __TRAINTERM_H__

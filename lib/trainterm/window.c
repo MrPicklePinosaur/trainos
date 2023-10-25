@@ -1,8 +1,8 @@
+#include <trainstd.h>
 #include "./trainterm.h"
-#include "trainstd.h"
 
 Window
-win_init(size_t x, size_t y, size_t w, size_t h)
+win_init(usize x, usize y, usize w, usize h)
 {
     return (Window) {
         .x = x,
@@ -11,6 +11,7 @@ win_init(size_t x, size_t y, size_t w, size_t h)
         .h = h,
     };
 }
+
 
 void
 win_draw(Window* win)
@@ -33,4 +34,29 @@ win_draw(Window* win)
     print("╰");
     for (unsigned int i = 0; i < (win->w)-2; ++i) print("─");
     print("╯");
+}
+
+void
+c_mv(usize x, usize y)
+{
+    print(ANSI_MOVE, y, x);
+}
+
+void
+c_putc(char ch)
+{
+    print("%c", ch);
+}
+
+void
+c_putc_mv(char ch, usize x, usize y)
+{
+    c_mv(x, y);
+    c_putc(ch);
+}
+
+void
+w_putc_mv(Window* win, char ch, usize x, usize y)
+{
+    c_putc_mv(ch, win->x+x, win->y+y);
 }

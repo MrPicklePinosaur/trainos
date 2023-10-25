@@ -4,24 +4,6 @@
 #include <traindef.h>
 #include <trainstd.h>
 
-// ansi codes
-#define ANSI_CLEAR "\033[2J"
-#define ANSI_HIDE "\033[?25l"
-#define ANSI_ORIGIN "\033[H"
-#define ANSI_MOVE(r, c) "\033[" r ";" c "H"
-#define ANSI_CLEAR_LINE "\033[K"
-
-#define ANSI_BLACK "\033[30m"
-#define ANSI_RED "\033[31m"
-#define ANSI_GREEN "\033[32m"
-#define ANSI_YELLOW "\033[33m"
-#define ANSI_BLUE "\033[34m"
-#define ANSI_MAGENTA "\033[35m"
-#define ANSI_CYAN "\033[36m"
-#define ANSI_WHITE "\033[37m"
-
-#define ANSI_RESET "\033[0m"
-
 // memory
 void *memset(void *s, int c, size_t n);
 void* memcpy(void* restrict dest, const void* restrict src, size_t n);

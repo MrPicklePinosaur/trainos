@@ -28,6 +28,9 @@ void uart_format_print (size_t line, char *fmt, va_list va ) {
 			case 's':
 				uart_puts( line, va_arg( va, char* ) );
 				break;
+            case 'c':
+                uart_putc( line, va_arg( va, int ) );
+                break;
 			case '%':
 				uart_putc( line, ch );
 				break;
