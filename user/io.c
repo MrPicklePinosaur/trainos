@@ -284,6 +284,14 @@ ioServer(size_t line)
         }
         else if (msg_buf.type == IO_CTS) {
             // SendCTS() implementation
+            reply_buf = (IOResp) {
+                .type = IO_CTS,
+                .data = {
+                    .cts = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
+
             if (list_len(output_fifo) > 0) {
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is a queued char, printing", line);
                 uart_putc(line, list_pop_front(output_fifo));
@@ -292,14 +300,6 @@ ioServer(size_t line)
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is no queued char", line);
                 cts = true;
             }
-
-            reply_buf = (IOResp) {
-                .type = IO_CTS,
-                .data = {
-                    .cts = {}
-                }
-            };
-            Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
         }
         else {
             ULOG_WARN("[LINE %d IO SERVER] Invalid message type", line);
