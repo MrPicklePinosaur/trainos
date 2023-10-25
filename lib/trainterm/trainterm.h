@@ -46,8 +46,13 @@ void win_draw(Window* win);
 void c_mv(usize x, usize y);
 void c_putc(char ch);
 void c_putc_mv(char ch, usize x, usize y);
+void c_puts(char* s);
+void c_puts_mv(char* s, usize x, usize y);
 
 // window commands
+void w_putc(Window* win, char ch);
 void w_putc_mv(Window* win, char ch, usize x, usize y);
+void w_puts(Window* win, char* s);
+void w_puts_mv(Window* win, char* s, usize x, usize y);
 
 #endif // __TRAINTERM_H__
