@@ -61,16 +61,12 @@ initTask()
     //Create(5, &perfTask, "Idle Percentage Printer");
     //Yield();
 
-    Create(5, &testHarness, "testHarness");
-
-#if 0
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
     Yield();
 
     char ch = Getc(io_server_console, CONSOLE);
     println("got ch %d", ch);
-#endif
 
     /*
     for (;;) {
