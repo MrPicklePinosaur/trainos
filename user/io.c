@@ -188,6 +188,7 @@ void
 ioServer(size_t line)
 {
     bool cts = true;
+    bool rx = false;
 
     IOMsg msg_buf;
     IOResp reply_buf;
@@ -208,7 +209,26 @@ ioServer(size_t line)
 
             ULOG_INFO_M(LOG_MASK_IO, "Line %d Getc request from %d with name %s", line, from_tid, TaskName(from_tid));
 
-            list_push_back(getc_tasks, (void*)from_tid);
+            // If RX interrupt occurred before Getc, reply to request immediately
+            if (rx) {
+                rx = false;
+
+                unsigned char ch = uart_getc_buffered(line);
+                reply_buf = (IOResp) {
+                    .type = IO_GETC,
+                    .data = {
+                        .getc = {
+                            .ch = ch
+                        }
+                    }
+                };
+                Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
+            }
+
+            // Otherwise, wait until RX interrupt happens
+            else {
+                list_push_back(getc_tasks, (void*)from_tid);
+            }
 
         }
         else if (msg_buf.type == IO_PUTC) {
@@ -245,13 +265,14 @@ ioServer(size_t line)
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
 
-            unsigned char ch = uart_getc_buffered(line);
-            if (ch == 0) {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d RX interrupt received but no data in receive buffer", line);
+            // If no tasks are waiting on Getc(), wait until the next Getc()
+            if (list_len(getc_tasks) == 0) {
+                rx = true;
                 continue;
             }
 
             // Respond to all tasks waiting on Getc()
+            unsigned char ch = uart_getc_buffered(line);
             while (list_len(getc_tasks) > 0) {
                 Tid tid = list_pop_front(getc_tasks);
 

@@ -264,7 +264,9 @@ void uart_clear_interrupts(size_t line) {
 }
 
 unsigned char uart_getc_buffered(size_t line) {
-    if (cbuf_len(input_fifo) == 0) return 0;
+    if (cbuf_len(input_fifo) == 0) {
+        PANIC("Tried to uart_getc_buffered, but buffer is empty");
+    }
     return (unsigned char)cbuf_pop_front(input_fifo);
 }
 
