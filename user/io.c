@@ -188,7 +188,6 @@ void
 ioServer(size_t line)
 {
     bool cts = true;
-    bool rx = false;
 
     IOMsg msg_buf;
     IOResp reply_buf;
@@ -209,11 +208,11 @@ ioServer(size_t line)
 
             ULOG_INFO_M(LOG_MASK_IO, "Line %d Getc request from %d with name %s", line, from_tid, TaskName(from_tid));
 
-            // If RX interrupt occurred before Getc, reply to request immediately
-            if (rx) {
-                rx = false;
+            bool is_buffer_empty;
+            unsigned char ch = uart_getc_buffered(line, &is_buffer_empty);
 
-                unsigned char ch = uart_getc_buffered(line);
+            // If there are characters in the buffer, reply to request immediately
+            if (!is_buffer_empty) {
                 reply_buf = (IOResp) {
                     .type = IO_GETC,
                     .data = {
@@ -267,12 +266,12 @@ ioServer(size_t line)
 
             // If no tasks are waiting on Getc(), wait until the next Getc()
             if (list_len(getc_tasks) == 0) {
-                rx = true;
                 continue;
             }
 
             // Respond to all tasks waiting on Getc()
-            unsigned char ch = uart_getc_buffered(line);
+            bool is_buffer_empty;
+            unsigned char ch = uart_getc_buffered(line, &is_buffer_empty);
             while (list_len(getc_tasks) > 0) {
                 Tid tid = list_pop_front(getc_tasks);
 

@@ -263,10 +263,12 @@ void uart_clear_interrupts(size_t line) {
     }
 }
 
-unsigned char uart_getc_buffered(size_t line) {
+unsigned char uart_getc_buffered(size_t line, bool* is_buffer_empty) {
     if (cbuf_len(input_fifo) == 0) {
-        PANIC("Tried to uart_getc_buffered, but buffer is empty");
+        *is_buffer_empty = true;
+        return 0;
     }
+    *is_buffer_empty = false;
     return (unsigned char)cbuf_pop_front(input_fifo);
 }
 
