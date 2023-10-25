@@ -15,6 +15,8 @@ void testList();
 void testHashmap();
 void testAlloc();
 
+void testParser();
+
 void testNameserver();
 
 #endif // __USER_TESTER_H__

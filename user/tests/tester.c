@@ -15,8 +15,9 @@ testHarness()
         &testCbuf,
         &testList,
         &testHashmap,
-        &testNameserver,
         &testAlloc,
+        &testParser,
+        &testNameserver,
         0
     };
 

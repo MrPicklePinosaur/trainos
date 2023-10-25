@@ -1,4 +1,5 @@
 #include <trainstd.h>
+#include <trainsys.h>
 #include "tester.h"
 
 // test standard library
@@ -8,6 +9,7 @@ testString()
 {
     println("Running test suite for string -----------------");
     
+    Exit();
 }
 
 void

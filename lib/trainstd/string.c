@@ -1,4 +1,14 @@
+#include <trainstd.h>
 #include "string.h"
+
+char*
+str8_to_cstr(str8 s)
+{
+    char* cstr = alloc((s.length+1)*sizeof(char));
+    cstr = memcpy(cstr, s.data, s.length);
+    cstr[s.length] = 0; // set null byte
+    return cstr;
+}
 
 str8
 str8_substr(str8 s, usize start, usize end)
