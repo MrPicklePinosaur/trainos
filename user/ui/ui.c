@@ -17,6 +17,32 @@ typedef u8 TrainState;
 
 void executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_state, ParserResult command);
 
+// task for querying switch states
+void
+switchStateTask()
+{
+    const u32 switch_count = 5;
+    u32 switch_state[switch_count];
+
+    Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    for (;;) {
+        marklin_dump_s88(marklin_server, switch_count);
+
+        for (u32 i = 0; i < switch_count; ++i) {
+            switch_state[i] = Getc(marklin_server);
+        }
+
+        // TODO send to display server to render new switch state
+
+        // TODO maybe should use DelayUntil to guarentee uniform fetches
+        Delay(clock_server, 10);
+    }
+
+    Exit();
+}
+
 // task for getting user input form the console
 void
 promptTask()
