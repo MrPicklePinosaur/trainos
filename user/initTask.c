@@ -65,7 +65,7 @@ initTask()
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
     Yield();
 
-    char ch = Getc(io_server_console, CONSOLE);
+    char ch = Getc(io_server_console);
     println("got ch %d", ch);
 
     /*
