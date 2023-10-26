@@ -54,6 +54,13 @@ c_puts_mv(char* s, usize x, usize y)
 }
 
 void
+w_mv(Window* win, usize x, usize y)
+{
+    // TODO currently windows don't have cursor of their own
+    c_mv(x, y);
+}
+
+void
 w_putc(Window* win, char ch)
 {
     // TODO cursor local to each window

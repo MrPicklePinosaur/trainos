@@ -50,6 +50,7 @@ void c_puts(char* s);
 void c_puts_mv(char* s, usize x, usize y);
 
 // window commands
+void w_mv(Window* win, usize x, usize y);
 void w_putc(Window* win, char ch);
 void w_putc_mv(Window* win, char ch, usize x, usize y);
 void w_puts(Window* win, char* s);

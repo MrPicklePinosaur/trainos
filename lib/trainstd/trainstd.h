@@ -6,6 +6,7 @@
 
 #include "list.h"
 #include "mem.h"
+#include "int.h"
 #include "string.h"
 #include "cbuf.h"
 #include "pair.h"

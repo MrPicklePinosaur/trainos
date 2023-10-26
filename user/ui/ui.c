@@ -8,9 +8,6 @@
 #include "ui.h"
 #include "render.h"
 
-#define CH_ENTER     0x0d
-#define CH_BACKSPACE 0x08
-
 #define NUMBER_OF_TRAINS 80
 #define TRAIN_SPEED_MASK     0b01111
 #define TRAIN_LIGHTS_MASK    0b10000
@@ -60,6 +57,8 @@ promptTask()
 
     for (;;) {
         int c = Getc(io_server);
+
+        renderer_prompt(renderer_server, c);
 
         if (isalnum(c) || isblank(c)) {
             cbuf_push_back(line, c);
