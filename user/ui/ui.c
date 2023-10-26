@@ -9,6 +9,8 @@
 #include "ui.h"
 #include "render.h"
 
+#include "kern/perf.h"
+
 #define NUMBER_OF_TRAINS 80
 #define TRAIN_SPEED_MASK     0b01111
 #define TRAIN_LIGHTS_MASK    0b10000
@@ -162,6 +164,21 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
     }
 }
 
+void
+diagnosticTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid renderer_server = WhoIs(RENDERER_ADDRESS);
+    usize ticks = Time(clock_server);
+    for (;;) {
+        ticks += 100; // update every second
+        DelayUntil(clock_server, ticks); 
+        renderer_diagnostic(renderer_server, ticks, get_idle_time());
+    }
+
+    Exit();
+}
+
 // soley responsible for rendering the ui
 void
 uiTask()
@@ -169,6 +186,7 @@ uiTask()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid render_tid = Create(2, &renderTask, "render task");
 
+    Tid diagnostic_tid = Create(2, &diagnosticTask, "diagnostic task");
     Tid prompt_tid = Create(2, &promptTask, "prompt task");
     Tid switch_state_tid = Create(2, &switchStateTask, "switch state task");
 

@@ -10,6 +10,7 @@ int renderer_append_console(Tid renderer_tid, char* line);
 int renderer_prompt(Tid renderer_tid, char ch);
 int renderer_sensor_triggered(Tid renderer_tid, usize sensor_id);
 int renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode);
+int renderer_diagnostic(Tid renderer_tid, usize ticks, usize idle_percent);
 void renderTask();
 
 #endif // __UI_RENDER_H__

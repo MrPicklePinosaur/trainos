@@ -11,6 +11,7 @@ typedef enum {
     RENDERER_PROMPT, // rerender prompt
     RENDERER_SENSOR_TRIGGERED,
     RENDERER_FLIP_SWITCH,
+    RENDERER_DIAGNOSTIC,
 } RendererMsgType;
 
 typedef struct {
@@ -30,6 +31,10 @@ typedef struct {
             usize switch_id;
             SwitchMode mode;
         } flip_switch;
+        struct {
+            usize ticks;
+            usize idle_percent;
+        } diagnostic;
     } data;
 } RendererMsg;
 
@@ -100,6 +105,24 @@ renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode)
     return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
 }
 
+int
+renderer_diagnostic(Tid renderer_tid, usize ticks, usize idle_percent)
+{
+
+    RendererResp resp_buf;
+    RendererMsg send_buf = (RendererMsg) {
+        .type = RENDERER_DIAGNOSTIC,
+        .data = {
+            .diagnostic = {
+                .ticks = ticks,
+                .idle_percent = idle_percent
+            }
+        }
+    };
+
+    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
+}
+
 void
 renderTask()
 {
@@ -129,16 +152,22 @@ renderTask()
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
+    const usize DIAGNOSTIC_ANCHOR_X = 1;
+    const usize DIAGNOSTIC_ANCHOR_Y = 1;
+    Window diagnostic_win = win_init(63, 2, 20, 4);
+    win_draw(&diagnostic_win);
+    w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
+
     const usize SENSOR_LIST_ANCHOR_X = 1;
     const usize SENSOR_LIST_ANCHOR_Y = 1;
     const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
-    Window sensor_win = win_init(63, 2, 20, 17);
+    Window sensor_win = win_init(63, 6, 20, 17);
     win_draw(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
 
     const usize SWITCH_ANCHOR_X = 1;
     const usize SWITCH_ANCHOR_Y = 1;
-    Window switch_win = win_init(63, 19, 20, 17);
+    Window switch_win = win_init(63, 23, 20, 13);
     win_draw(&switch_win);
     w_puts_mv(&switch_win, "[switches]", 2, 0);
     w_puts_mv(&switch_win, "01 .     12 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+0);
@@ -243,6 +272,21 @@ renderTask()
             }
             c_attr_reset();
 
+            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
+        }
+        else if (msg_buf.type == RENDERER_DIAGNOSTIC) {
+            char ticks_str[20] = {0};
+            char idle_str[20] = {0};
+            ui2a(msg_buf.data.diagnostic.ticks, 10, ticks_str);
+            ui2a(msg_buf.data.diagnostic.idle_percent, 10, idle_str);
+
+            // TODO don't need to keep reredendering this
+            w_puts_mv(&diagnostic_win, "Tick:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y);
+            w_puts_mv(&diagnostic_win, "Idle:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y+1);
+            w_puts_mv(&diagnostic_win, ticks_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y);
+            w_puts_mv(&diagnostic_win, idle_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y+1);
+            w_putc(&diagnostic_win, '%');
+            
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
 
