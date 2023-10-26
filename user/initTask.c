@@ -48,6 +48,7 @@ initTask()
         &(TaskMenuEntry){ "K2", &RPSTask },
         &(TaskMenuEntry){ "K2Perf", &K2Perf },
         &(TaskMenuEntry){ "K3", &K3 },
+        &(TaskMenuEntry){ "K4", &uiTask },
         &(TaskMenuEntry){ "sendReceiveReplyTest", &sendReceiveReplyTestTask },
         &(TaskMenuEntry){ "graphics", &graphicsTask },
         &(TaskMenuEntry){ "test", &testHarness },
@@ -57,9 +58,7 @@ initTask()
     // spawn init tasks
     initNameserverTask();
     Create(1, &clockTask, "Clock Server");
-    //Yield();  // Yield to let the clock server run at least once before the SELECT TASK loop
     //Create(5, &perfTask, "Idle Percentage Printer");
-    //Yield();
 
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
@@ -73,17 +72,18 @@ initTask()
 
         int ch = Getc(io_server_console) - '0';
 
-        // unsigned char ch;
-        // while ((ch = getc_poll()) == 0) Yield();
-        // ch = ch - '0';
-
         if (!(0 <= ch && ch < 9)) {
             println("invalid task");
             continue;
         }
-        Create(5, task_menu[ch]->taskFn, "Menu-Started Task");
-        Yield();
+        Tid task_menu_task = Create(5, task_menu[ch]->taskFn, task_menu[ch]->name);
+        WaitTid(task_menu_task);
     }
+
+
+    char dummy;
+    Tid from_tid;
+    Receive(&from_tid, &dummy, sizeof(char));
 
     println("attempting to exit init task");
 

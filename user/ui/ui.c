@@ -62,17 +62,19 @@ promptTask()
             cbuf_push_back(line, c);
         } else if (c == CH_ENTER) {
             // drain the buffer
-            char completed_line[cbuf_len(line)];
-            for (u8 i = 0; i < cbuf_len(line); ++i)
+            usize input_len = cbuf_len(line);
+            char completed_line[input_len];
+            for (u8 i = 0; i < input_len; ++i)
                 completed_line[i] = cbuf_pop_front(line);
 
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             ParserResult parsed = parse_command(str8(completed_line));
             if (parsed._type == PARSER_RESULT_ERROR) {
                 // TODO print error message
+                PRINT("invalid command");
                 continue;
             }
-            executeCommand(marklin_server, clock_server, train_state, parsed);
+            //executeCommand(marklin_server, clock_server, train_state, parsed);
 
 
         } else if (c == CH_BACKSPACE) {
@@ -143,12 +145,7 @@ uiTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
-    // data structures
-
-    for (;;) {
-
-    }
-
+    Create(2, &promptTask, "prompt task");
 
     Exit();
 }

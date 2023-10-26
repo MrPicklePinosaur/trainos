@@ -126,7 +126,7 @@ scheduler_remove(Tid tid)
     KLOG_ERROR("could not find task id %d in scheduler", tid);
 }
 
-void scheduler_unblock_event(int eventid) {
+void scheduler_unblock_event(int eventid, int event_data) {
     for (u32 i = 0; i < NUM_PRIORITY_LEVELS; i++) {
         SchedulerNode* current = mlq[i];
         for (; current != nullptr;) {
@@ -134,6 +134,7 @@ void scheduler_unblock_event(int eventid) {
             if (task->state == TASKSTATE_AWAIT_EVENT_WAIT && task->blocking_event == eventid) {
                 task->state = TASKSTATE_READY;
                 task->blocking_event = EVENT_NONE;
+                task->sf->x0 = event_data; // set return value to the event data that was passed
             }
             current = current->next;
         }

@@ -20,6 +20,6 @@ u32 scheduler_valid_priority(u32 priority);  // Returns 1 if valid priority, 0 o
 void scheduler_insert(Tid tid, u32 priority);
 Tid scheduler_next(void);
 void scheduler_remove(Tid tid);
-void scheduler_unblock_event(int eventid);  // Unblock all tasks waiting for eventid
+void scheduler_unblock_event(int eventid, int event_data);  // Unblock all tasks waiting for eventid
 
 #endif // __SCHEDULER_H__

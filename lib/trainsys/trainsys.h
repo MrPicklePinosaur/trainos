@@ -13,6 +13,7 @@ typedef enum {
     EVENT_MARKLIN_RX,
     EVENT_MARKLIN_CTS,
     EVENT_CONSOLE_RX,
+    EVENT_TASK_EXIT,
 } EventId;
 
 extern int Create(int priority, void (*function)(), const char* name);
@@ -25,5 +26,6 @@ extern int Receive(int* tid, char* msg, int msglen);
 extern int Reply(int tid, const char* reply, int rplen);
 extern int AwaitEvent(EventId eventid);
 extern char* TaskName(int tid);
+void WaitTid(Tid tid);
 
 #endif // __TRAINSYS_H__

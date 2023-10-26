@@ -313,10 +313,12 @@ handle_svc(void)
         if (current_tid == 1) {
             KLOG_WARN("Attempting to delete task 1");
         }
-
         scheduler_remove(current_tid);
         set_task_state(current_task, TASKSTATE_EXITED);
         tasktable_delete_task(current_tid);
+
+        // unblock tasks waiting for us to exit
+        scheduler_unblock_event(EVENT_TASK_EXIT, current_tid);
 
     } else if (opcode == OPCODE_SEND) {
 
@@ -345,7 +347,6 @@ handle_svc(void)
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] AWAIT EVENT");
 
         handle_svc_await_event((EventId)sf->x0);
-        sf->x0 = 0; // TODO set proper return value
 
     } else if (opcode == OPCODE_TASK_NAME) {
 
@@ -378,7 +379,7 @@ handle_interrupt(void)
 
     // Timer task
     if (interrupt_id == 97) {
-        scheduler_unblock_event(EVENT_CLOCK_TICK);
+        scheduler_unblock_event(EVENT_CLOCK_TICK, 0);
         timer_set_c1_next_tick();
     } else if (interrupt_id == 153) {
         // Handle whatever interrupts occurred
@@ -386,19 +387,19 @@ handle_interrupt(void)
             KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin CTS interrupt");
             if (uart_get_cts(MARKLIN)) {  // If CTS is high
                 KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Unblocking CTS");
-                scheduler_unblock_event(EVENT_MARKLIN_CTS);
+                scheduler_unblock_event(EVENT_MARKLIN_CTS, 0);
             }
             uart_clear_cts(MARKLIN);
         }
         if (uart_is_rx_interrupt(MARKLIN)) {
             KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin RX interrupt");
-            scheduler_unblock_event(EVENT_MARKLIN_RX);
+            scheduler_unblock_event(EVENT_MARKLIN_RX, 0);
             uart_clear_rx(MARKLIN);
         }
 
         if (uart_is_rx_interrupt(CONSOLE)) {
             KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Console RX interrupt");
-            scheduler_unblock_event(EVENT_CONSOLE_RX);
+            scheduler_unblock_event(EVENT_CONSOLE_RX, 0);
             uart_clear_rx(CONSOLE);
         }
     } else {
