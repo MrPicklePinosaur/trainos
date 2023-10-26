@@ -7,10 +7,16 @@
 Arena
 arena_new(usize capacity)
 {
-    Arena arena = {0};
-    arena.beg = alloc(capacity);
-    arena.end = arena.beg ? arena.beg + capacity : 0;
-    return arena;
+    Arena a = {0};
+    a.beg = alloc(capacity);
+    a.end = a.beg ? a.beg + capacity : 0;
+    return a;
+}
+
+void
+arena_release(Arena *a)
+{
+    free(a);
 }
 
 void*

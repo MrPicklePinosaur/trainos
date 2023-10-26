@@ -20,6 +20,7 @@ typedef struct {
 #define arena_alloc4(a, t, n, f)    (t *)_arena_alloc(a, sizeof(t), alignof(t), n, f)
 
 Arena arena_new(usize capacity);
+void arena_release(Arena *a);
 void* _arena_alloc(Arena *a, isize size, isize align, isize count, int flags);
 
 #endif // __TRAINSTD_ARENA_H__

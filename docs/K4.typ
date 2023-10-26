@@ -41,17 +41,42 @@ Gitlab repository name: `d278liu/trainos`
 
 Commit SHA: `To be decided`
 
-= Kernel Features
-
-== Running The Train Controller
+= Running The Train Controller
 
 After booting up the kernel, you will be prompted to `SELECT TASK TO RUN`.
 Choose a task by entering a number on the keyboard.
 The train controller task is the one called `K4`.
 
-The train controller supports the `tr`, `sw`, and `rv` commands from the first assignment.
-Note that the commands are case-sensitive.
-In particular, the `S` or `C` passed to `sw` must be capitalized.
+= Kernel Features
+
+== Marklin CTL
+
+The marklin control TUI from assignment 0 was ported to `trainos` and makes extensive use of tasks and message passing to achieve lower latency in updating data and rerendering the UI. The control TUI provides a prompt to enter commands to the marklin, diagonistic information, recently triggered sensors, as well as table for switch state.
+
+The supported commands are as follows:
+
+`tr <train number> <speed>`
+Controls the speed of a given train, where `<train number>` is between 1 and 80, and speed is between 0 and 14
+
+`rv <train number>`
+Reverses the direction a given train is going
+
+`sw <switch number> <switch direction>`
+Sets the state of a switch. `<switch direction>` must be "S" (for straight) or "C" (for curved)
+
+`light <train number> <on|off>`
+Toggle the lights on the train on and off
+
+`go`
+Turns on the marklin
+
+`stop`
+Turns off the marklin
+
+`q`
+Quits the program
+
+Note that the commands are case-sensitive. In particular, the `S` or `C` passed to `sw` must be capitalized.
 
 == IO Servers
 
@@ -69,6 +94,26 @@ int Putc(int tid, unsigned char ch)
 
 The console IO server only handles Getc.
 Since we do a lot of debug printing, we determined it would be too slow using a server for console Putc's.
+
+== Task Names
+
+To facillitate easier debugging of individual tasks, each task now can be assigned a name string. The name is stored in the task data structure and the `Create()` systemcall has been modified to take in a name.
+```c
+int Create(int priority, void (*function)(), const char* name);
+```
+
+A task name system call has been introduced for any task to query the name of a given Tid.
+```c
+char* TaskName(int tid);
+```
+
+== WaitTid
+
+An additional system call was added in this version of the kernel. Previously we would have an issue that `initTask`, which was responsible for prompting the user for a task to run, was prompting the user before the previously ran task would finish running. To solve this, we introduced a system call that will block the calling task until the desired task has exited. As for implementation, `WaitTid` is actually just a wrapper around `AwaitEvent`.
+
+== trainterm.h
+
+To improve developer experience when writing UI, an ncurses-esque library was created. It supports higher level manipulation of windows and terminal attributes. Currently no cursor movement optimizations are made. This may be a consideration if we find that the console cannot keep up with out rendering needs.
 
 = Kernel Implementation
 
