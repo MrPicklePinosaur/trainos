@@ -16,6 +16,7 @@
 #define TRAIN_LIGHTS_MASK    0b10000
 
 #define BYTE_COUNT 10
+#define UNIT_COUNT 5
 
 typedef u8 TrainState;
 
@@ -25,9 +26,6 @@ void executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, T
 void
 switchStateTask()
 {
-    // for some reason marklin doesn't send sensor groups in order
-    const usize BYTE_TO_GROUP[5] = { 3, 4, 0, 1, 2 };
-
     u8 sensor_state[BYTE_COUNT] = {0};
     u8 prev_sensor_state[BYTE_COUNT] = {0};
 
@@ -36,7 +34,7 @@ switchStateTask()
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
 
     for (;;) {
-        marklin_dump_s88(marklin_server, BYTE_COUNT);
+        marklin_dump_s88(marklin_server, UNIT_COUNT);
 
         for (usize i = 0; i < BYTE_COUNT; ++i) {
             u8 sensor_byte = Getc(marklin_server);
@@ -45,10 +43,8 @@ switchStateTask()
             u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
             for (usize j = 0; j < 8; ++j) {
                 if (((triggered >> j) & 0x1) == 1) {
-                    usize group = BYTE_TO_GROUP[i / 2];
-                    u8 offset = (i % 2 == 0) ? 0 : 8;
                     u8 index = (7-j);
-                    renderer_sensor_triggered(renderer_server, group*16+offset+index);
+                    renderer_sensor_triggered(renderer_server, i*8+index);
                 }
             }
         }
