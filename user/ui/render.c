@@ -128,43 +128,42 @@ renderTask()
 {
     RegisterAs(RENDERER_ADDRESS);
 
-    // console
-    usize console_length = 0;
-
-    // prompt
-    usize prompt_length = 0;
-
-    // sensors
-    const usize MAX_SENSORS = 15;
-    CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
-
     term_init();
 
+    // CONSOLE
     const usize CONSOLE_ANCHOR_X = 1;
     const usize CONSOLE_ANCHOR_Y = 29;
+    usize console_length = 0;
     Window console_win = win_init(2, 2, 60, 31);
     win_draw(&console_win);
     w_puts_mv(&console_win, "[console]", 2, 0);
 
+    // PROMPT
     const usize PROMPT_ANCHOR_X = 3;
     const usize PROMPT_ANCHOR_Y = 1;
+    usize prompt_length = 0;
     Window prompt_win = win_init(2, 33, 60, 3);
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
+    // DIAGNOSTICS
     const usize DIAGNOSTIC_ANCHOR_X = 1;
     const usize DIAGNOSTIC_ANCHOR_Y = 1;
     Window diagnostic_win = win_init(63, 2, 20, 4);
     win_draw(&diagnostic_win);
     w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
 
+    // SENSOR
     const usize SENSOR_LIST_ANCHOR_X = 1;
     const usize SENSOR_LIST_ANCHOR_Y = 1;
     const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
+    const usize MAX_SENSORS = 15;
+    CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
     Window sensor_win = win_init(63, 6, 20, 17);
     win_draw(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
 
+    // SWITCH
     const usize SWITCH_ANCHOR_X = 1;
     const usize SWITCH_ANCHOR_Y = 1;
     Window switch_win = win_init(63, 23, 20, 13);

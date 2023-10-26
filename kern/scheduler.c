@@ -66,7 +66,7 @@ scheduler_insert(Tid tid, u32 priority)
         return;
     }
 
-    SchedulerNode* node = arena_alloc(sizeof(SchedulerNode));
+    SchedulerNode* node = kalloc(sizeof(SchedulerNode));
     node->tid = tid;
     node->priority = priority;
     node->next = nullptr;
@@ -114,7 +114,7 @@ scheduler_remove(Tid tid)
                 else {
                     mlq[i] = current->next;
                 }
-                arena_free(current);
+                kfree(current);
                 task_count--;
                 return;
             }

@@ -35,16 +35,16 @@ tasktable_create_task(u32 priority, void (*entrypoint)(), const char* name)
 
     Tid new_task_id = (tasktable.next_tid)++;
 
-    Task* new_task = arena_alloc(sizeof(Task));
-    SwitchFrame* sf = arena_alloc(sizeof(SwitchFrame));
+    Task* new_task = kalloc(sizeof(Task));
+    SwitchFrame* sf = kalloc(sizeof(SwitchFrame));
     *sf = switchframe_new(addrspace.stackbase, entrypoint);
 
-    SendBuf* send_buf = arena_alloc(sizeof(SendBuf)); 
+    SendBuf* send_buf = kalloc(sizeof(SendBuf)); 
     *send_buf = (SendBuf) {
         .in_use = false
     };
 
-    ReceiveBuf* receive_buf = arena_alloc(sizeof(ReceiveBuf)); 
+    ReceiveBuf* receive_buf = kalloc(sizeof(ReceiveBuf)); 
     *receive_buf = (ReceiveBuf) {
         .in_use = false
     };
@@ -63,7 +63,7 @@ tasktable_create_task(u32 priority, void (*entrypoint)(), const char* name)
         .blocking_event = EVENT_NONE
     };
 
-    TaskNode* new_task_node = arena_alloc(sizeof(TaskNode));
+    TaskNode* new_task_node = kalloc(sizeof(TaskNode));
     new_task_node->task = new_task;
     new_task_node->next = nullptr;
 
@@ -120,7 +120,7 @@ tasktable_delete_task(Tid tid)
     Task* task = tasktable_get_task(tid);
     task->state = TASKSTATE_EXITED;
     // don't free it for now
-    /* arena_free(task->sf); */
-    /* arena_free(task); */
+    /* kfree(task->sf); */
+    /* kfree(task); */
     // tasktable.tasks[tid] = nullptr;
 }

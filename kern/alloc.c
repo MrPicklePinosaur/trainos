@@ -38,7 +38,7 @@ cursor_alloc(size_t size)
 
     // bounds check
     if (CURSOR_ALLOC_HEAP_BASE + cursor + size >= CURSOR_ALLOC_HEAP_BASE+CURSOR_ALLOC_ALLOCATOR_SIZE) {
-        PANIC("arena allocator is out of memory %d", cursor);
+        PANIC("kernel allocator is out of memory %d", cursor);
     }
 
     void* ptr = CURSOR_ALLOC_HEAP_BASE + cursor;
@@ -132,7 +132,7 @@ freelist_alloc(size_t size)
     }
 
     // No memory left to use
-    PANIC("arena allocator is out of memory");
+    PANIC("kernel allocator is out of memory");
 
 }
 

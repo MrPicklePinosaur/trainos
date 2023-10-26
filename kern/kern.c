@@ -14,7 +14,7 @@
 void
 kern_init(void)
 {
-    arena_init();
+    kern_mem_init();
     uart_init();
     log_init();
     pagetable_init();

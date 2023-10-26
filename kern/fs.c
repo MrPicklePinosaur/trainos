@@ -45,7 +45,7 @@ fs_init(void)
 Fid
 fs_create(char* filename)
 {
-    FileMeta* meta = arena_alloc(sizeof(FileMeta));
+    FileMeta* meta = kalloc(sizeof(FileMeta));
     *meta = (FileMeta) {
         .filename = filename, // TODO truncate filename passed
         .size = 0,
@@ -73,7 +73,7 @@ fs_open(char* filename)
 
     // Put entry into open file table
     Fid fid = 0; // TODO temp
-    FileOpenTableEntry* entry = arena_alloc(sizeof(FileOpenTableEntry));
+    FileOpenTableEntry* entry = kalloc(sizeof(FileOpenTableEntry));
     *entry = (FileOpenTableEntry) {
         .tid = tasktable_current_task(),
         .cursor = 0,
@@ -89,6 +89,6 @@ fs_close(Fid fid)
     // TODO: maybe check if file is already open
 
     // Remove from open table
-    arena_free(open_table.entries[fid]);
+    kfree(open_table.entries[fid]);
     open_table.entries[fid] = 0;
 }

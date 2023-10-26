@@ -7,9 +7,9 @@
 
 /* Collection of memory allocators */
 
-#define arena_init cursor_alloc_init
-#define arena_alloc cursor_alloc
-#define arena_free cursor_free
+#define kern_mem_init cursor_alloc_init
+#define kalloc cursor_alloc
+#define kfree cursor_free
 
 void cursor_alloc_init(void);
 void* cursor_alloc(size_t size);

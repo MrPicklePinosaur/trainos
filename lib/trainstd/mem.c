@@ -4,11 +4,11 @@
 void*
 alloc(size_t size)
 {
-    return arena_alloc(size);
+    return kalloc(size);
 }
 
 void
 free(void* ptr)
 {
-    arena_free(ptr);
+    kfree(ptr);
 }
