@@ -10,6 +10,7 @@ typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
     RENDERER_SENSOR_TRIGGERED,
+    RENDERER_SET_SWITCH,
 } RendererMsgType;
 
 typedef struct {
@@ -25,6 +26,10 @@ typedef struct {
         struct {
             usize sensor_id;
         } sensor_triggered;
+        struct {
+            usize switch_id;
+            SwitchMode mode;
+        } flip_switch;
     } data;
 } RendererMsg;
 
@@ -71,6 +76,23 @@ renderer_sensor_triggered(Tid renderer_tid, usize sensor_id)
         .data = {
             .sensor_triggered = {
                 .sensor_id = sensor_id
+            }
+        }
+    };
+
+    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
+}
+
+int
+renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode)
+{
+    RendererResp resp_buf;
+    RendererMsg send_buf = (RendererMsg) {
+        .type = RENDERER_SET_SWITCH,
+        .data = {
+            .flip_switch = {
+                .switch_id = switch_id,
+                .mode = mode
             }
         }
     };

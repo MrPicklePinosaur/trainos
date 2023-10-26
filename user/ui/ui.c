@@ -15,7 +15,7 @@
 
 typedef u8 TrainState;
 
-void executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_state, ParserResult command);
+void executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command);
 
 // task for querying switch states
 void
@@ -87,9 +87,8 @@ promptTask()
                 renderer_append_console(renderer_server, "invalid command");
                 continue;
             }
-            executeCommand(marklin_server, clock_server, train_state, parsed);
+            executeCommand(marklin_server, clock_server, renderer_server, train_state, parsed);
             renderer_append_console(renderer_server, "valid command");
-
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -98,7 +97,7 @@ promptTask()
 }
 
 void
-executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_state, ParserResult command)
+executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
@@ -123,6 +122,7 @@ executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_state, Pa
             u32 switch_id = command._data.switch_control.switch_id;
             SwitchMode switch_mode = command._data.switch_control.switch_mode;
             marklin_switch_ctl(marklin_server, switch_id, switch_mode);
+            renderer_flip_switch(renderer_server, switch_id, switch_mode);
 			break;
 		}
         case PARSER_RESULT_STOP: {
