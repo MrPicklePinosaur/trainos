@@ -93,7 +93,6 @@ promptTask()
                 continue;
             }
             executeCommand(marklin_server, clock_server, renderer_server, train_state, parsed);
-            renderer_append_console(renderer_server, "valid command");
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -109,11 +108,14 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
             uint32_t train = command._data.train_speed.train;
             uint32_t speed = command._data.train_speed.speed;
             train_state[train] = (train_state[train] & ~TRAIN_SPEED_MASK) | speed;
+            renderer_append_console(renderer_server, "Setting train speed");
             marklin_train_ctl(marklin_server, train, train_state[train]);
 			break;
 		}
         case PARSER_RESULT_REVERSE: {
             uint32_t train = command._data.reverse.train;
+
+            renderer_append_console(renderer_server, "Reversing train speed");
 
             marklin_train_ctl(marklin_server, train, SPEED_STOP);
             Delay(clock_server, 10); // TODO arbritrary delay
@@ -126,20 +128,24 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
         case PARSER_RESULT_SWITCH: {
             u32 switch_id = command._data.switch_control.switch_id;
             SwitchMode switch_mode = command._data.switch_control.switch_mode;
+            renderer_append_console(renderer_server, "Setting switch state");
             marklin_switch_ctl(marklin_server, switch_id, switch_mode);
             renderer_flip_switch(renderer_server, switch_id, switch_mode);
 			break;
 		}
         case PARSER_RESULT_STOP: {
+            renderer_append_console(renderer_server, "Powering off marklin");
             marklin_stop(marklin_server);
 			break;
 		}
         case PARSER_RESULT_GO: {
+            renderer_append_console(renderer_server, "Powering on marklin");
             marklin_go(marklin_server);
 			break;
 		}
         case PARSER_RESULT_LIGHTS: {
             uint32_t train = command._data.lights.train;
+            renderer_append_console(renderer_server, "Setting train lights");
             if (command._data.lights.state) {
                 train_state[train] |= TRAIN_LIGHTS_MASK;
             } else {

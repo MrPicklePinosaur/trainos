@@ -133,7 +133,9 @@ renderTask()
     // CONSOLE
     const usize CONSOLE_ANCHOR_X = 1;
     const usize CONSOLE_ANCHOR_Y = 29;
-    usize console_length = 0;
+    const usize CONSOLE_MAX_LINES = 29;
+    const usize CONSOLE_INNER_WIDTH = 58;
+    CBuf* console_lines = cbuf_new(CONSOLE_MAX_LINES);
     Window console_win = win_init(2, 2, 60, 31);
     win_draw(&console_win);
     w_puts_mv(&console_win, "[console]", 2, 0);
@@ -190,8 +192,20 @@ renderTask()
 
         if (msg_buf.type == RENDERER_APPEND_CONSOLE) {
 
+#if 0
+            for (usize i = 0; i < cbuf_len(console_lines); ++i) {
+
+                // clear line first
+                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i);
+                for (usize j = 0; j < CONSOLE_INNER_WIDTH; ++j) w_putc(&console_win, ' '); 
+
+                // render the line
+                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i);
+                w_puts(&console_win, (char*)cbuf_get(console_lines, i));
+
+            }
             w_puts_mv(&console_win, msg_buf.data.append_console.line, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-console_length);
-            ++console_length;
+#endif
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }

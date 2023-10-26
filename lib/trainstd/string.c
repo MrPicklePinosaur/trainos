@@ -35,3 +35,4 @@ str8_cmp(str8 a, str8 b)
 
     return true;
 }
+
