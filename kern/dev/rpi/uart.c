@@ -231,6 +231,15 @@ bool uart_is_rx_interrupt(size_t line) {
     return UART_REG(line, UART_MIS) & UART_MIS_RXMIS;
 }
 
+void uart_clear_rx(size_t line) {
+    unsigned char data;
+    if (uart_getc_poll(line, &data) == 1) {
+        PANIC("no data on receive line");
+    }
+    cbuf_push_back(input_fifo, data);  // TODO this may need mutual exclusion (since this interrupt may happen inside a cbuf operation)
+    UART_REG(line, UART_ICR) = UART_ICR_RXIC;
+}
+
 bool uart_is_cts_interrupt(size_t line) {
     return UART_REG(line, UART_MIS) & UART_MIS_CTSMMIS;
 }
@@ -239,28 +248,8 @@ bool uart_get_cts(size_t line) {
     return UART_REG(line, UART_FR) & UART_FR_CTS;
 }
 
-// clears all interrupts
-void uart_clear_interrupts(size_t line) {
-    // read MIS to find out which interrupt was thrown
-    u32 mis_reg = UART_REG(line, UART_MIS);
-    if ((mis_reg & UART_MIS_RXMIS) == UART_MIS_RXMIS) {
-
-        unsigned char data;
-        if (uart_getc_poll(line, &data) == 1) {
-            PANIC("no data on receive line");
-        }
-        cbuf_push_back(input_fifo, data); // TODO this may need mutual exclusion (since this interrupt may happen inside a cbuf operation)
-        UART_REG(line, UART_ICR) = UART_ICR_RXIC;
-
-    }
-    if ((mis_reg & UART_MIS_TXMIS) == UART_MIS_TXMIS) {
-
-        UART_REG(line, UART_ICR) = UART_ICR_TXIC;
-    }
-    if ((mis_reg & UART_MIS_CTSMMIS) == UART_MIS_CTSMMIS) {
-
-        UART_REG(line, UART_ICR) = UART_ICR_CTSMIC;
-    }
+void uart_clear_cts(size_t line) {
+    UART_REG(line, UART_ICR) = UART_ICR_CTSMIC;
 }
 
 unsigned char uart_getc_buffered(size_t line, bool* is_buffer_empty) {
