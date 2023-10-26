@@ -74,7 +74,7 @@ promptTask()
                 PRINT("invalid command");
                 continue;
             }
-            //executeCommand(marklin_server, clock_server, train_state, parsed);
+            executeCommand(marklin_server, clock_server, train_state, parsed);
 
 
         } else if (c == CH_BACKSPACE) {
@@ -131,7 +131,8 @@ executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_state, Pa
 		}
         case PARSER_RESULT_QUIT: {
             // TODO exit task and restore console state
-			break;
+            Exit();
+			break; // unreachable
 		}
         default: {
             ULOG_WARN("Parser result was invalid");
@@ -145,7 +146,9 @@ uiTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
-    Create(2, &promptTask, "prompt task");
+    Tid prompt_tid = Create(2, &promptTask, "prompt task");
+    WaitTid(prompt_tid);
+    PRINT("prompt exited");
 
     Exit();
 }
