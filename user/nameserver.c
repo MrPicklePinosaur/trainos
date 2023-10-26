@@ -152,18 +152,24 @@ WhoIs(const char *name)
         }
     };
 
-    int ret = Send(nameserver_tid, (const char*)&send_buf, sizeof(NameserverMsg), (char*)&resp_buf, sizeof(NameserverResp));
-    if (ret < 0) return -1;
+    // retry a couple of times
+    const u8 WHOIS_RETRY = 5;
+    Tid tid = 0;
+    for (int i = 0; i < WHOIS_RETRY; ++i) {
+        int ret = Send(nameserver_tid, (const char*)&send_buf, sizeof(NameserverMsg), (char*)&resp_buf, sizeof(NameserverResp));
+        if (ret < 0) return -1;
+        if (resp_buf.type != NS_WHO_IS) return -1;
+        if (resp_buf.data.who_is.tid > 0) {
+            tid = resp_buf.data.who_is.tid;
+            break;
+        }
+    }
 
-    if (resp_buf.type != NS_WHO_IS) return -1;
-
-    if (resp_buf.data.who_is.tid == 0) {
+    if (tid == 0) {
         PANIC("Couldn't find tid for name %s", name);
     }
 
-    // println("who is result is %d", resp_buf.data.who_is.tid);
-
-    return resp_buf.data.who_is.tid;
+    return tid;
 }
 
 void
