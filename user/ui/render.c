@@ -10,7 +10,7 @@ typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
     RENDERER_SENSOR_TRIGGERED,
-    RENDERER_SET_SWITCH,
+    RENDERER_FLIP_SWITCH,
 } RendererMsgType;
 
 typedef struct {
@@ -88,7 +88,7 @@ renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode)
 {
     RendererResp resp_buf;
     RendererMsg send_buf = (RendererMsg) {
-        .type = RENDERER_SET_SWITCH,
+        .type = RENDERER_FLIP_SWITCH,
         .data = {
             .flip_switch = {
                 .switch_id = switch_id,
@@ -117,21 +117,41 @@ renderTask()
 
     term_init();
 
+    const usize CONSOLE_ANCHOR_X = 1;
+    const usize CONSOLE_ANCHOR_Y = 29;
     Window console_win = win_init(2, 2, 60, 31);
     win_draw(&console_win);
-    w_puts_mv(&console_win, "console", 1, 0);
+    w_puts_mv(&console_win, "[console]", 2, 0);
 
+    const usize PROMPT_ANCHOR_X = 3;
+    const usize PROMPT_ANCHOR_Y = 1;
     Window prompt_win = win_init(2, 33, 60, 3);
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
+    const usize SENSOR_LIST_ANCHOR_X = 1;
+    const usize SENSOR_LIST_ANCHOR_Y = 1;
+    const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
     Window sensor_win = win_init(63, 2, 20, 17);
     win_draw(&sensor_win);
-    w_puts_mv(&sensor_win, "sensors", 1, 0);
+    w_puts_mv(&sensor_win, "[sensors]", 2, 0);
 
+    const usize SWITCH_ANCHOR_X = 1;
+    const usize SWITCH_ANCHOR_Y = 1;
     Window switch_win = win_init(63, 19, 20, 17);
     win_draw(&switch_win);
-    w_puts_mv(&switch_win, "switches", 1, 0);
+    w_puts_mv(&switch_win, "[switches]", 2, 0);
+    w_puts_mv(&switch_win, "01 .     12 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+0);
+    w_puts_mv(&switch_win, "02 .     13 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+1);
+    w_puts_mv(&switch_win, "03 .     14 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+2);
+    w_puts_mv(&switch_win, "04 .     15 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+3);
+    w_puts_mv(&switch_win, "05 .     16 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+4);
+    w_puts_mv(&switch_win, "06 .     17 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+5);
+    w_puts_mv(&switch_win, "07 .     18 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+6);
+    w_puts_mv(&switch_win, "08 .    153 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+7);
+    w_puts_mv(&switch_win, "09 .    154 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+8);
+    w_puts_mv(&switch_win, "10 .    155 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+9);
+    w_puts_mv(&switch_win, "11 .    156 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+10);
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
@@ -142,18 +162,12 @@ renderTask()
 
         if (msg_buf.type == RENDERER_APPEND_CONSOLE) {
 
-            const usize CONSOLE_ANCHOR_X = 1;
-            const usize CONSOLE_ANCHOR_Y = 30;
-
             w_puts_mv(&console_win, msg_buf.data.append_console.line, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-console_length);
             ++console_length;
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
         else if (msg_buf.type == RENDERER_PROMPT) {
-
-            const usize PROMPT_ANCHOR_X = 3;
-            const usize PROMPT_ANCHOR_Y = 1;
 
             char ch = msg_buf.data.prompt.ch;
             if (ch == CH_BACKSPACE) {
@@ -174,10 +188,6 @@ renderTask()
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
         else if (msg_buf.type == RENDERER_SENSOR_TRIGGERED) {
-
-            const usize SENSOR_LIST_ANCHOR_X = 1;
-            const usize SENSOR_LIST_ANCHOR_Y = 1;
-            const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
 
             usize next_sensor_id = msg_buf.data.sensor_triggered.sensor_id;
 
@@ -205,6 +215,33 @@ renderTask()
                 c_attr_reset();
 
             } 
+
+            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
+        }
+        else if (msg_buf.type == RENDERER_FLIP_SWITCH) {
+
+            usize switch_id = msg_buf.data.flip_switch.switch_id;
+            SwitchMode mode = msg_buf.data.flip_switch.mode;
+
+            usize grid_id;
+            if (1 <= switch_id && switch_id <= 18) {
+                grid_id = switch_id - 1;
+            }
+            else if (153 <= switch_id && switch_id <= 156) {
+                grid_id = switch_id - 153 + 18;
+            }
+
+            usize row = grid_id % 11;
+            usize column = grid_id / 11;
+
+            if (mode == SWITCH_MODE_CURVED) {
+                c_attr(ATTR_YELLOW);
+                w_putc_mv(&switch_win, 'C', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
+            } else if (mode == SWITCH_MODE_STRAIGHT) {
+                c_attr(ATTR_CYAN);
+                w_putc_mv(&switch_win, 'S', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
+            }
+            c_attr_reset();
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
