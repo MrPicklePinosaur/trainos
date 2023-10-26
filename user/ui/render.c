@@ -192,20 +192,22 @@ renderTask()
 
         if (msg_buf.type == RENDERER_APPEND_CONSOLE) {
 
-#if 0
+            if (cbuf_len(console_lines) >= CONSOLE_MAX_LINES) {
+                cbuf_pop_front(console_lines);
+            }
+            cbuf_push_back(console_lines, msg_buf.data.append_console.line);
+
             for (usize i = 0; i < cbuf_len(console_lines); ++i) {
 
                 // clear line first
-                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i);
+                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
                 for (usize j = 0; j < CONSOLE_INNER_WIDTH; ++j) w_putc(&console_win, ' '); 
 
                 // render the line
-                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i);
+                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
                 w_puts(&console_win, (char*)cbuf_get(console_lines, i));
 
             }
-            w_puts_mv(&console_win, msg_buf.data.append_console.line, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-console_length);
-#endif
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
