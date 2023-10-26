@@ -53,6 +53,16 @@ testCbuf()
     TEST(cbuf_get(out_stream, 2) == 2);
     TEST(cbuf_get(out_stream, 3) == 3);
 
+    CBuf* cbuf2 = cbuf_new(10);
+    cbuf_push_front(cbuf2, 3);
+    cbuf_push_front(cbuf2, 2);
+    cbuf_push_front(cbuf2, 1);
+    cbuf_push_front(cbuf2, 0);
+
+    for (int i = 0; i < 4; ++i) {
+        TEST(cbuf_get(cbuf2, i) == i);
+    }
+
     Exit();
 }
 

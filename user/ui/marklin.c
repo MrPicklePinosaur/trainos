@@ -2,6 +2,12 @@
 #include "marklin.h"
 
 void
+marklin_init(Tid io_server)
+{
+    Putc(io_server, 192);
+}
+
+void
 marklin_train_ctl(Tid io_server, u32 train, u32 speed)
 {
     Putc(io_server, speed);

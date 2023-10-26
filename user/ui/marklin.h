@@ -20,6 +20,7 @@ typedef enum {
   SWITCH_MODE_CURVED = 34,
 } SwitchMode;
 
+void marklin_init(Tid io_server);
 void marklin_train_ctl(Tid io_server, u32 train, u32 speed);
 void marklin_switch_ctl(Tid io_server, u32 switch_id, SwitchMode mode);
 void marklin_dump_s88(Tid io_server, usize count);

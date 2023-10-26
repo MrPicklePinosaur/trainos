@@ -57,7 +57,7 @@ void
 w_mv(Window* win, usize x, usize y)
 {
     // TODO currently windows don't have cursor of their own
-    c_mv(x, y);
+    c_mv(win->x+x, win->y+y);
 }
 
 void

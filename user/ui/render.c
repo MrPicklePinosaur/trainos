@@ -105,20 +105,33 @@ renderTask()
 {
     RegisterAs(RENDERER_ADDRESS);
 
+    // console
+    usize console_length = 0;
+
+    // prompt
+    usize prompt_length = 0;
+
+    // sensors
+    const usize MAX_SENSORS = 15;
+    CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
+
     term_init();
 
-    Window prompt_win = win_init(2, 2, 60, 3);
+    Window console_win = win_init(2, 2, 60, 31);
+    win_draw(&console_win);
+    w_puts_mv(&console_win, "console", 1, 0);
+
+    Window prompt_win = win_init(2, 33, 60, 3);
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
-    Window console_win = win_init(2, 5, 60, 30);
-    win_draw(&console_win);
+
     Window sensor_win = win_init(63, 2, 20, 17);
     win_draw(&sensor_win);
-    Window switch_win = win_init(63, 13, 20, 16);
-    win_draw(&switch_win);
+    w_puts_mv(&sensor_win, "sensors", 1, 0);
 
-    usize console_length = 0;
-    usize prompt_length = 0;
+    Window switch_win = win_init(63, 19, 20, 17);
+    win_draw(&switch_win);
+    w_puts_mv(&switch_win, "switches", 1, 0);
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
@@ -129,7 +142,10 @@ renderTask()
 
         if (msg_buf.type == RENDERER_APPEND_CONSOLE) {
 
-            w_puts_mv(&console_win, msg_buf.data.append_console.line, 1, 1+console_length);
+            const usize CONSOLE_ANCHOR_X = 1;
+            const usize CONSOLE_ANCHOR_Y = 59;
+
+            w_puts_mv(&console_win, msg_buf.data.append_console.line, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-console_length);
             ++console_length;
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
@@ -159,9 +175,32 @@ renderTask()
         }
         else if (msg_buf.type == RENDERER_SENSOR_TRIGGERED) {
 
-            usize sensor_id = msg_buf.data.sensor_triggered.sensor_id;
+            const usize SENSOR_LIST_ANCHOR_X = 1;
+            const usize SENSOR_LIST_ANCHOR_Y = 1;
 
-            // update ui accordingly
+            usize next_sensor_id = msg_buf.data.sensor_triggered.sensor_id;
+
+            if (cbuf_len(triggered_sensors) >= MAX_SENSORS) {
+                cbuf_pop_back(triggered_sensors);
+            }
+            cbuf_push_front(triggered_sensors, next_sensor_id);
+
+            for (usize i = 0; i < min(MAX_SENSORS, cbuf_len(triggered_sensors)); ++i) {
+                // build string from raw sensor id
+                usize sensor_id = cbuf_get(triggered_sensors, i);
+
+                char sensor_group = (sensor_id / 16) + 'A';
+                usize sensor_index = (sensor_id % 16) + 1;
+                w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
+                w_puts(&sensor_win, "   ");
+                w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
+                w_putc(&sensor_win, sensor_group);
+
+                char sensor_index_str[5] = {0};
+                ui2a(sensor_index, 10, sensor_index_str); 
+                w_puts(&sensor_win, sensor_index_str);
+
+            } 
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }

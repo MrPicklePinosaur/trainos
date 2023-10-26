@@ -55,7 +55,7 @@ cbuf_push_front(CBuf* cbuf, u8 byte)
         return 1;
     }
 
-    cbuf->front_ptr = (cbuf->front_ptr-1) % cbuf->max_len;
+    cbuf->front_ptr = (cbuf->front_ptr+cbuf->max_len-1) % cbuf->max_len;
     cbuf->data[cbuf->front_ptr] = byte;
 
     ++(cbuf->len);

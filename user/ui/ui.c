@@ -13,6 +13,8 @@
 #define TRAIN_SPEED_MASK     0b01111
 #define TRAIN_LIGHTS_MASK    0b10000
 
+#define BYTE_COUNT 10
+
 typedef u8 TrainState;
 
 void executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command);
@@ -21,33 +23,36 @@ void executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, T
 void
 switchStateTask()
 {
-    const u32 byte_count = 10;
-    u8 sensor_state[byte_count];
-    u8 prev_sensor_state[byte_count];
+    // for some reason marklin doesn't send sensor groups in order
+    const usize BYTE_TO_GROUP[5] = { 3, 4, 0, 1, 2 };
+
+    u8 sensor_state[BYTE_COUNT] = {0};
+    u8 prev_sensor_state[BYTE_COUNT] = {0};
 
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
 
     for (;;) {
-        marklin_dump_s88(marklin_server, byte_count);
+        marklin_dump_s88(marklin_server, BYTE_COUNT);
 
-        for (usize i = 0; i < byte_count; ++i) {
+        for (usize i = 0; i < BYTE_COUNT; ++i) {
             u8 sensor_byte = Getc(marklin_server);
             prev_sensor_state[i] = sensor_state[i];
             sensor_state[i] = sensor_byte;
             u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
             for (usize j = 0; j < 8; ++j) {
                 if (((triggered >> j) & 0x1) == 1) {
-                    renderer_sensor_triggered(renderer_server, i*8+j);
+                    usize group = BYTE_TO_GROUP[i / 2];
+                    u8 offset = (i % 2 == 0) ? 0 : 8;
+                    u8 index = (7-j);
+                    renderer_sensor_triggered(renderer_server, group*16+offset+index);
                 }
             }
         }
 
-        // TODO send to display server to render new switch state
-
         // TODO maybe should use DelayUntil to guarentee uniform fetches
-        Delay(clock_server, 10);
+        Delay(clock_server, 20);
     }
 
     Exit();
@@ -65,6 +70,8 @@ promptTask()
     TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
     CBuf* line = cbuf_new(32);
+
+    marklin_init(marklin_server);
 
     for (;;) {
         int c = Getc(io_server);
