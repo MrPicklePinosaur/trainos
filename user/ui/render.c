@@ -9,6 +9,7 @@
 typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
+    RENDERER_SENSOR_TRIGGERED,
 } RendererMsgType;
 
 typedef struct {
@@ -21,6 +22,9 @@ typedef struct {
         struct {
             char ch;
         } prompt;
+        struct {
+            usize sensor_id;
+        } sensor_triggered;
     } data;
 } RendererMsg;
 
@@ -58,6 +62,22 @@ renderer_prompt(Tid renderer_tid, char ch)
     return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
 }
 
+int
+renderer_sensor_triggered(Tid renderer_tid, usize sensor_id)
+{
+    RendererResp resp_buf;
+    RendererMsg send_buf = (RendererMsg) {
+        .type = RENDERER_SENSOR_TRIGGERED,
+        .data = {
+            .sensor_triggered = {
+                .sensor_id = sensor_id
+            }
+        }
+    };
+
+    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
+}
+
 void
 renderTask()
 {
@@ -67,8 +87,13 @@ renderTask()
 
     Window prompt_win = win_init(2, 2, 60, 3);
     win_draw(&prompt_win);
+    w_putc_mv(&prompt_win, '>', 1, 1);
     Window console_win = win_init(2, 5, 60, 30);
     win_draw(&console_win);
+    Window sensor_win = win_init(63, 2, 20, 17);
+    win_draw(&sensor_win);
+    Window switch_win = win_init(63, 13, 20, 16);
+    win_draw(&switch_win);
 
     usize console_length = 0;
     usize prompt_length = 0;
@@ -89,25 +114,36 @@ renderTask()
         }
         else if (msg_buf.type == RENDERER_PROMPT) {
 
+            const usize PROMPT_ANCHOR_X = 3;
+            const usize PROMPT_ANCHOR_Y = 1;
+
             char ch = msg_buf.data.prompt.ch;
             if (ch == CH_BACKSPACE) {
-                prompt_length = usize_sub(prompt_length, 1);
-                w_putc_mv(&prompt_win, ' ', 1+prompt_length, 1);
+                prompt_length = usize_sub(prompt_length, PROMPT_ANCHOR_Y);
+                w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
             }
             else if (ch == CH_ENTER) {
-                w_mv(&prompt_win, 1, 1);
-                for (usize i = 0; i < prompt_length; ++i) w_putc(&prompt_win, ' ');
+                for (usize i = 0; i < prompt_length; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
                 prompt_length = 0;
             }
             else if (isalnum(ch) || isblank(ch)) {
                 // normal character
                 // TODO max length for prompt
-                w_putc_mv(&prompt_win, ch, 1+prompt_length, 1);
+                w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
                 prompt_length += 1;
             }
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
+        else if (msg_buf.type == RENDERER_SENSOR_TRIGGERED) {
+
+            usize sensor_id = msg_buf.data.sensor_triggered.sensor_id;
+
+            // update ui accordingly
+
+            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
+        }
+
 
     }
 }

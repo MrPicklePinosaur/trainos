@@ -1,5 +1,6 @@
 #include <trainstd.h>
 #include <trainsys.h>
+#include <trainterm.h>
 #include <ctype.h>
 #include "user/clock.h"
 #include "user/io.h"
@@ -20,17 +21,27 @@ void executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_stat
 void
 switchStateTask()
 {
-    const u32 switch_count = 5;
-    u32 switch_state[switch_count];
+    const u32 byte_count = 10;
+    u8 sensor_state[byte_count];
+    u8 prev_sensor_state[byte_count];
 
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid renderer_server = WhoIs(RENDERER_ADDRESS);
 
     for (;;) {
-        marklin_dump_s88(marklin_server, switch_count);
+        marklin_dump_s88(marklin_server, byte_count);
 
-        for (u32 i = 0; i < switch_count; ++i) {
-            switch_state[i] = Getc(marklin_server);
+        for (usize i = 0; i < byte_count; ++i) {
+            u8 sensor_byte = Getc(marklin_server);
+            prev_sensor_state[i] = sensor_state[i];
+            sensor_state[i] = sensor_byte;
+            u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
+            for (usize j = 0; j < 8; ++j) {
+                if (((triggered >> j) & 0x1) == 1) {
+                    renderer_sensor_triggered(renderer_server, i*8+j);
+                }
+            }
         }
 
         // TODO send to display server to render new switch state
@@ -133,7 +144,8 @@ executeCommand(Tid marklin_server, Tid clock_server, TrainState* train_state, Pa
 			break;
 		}
         case PARSER_RESULT_QUIT: {
-            // TODO exit task and restore console state
+            // exit task and restore console state
+            term_clear();
             Exit();
 			break; // unreachable
 		}
