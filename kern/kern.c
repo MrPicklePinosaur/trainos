@@ -395,6 +395,12 @@ handle_interrupt(void)
             scheduler_unblock_event(EVENT_MARKLIN_RX);
             uart_clear_rx(MARKLIN);
         }
+
+        if (uart_is_rx_interrupt(CONSOLE)) {
+            KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Console RX interrupt");
+            scheduler_unblock_event(EVENT_CONSOLE_RX);
+            uart_clear_rx(CONSOLE);
+        }
     } else {
         PANIC("invalid interrupt id");
     }

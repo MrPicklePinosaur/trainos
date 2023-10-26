@@ -63,12 +63,7 @@ initTask()
 
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
-    Yield();
 
-    char ch = Getc(io_server_console);
-    println("got ch %d", ch);
-
-    /*
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
         for (size_t i = 0; task_menu[i] != 0; ++i) {
@@ -76,7 +71,7 @@ initTask()
         }
         println("======================================================");
 
-        int ch = getc() - '0';
+        int ch = Getc(io_server_console) - '0';
 
         // unsigned char ch;
         // while ((ch = getc_poll()) == 0) Yield();
@@ -89,15 +84,8 @@ initTask()
         Create(5, task_menu[ch]->taskFn, "Menu-Started Task");
         Yield();
     }
-    */
-
-    // Block init by receiving from no-one
-    char dummy;
-    Tid from_tid;
-    Receive(&from_tid, &dummy, sizeof(char));
 
     println("attempting to exit init task");
-    for (;;) {}
 
     Exit();
 }

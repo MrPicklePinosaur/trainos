@@ -137,6 +137,16 @@ SendCTS(Tid io_server)
 }
 
 void
+rxNotifierConsole(void)
+{
+    Tid io_server = WhoIs(IO_ADDRESS_CONSOLE);
+    for (;;) {
+        AwaitEvent(EVENT_CONSOLE_RX);
+        SendRX(io_server);
+    }
+}
+
+void
 rxNotifierMarklin(void)
 {
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
@@ -312,6 +322,7 @@ void
 consoleIO(void)
 {
     RegisterAs(IO_ADDRESS_CONSOLE);
+    Create(5, &rxNotifierConsole, "Console IO Server RX Notifier");
     ioServer(CONSOLE);
 }
 
@@ -321,6 +332,5 @@ marklinIO(void)
     RegisterAs(IO_ADDRESS_MARKLIN);
     Create(5, &ctsNotifierMarklin, "Marklin IO Server CTS Notifier");
     Create(5, &rxNotifierMarklin, "Marklin IO Server RX Notifier");
-    Create(4, &putcTestTask, "Marklin IO Server Putc Test");
     ioServer(MARKLIN);
 }

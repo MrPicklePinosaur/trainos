@@ -12,6 +12,7 @@ typedef enum {
     EVENT_CLOCK_TICK,
     EVENT_MARKLIN_RX,
     EVENT_MARKLIN_CTS,
+    EVENT_CONSOLE_RX,
 } EventId;
 
 extern int Create(int priority, void (*function)(), const char* name);
