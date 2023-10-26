@@ -143,7 +143,7 @@ renderTask()
         if (msg_buf.type == RENDERER_APPEND_CONSOLE) {
 
             const usize CONSOLE_ANCHOR_X = 1;
-            const usize CONSOLE_ANCHOR_Y = 59;
+            const usize CONSOLE_ANCHOR_Y = 30;
 
             w_puts_mv(&console_win, msg_buf.data.append_console.line, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-console_length);
             ++console_length;
@@ -177,6 +177,7 @@ renderTask()
 
             const usize SENSOR_LIST_ANCHOR_X = 1;
             const usize SENSOR_LIST_ANCHOR_Y = 1;
+            const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
 
             usize next_sensor_id = msg_buf.data.sensor_triggered.sensor_id;
 
@@ -189,16 +190,19 @@ renderTask()
                 // build string from raw sensor id
                 usize sensor_id = cbuf_get(triggered_sensors, i);
 
-                char sensor_group = (sensor_id / 16) + 'A';
+                usize sensor_group = sensor_id / 16;
                 usize sensor_index = (sensor_id % 16) + 1;
                 w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
                 w_puts(&sensor_win, "   ");
                 w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
-                w_putc(&sensor_win, sensor_group);
 
                 char sensor_index_str[5] = {0};
+
+                c_attr(SENSOR_COLORS[sensor_group]);
+                w_putc(&sensor_win, sensor_group+'A');
                 ui2a(sensor_index, 10, sensor_index_str); 
                 w_puts(&sensor_win, sensor_index_str);
+                c_attr_reset();
 
             } 
 

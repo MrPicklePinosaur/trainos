@@ -29,6 +29,18 @@ typedef struct {
     usize h;
 } Window;
 
+typedef enum {
+    ATTR_BLACK,
+    ATTR_RED,
+    ATTR_GREEN,
+    ATTR_YELLOW,
+    ATTR_BLUE,
+    ATTR_MAGENTA,
+    ATTR_CYAN,
+    ATTR_WHITE,
+    ATTR_RESET,
+} Attr;
+
 // initialize screen for tui mode
 void term_init(void);
 
@@ -48,6 +60,8 @@ void c_putc(char ch);
 void c_putc_mv(char ch, usize x, usize y);
 void c_puts(char* s);
 void c_puts_mv(char* s, usize x, usize y);
+void c_attr(Attr attr);
+void c_attr_reset(void);
 
 // window commands
 void w_mv(Window* win, usize x, usize y);

@@ -54,6 +54,46 @@ c_puts_mv(char* s, usize x, usize y)
 }
 
 void
+c_attr(Attr attr)
+{
+    switch (attr) {
+        case ATTR_BLACK:
+            c_puts(ANSI_BLACK);
+            break;
+        case ATTR_RED:
+            c_puts(ANSI_RED);
+            break;
+        case ATTR_GREEN:
+            c_puts(ANSI_GREEN);
+            break;
+        case ATTR_YELLOW:
+            c_puts(ANSI_YELLOW);
+            break;
+        case ATTR_BLUE:
+            c_puts(ANSI_BLUE);
+            break;
+        case ATTR_MAGENTA:
+            c_puts(ANSI_MAGENTA);
+            break;
+        case ATTR_CYAN:
+            c_puts(ANSI_CYAN);
+            break;
+        case ATTR_WHITE:
+            c_puts(ANSI_WHITE);
+            break;
+        case ATTR_RESET:
+            c_puts(ANSI_RESET);
+            break;
+    }
+}
+
+void
+c_attr_reset(void)
+{
+    c_attr(ATTR_RESET);
+}
+
+void
 w_mv(Window* win, usize x, usize y)
 {
     // TODO currently windows don't have cursor of their own
