@@ -24,6 +24,7 @@ typedef size_t usize;
 typedef char byte;
 
 #define sizeof(x)    (usize)sizeof(x)
+#define alignof(x)   (usize)_Alignof(x)
 #define countof(a)   (sizeof(a) / sizeof(*(a)))
 #define lengthof(s)  (countof(s) - 1)
 

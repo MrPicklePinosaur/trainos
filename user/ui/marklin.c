@@ -20,7 +20,6 @@ marklin_switch_ctl(Tid io_server, u32 switch_id, SwitchMode mode)
     Putc(io_server, mode);
     Putc(io_server, switch_id);
     Putc(io_server, 32);
-
 }
 
 void
