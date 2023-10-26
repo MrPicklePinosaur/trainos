@@ -9,18 +9,18 @@
 
 typedef struct CBuf CBuf;
 
-CBuf* cbuf_new(size_t max_len);
+CBuf* cbuf_new(usize max_len);
 void cbuf_delete(CBuf* cbuf);
 
-u8 cbuf_front(CBuf* cbuf);
-u8 cbuf_back(CBuf* cbuf);
-int cbuf_push_front(CBuf* cbuf, u8 byte);
-int cbuf_push_back(CBuf* cbuf, u8 byte);
-u8 cbuf_pop_front(CBuf* cbuf);
-u8 cbuf_pop_back(CBuf* cbuf);
-u32 cbuf_len(CBuf* cbuf);
+void* cbuf_front(CBuf* cbuf);
+void* cbuf_back(CBuf* cbuf);
+int cbuf_push_front(CBuf* cbuf, void* data);
+int cbuf_push_back(CBuf* cbuf, void* data);
+void* cbuf_pop_front(CBuf* cbuf);
+void* cbuf_pop_back(CBuf* cbuf);
+usize cbuf_len(CBuf* cbuf);
 
-u8 cbuf_get(CBuf* cbuf, size_t index);
+void* cbuf_get(CBuf* cbuf, usize index);
 void cbuf_clear(CBuf* cbuf);
 void cbuf_debug(CBuf* cbuf);
 
