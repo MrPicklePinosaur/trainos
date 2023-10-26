@@ -21,7 +21,7 @@ void K2Perf();
 void K3();
 
 // K4
-void uiTask();
+#include "ui/ui.h"
 
 // Other
 void graphicsTask();

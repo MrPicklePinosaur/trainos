@@ -5,6 +5,8 @@
 #include "user/io.h"
 #include "user/nameserver.h"
 #include "parser.h"
+#include "ui.h"
+#include "render.h"
 
 #define CH_ENTER     0x0d
 #define CH_BACKSPACE 0x08
@@ -50,6 +52,7 @@ promptTask()
     Tid io_server = WhoIs(IO_ADDRESS_CONSOLE);
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid renderer_server = WhoIs(RENDERER_ADDRESS);
 
     TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
@@ -71,10 +74,11 @@ promptTask()
             ParserResult parsed = parse_command(str8(completed_line));
             if (parsed._type == PARSER_RESULT_ERROR) {
                 // TODO print error message
-                PRINT("invalid command");
+                renderer_append_console(renderer_server, "invalid command");
                 continue;
             }
             executeCommand(marklin_server, clock_server, train_state, parsed);
+            renderer_append_console(renderer_server, "valid command");
 
 
         } else if (c == CH_BACKSPACE) {
@@ -145,10 +149,14 @@ void
 uiTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid render_tid = Create(2, &renderTask, "render task");
 
     Tid prompt_tid = Create(2, &promptTask, "prompt task");
+    Tid switch_state_tid = Create(2, &switchStateTask, "switch state task");
+
     WaitTid(prompt_tid);
-    PRINT("prompt exited");
+
+    //  TODO impleement Kill() syscall
 
     Exit();
 }
