@@ -9,6 +9,10 @@ void eat_whitespace(str8 command, u32* it);
 ParserResult
 parse_command(str8 command)
 {
+    ParserResult error = (ParserResult) {
+        ._type = PARSER_RESULT_ERROR,
+    };
+
     // read until first whitespace character
     u32 it = 0;
 
@@ -25,6 +29,7 @@ parse_command(str8 command)
         eat_whitespace(command, &it);
 
         u32 speed = get_number(command, &it);
+        if (!(0 <= train && train <= 15)) return error;
 
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed TR command: train = %d, speed = %d", train, speed);
 
@@ -60,6 +65,7 @@ parse_command(str8 command)
         eat_whitespace(command, &it);
 
         int switch_id = get_number(command, &it);
+        if (!((1 <= switch_id && switch_id <= 18) || (153 <= switch_id && switch_id <= 156))) return error;
 
         eat_whitespace(command, &it);
 
@@ -90,9 +96,7 @@ parse_command(str8 command)
                 };
             }
         else {
-            return (ParserResult) {
-                ._type = PARSER_RESULT_ERROR,
-            };
+            return error;
         }
 
     }
@@ -128,9 +132,7 @@ parse_command(str8 command)
                 },
             };
         }
-        return (ParserResult) {
-            ._type = PARSER_RESULT_ERROR,
-        };
+        return error;
     }
     else if (str8_cmp(cmd_name, str8("go"))) {
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed GO command");
@@ -151,9 +153,7 @@ parse_command(str8 command)
         };
     }
 
-    return (ParserResult) {
-        ._type = PARSER_RESULT_ERROR,
-    };
+    return error;
 }
 
 str8
