@@ -53,7 +53,7 @@ The train controller task is the one called `K4`.
 
 The Marklin control TUI from Assignment 0 was ported to `trainos`.
 It uses tasks and message passing to lower the latency of data updates and UI re-renders.
-The UI includes a prompt to enter commands, diagonistic information, a list of recently triggered sensors, and a table for switch states.
+The UI includes a prompt to enter commands, diagnostic information, a list of recently triggered sensors, and a table for switch states.
 
 The following commands are supported:
 
@@ -101,7 +101,7 @@ Since we do a lot of debug printing, we determined it would be too slow using a 
 
 == Task Names
 
-To facillitate easier debugging of individual tasks, each task is now assigned a name string.
+To facilitate easier debugging of individual tasks, each task is now assigned a name string.
 This string's location can be found in the task's tasktable entry.
 
 The `Create()` systemcall has been modified to take in a name:
@@ -169,3 +169,9 @@ However, we expect the user to be sensible and not create multiple tasks reading
 Every time Getc() is called, we check if there are any characters in the kernel queue.
 If there are, simply return the oldest queued character.
 Otherwise, the task gets added to a list of tasks waiting for a character.
+
+= Bugs / Issues
+
+- On rare occasions, the prompt will freeze up and no longer be able to take in input
+- There is no logic enforcing the middle switches to not both be straight or both be curved
+

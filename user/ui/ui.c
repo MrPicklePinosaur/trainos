@@ -83,9 +83,10 @@ promptTask()
             usize input_len = cbuf_len(line);
             char completed_line[input_len+1];
             for (u8 i = 0; i < input_len; ++i)
-                completed_line[i] = (char)cbuf_pop_front(line);
+                completed_line[i] = (char)cbuf_get(line, i);
 
             completed_line[input_len] = 0;
+            cbuf_clear(line);
 
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             ParserResult parsed = parse_command(str8(completed_line));
@@ -99,6 +100,7 @@ promptTask()
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
         }
+
     }
 }
 

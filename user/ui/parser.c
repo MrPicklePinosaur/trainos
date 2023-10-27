@@ -29,7 +29,7 @@ parse_command(str8 command)
         eat_whitespace(command, &it);
 
         u32 speed = get_number(command, &it);
-        if (!(0 <= train && train <= 15)) return error;
+        if (!(0 <= speed && speed <= 15)) return error;
 
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed TR command: train = %d, speed = %d", train, speed);
 
