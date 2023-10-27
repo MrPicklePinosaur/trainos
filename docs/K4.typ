@@ -51,69 +51,89 @@ The train controller task is the one called `K4`.
 
 == Marklin CTL
 
-The marklin control TUI from assignment 0 was ported to `trainos` and makes extensive use of tasks and message passing to achieve lower latency in updating data and rerendering the UI. The control TUI provides a prompt to enter commands to the marklin, diagonistic information, recently triggered sensors, as well as table for switch state.
+The Marklin control TUI from Assignment 0 was ported to `trainos`.
+It uses tasks and message passing to lower the latency of data updates and UI re-renders.
+The UI includes a prompt to enter commands, diagonistic information, a list of recently triggered sensors, and a table for switch states.
 
-The supported commands are as follows:
+The following commands are supported:
 
 `tr <train number> <speed>`
-Controls the speed of a given train, where `<train number>` is between 1 and 80, and speed is between 0 and 14
+Controls the speed of a given train.
+`<train number>` is between 1 and 80, and speed is between 0 and 14.
 
 `rv <train number>`
-Reverses the direction a given train is going
+Reverses the direction of a given train.
 
 `sw <switch number> <switch direction>`
-Sets the state of a switch. `<switch direction>` must be "S" (for straight) or "C" (for curved)
+Sets the state of a switch.
+`<switch number>` is between 1 and 18, or between 153 and 156.
+`<switch direction>` must be "S" (for straight) or "C" (for curved).
+Note that these characters must be capitalized.
 
 `light <train number> <on|off>`
-Toggle the lights on the train on and off
+Toggle the lights on the train on and off.
 
 `go`
-Turns on the marklin
+Turns on the Marklin.
 
 `stop`
-Turns off the marklin
+Turns off the Marklin.
 
 `q`
-Quits the program
-
-Note that the commands are case-sensitive. In particular, the `S` or `C` passed to `sw` must be capitalized.
+Quits the program.
 
 == IO Servers
 
 We have two IO servers, one for the console and one for Marklin.
 We believe this is better than having a single general server because it lightens the load on the Marklin IO server, ensuring it updates reactively.
 
-Because we have two separate servers, with two separate Tid's, there is no use for the `channel` parameter in Getc and Putc.
+Because we have two separate servers, with two separate Tid's, there is no use for the `channel` parameter in Getc() and Putc().
 Just passing in the Tid of the server you want is enough information.
-Thus, the signatures of Getc and Putc are as follows:
+Thus, the signatures of Getc() and Putc() are as follows:
 
 ```c
 int Getc(int tid)
 int Putc(int tid, unsigned char ch)
 ```
 
-The console IO server only handles Getc.
-Since we do a lot of debug printing, we determined it would be too slow using a server for console Putc's.
+The console IO server only handles Getc().
+Since we do a lot of debug printing, we determined it would be too slow using a server for console Putc()'s.
 
 == Task Names
 
-To facillitate easier debugging of individual tasks, each task now can be assigned a name string. The name is stored in the task data structure and the `Create()` systemcall has been modified to take in a name.
+To facillitate easier debugging of individual tasks, each task is now assigned a name string.
+This string's location can be found in the task's tasktable entry.
+
+The `Create()` systemcall has been modified to take in a name:
 ```c
-int Create(int priority, void (*function)(), const char* name);
+int Create(int priority, void (*function)(), const char* name)
 ```
 
-A task name system call has been introduced for any task to query the name of a given Tid.
+There is also a new system call for querying the name of a given Tid:
 ```c
-char* TaskName(int tid);
+char* TaskName(int tid)
 ```
 
 == WaitTid
 
-An additional system call was added in this version of the kernel. Previously we would have an issue that `initTask`, which was responsible for prompting the user for a task to run, was prompting the user before the previously ran task would finish running. To solve this, we introduced a system call that will block the calling task until the desired task has exited. As for implementation, `WaitTid` is actually just a wrapper around `AwaitEvent`.
+`WaitTid` is a new system call:
+```c
+WaitTid(Tid tid)
+```
+It will block the calling task until the `tid` task exits.
+
+This solves an issue surrounding `initTask`, which prompts the user for a task to run.
+After you selected a task, this task would prompt the user again before the selected task ended.
+
+As for the implementation, `WaitTid` is simply a wrapper for `AwaitEvent`.
 
 == trainterm.h
 
-To improve developer experience when writing UI, an ncurses-esque library was created. It supports higher level manipulation of windows and terminal attributes. Currently no cursor movement optimizations are made. This may be a consideration if we find that the console cannot keep up with out rendering needs.
+To improve developer experience when writing UI, we created an ncurses-esque library.
+It supports high-level manipulation of windows and terminal attributes.
+
+This library currently does not optimize cursor movement.
+We may optimize this in the future if we find that the console cannot keep up with our rendering needs.
 
 = Kernel Implementation
 
@@ -141,11 +161,10 @@ Because CTS is edge-triggered, and because won't send another character until we
 === RX and Getc()
 
 Every time we get an RX interrupt, we write the character to a kernel-side FIFO while inside the interrupt handler.
-We do it in the interrupt handler because we need to be quick; we need to get the character before another character overwrites the data register.
-The IO server then gets notified that RX was called, and all tasks waiting on Getc() receive that character.
-
-This means that if multiple tasks are waiting on a Getc() from the same source, they all get the same character.
-However, we do not expect the user to have multiple tasks waiting on a Getc().
+We do it in the interrupt handler because we need to be quick; the character must be obtained before another character overwrites the data register.
+The IO server is then notified that an RX interrupt occurred, and replies to all tasks waiting on a Getc() with the oldest queued character.
+Note that this means multiple tasks may receive the same character if the all Getc() at once.
+However, we expect the user to be sensible and not create multiple tasks reading from the same source.
 
 Every time Getc() is called, we check if there are any characters in the kernel queue.
 If there are, simply return the oldest queued character.
