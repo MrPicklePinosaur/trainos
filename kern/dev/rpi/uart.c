@@ -123,7 +123,8 @@ static const u32 UART_ICR_CTSMIC = 0x02;
 static const u32 UART_ICR_RXIC   = 0x10;
 static const u32 UART_ICR_TXIC   = 0x20;
 
-CBuf* input_fifo;
+CBuf* input_fifo_console;
+CBuf* input_fifo_marklin;
 CBuf* output_fifo;
 
 void uart_config_and_enable(size_t line, u32 baudrate, u32 control, u32 interrupts);
@@ -134,7 +135,8 @@ void uart_config_and_enable(size_t line, u32 baudrate, u32 control, u32 interrup
 // the uart control and data signals to the GPIO pins expected by the hat
 void uart_init() {
 
-    input_fifo = cbuf_new(64);
+    input_fifo_console = cbuf_new(64);
+    input_fifo_marklin = cbuf_new(64);
     output_fifo = cbuf_new(64);
 
     setup_gpio(4, GPIO_ALTFN4, GPIO_NONE);
@@ -236,7 +238,14 @@ void uart_clear_rx(size_t line) {
     if (uart_getc_poll(line, &data) == 1) {
         PANIC("no data on receive line");
     }
-    cbuf_push_back(input_fifo, data);  // TODO this may need mutual exclusion (since this interrupt may happen inside a cbuf operation)
+
+    if (line == CONSOLE) {
+        cbuf_push_back(input_fifo_console, data);  // TODO this may need mutual exclusion (since this interrupt may happen inside a cbuf operation)
+    }
+    else if (line == MARKLIN) {
+        cbuf_push_back(input_fifo_marklin, data);  // TODO this may need mutual exclusion (since this interrupt may happen inside a cbuf operation)
+    }
+
     UART_REG(line, UART_ICR) = UART_ICR_RXIC;
 }
 
@@ -253,6 +262,17 @@ void uart_clear_cts(size_t line) {
 }
 
 unsigned char uart_getc_buffered(size_t line, bool* is_buffer_empty) {
+    CBuf* input_fifo;
+    if (line == CONSOLE) {
+        input_fifo = input_fifo_console;
+    }
+    else if (line == MARKLIN) {
+        input_fifo = input_fifo_marklin;
+    }
+    else {
+        PANIC("Invalid line passed to uart_getc_buffered");
+    }
+
     if (cbuf_len(input_fifo) == 0) {
         *is_buffer_empty = true;
         return 0;
