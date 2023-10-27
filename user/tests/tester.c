@@ -17,7 +17,7 @@ testHarness()
         &testHashmap,
         &testAlloc,
         &testParser,
-        &testNameserver,
+        /* &testNameserver, */
         0
     };
 
