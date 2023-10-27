@@ -39,7 +39,7 @@
 
 Gitlab repository name: `d278liu/trainos`
 
-Commit SHA: `To be decided`
+Commit SHA: `faba3a1eb3be8c57118b89406d6929045529ba18`
 
 = Running The Train Controller
 
@@ -172,6 +172,6 @@ Otherwise, the task gets added to a list of tasks waiting for a character.
 
 = Bugs / Issues
 
-- On rare occasions, the prompt will freeze up and no longer be able to take in input
-- There is no logic enforcing the middle switches to not both be straight or both be curved
-
+- On rare occasions, the prompt will freeze up and no longer be able to take in input. We are not super sure why this happens.
+- There is no logic enforcing the middle switches to not both be straight or both be curved.
+- While reversing a train, the characters you type will not show up until after the train finishes reversing. As well, if you type enough characters during this window of time, the input will freeze up and no longer take any input.
