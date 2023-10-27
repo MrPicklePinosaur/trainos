@@ -118,7 +118,7 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
             renderer_append_console(renderer_server, "Reversing train speed");
 
             marklin_train_ctl(marklin_server, train, SPEED_STOP);
-            Delay(clock_server, 10); // TODO arbritrary delay
+            Delay(clock_server, 400); // TODO arbritrary delay
             marklin_train_ctl(marklin_server, train, SPEED_REVERSE);
             Delay(clock_server, 10); // TODO arbritrary delay
             marklin_train_ctl(marklin_server, train, train_state[train]);
