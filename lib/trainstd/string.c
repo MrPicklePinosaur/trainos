@@ -1,6 +1,10 @@
 #include <trainstd.h>
 #include "string.h"
 
+
+char* _cstr_format_puts(Arena* arena, char* cur, char* buf);
+char* _cstr_format(Arena* arena, char *fmt, va_list va);
+
 char*
 str8_to_cstr(str8 s)
 {
@@ -40,9 +44,28 @@ str8_copy(Arena* arena, str8 s)
     UNIMPLEMENTED("str8_copy"); 
 }
 
-// helper for str8_format
+str8
+str8_format(Arena* arena, char *fmt, ...)
+{
+	va_list va;
+	va_start(va,fmt);
+    char* out = _cstr_format(arena, fmt, va);
+	va_end(va);
+    return str8(out);
+}
+
 char*
-_str8_format_puts(Arena* arena, char* cur, char* buf)
+cstr_copy(Arena* arena, char* s)
+{
+    usize len_str = strlen(s)+1;
+    char* new_str = arena_alloc(arena, char, len_str);
+    strncpy(new_str, s, len_str);
+    return new_str;
+}
+
+// helper for cstr_format
+char*
+_cstr_format_puts(Arena* arena, char* cur, char* buf)
 {
     while (*buf) {
         *cur = *buf;
@@ -52,12 +75,9 @@ _str8_format_puts(Arena* arena, char* cur, char* buf)
     return cur;
 }
 
-str8
-str8_format(Arena* arena, char *fmt, ...)
+char*
+_cstr_format(Arena* arena, char *fmt, va_list va)
 {
-	va_list va;
-	va_start(va,fmt);
-
 	char bf[12];
 	char ch;
 
@@ -74,18 +94,18 @@ str8_format(Arena* arena, char *fmt, ...)
         switch( ch ) {
             case 'u':
                 ui2a( va_arg( va, unsigned int ), 10, bf );
-                cur = _str8_format_puts(arena, cur, bf);
+                cur = _cstr_format_puts(arena, cur, bf);
                 break;
             case 'd':
                 i2a( va_arg( va, int ), bf );
-                cur = _str8_format_puts(arena, cur, bf);
+                cur = _cstr_format_puts(arena, cur, bf);
                 break;
             case 'x':
                 ui2a( va_arg( va, unsigned int ), 16, bf );
-                cur = _str8_format_puts(arena, cur, bf);
+                cur = _cstr_format_puts(arena, cur, bf);
                 break;
             case 's':
-                cur =_str8_format_puts(arena, cur, va_arg( va, char* ));
+                cur =_cstr_format_puts(arena, cur, va_arg( va, char* ));
                 break;
             case 'c':
                 *cur = va_arg( va, int );
@@ -100,16 +120,15 @@ str8_format(Arena* arena, char *fmt, ...)
         }
     }
 
-	va_end(va);
-
-    return str8(start);
+    return start;
 }
 
 char*
-cstr_copy(Arena* arena, char* s)
+cstr_format(Arena* arena, char *fmt, ...)
 {
-    usize len_str = strlen(s)+1;
-    char* new_str = arena_alloc(arena, char, len_str);
-    strncpy(new_str, s, len_str);
-    return new_str;
+	va_list va;
+	va_start(va,fmt);
+    char* out = _cstr_format(arena, fmt, va);
+	va_end(va);
+    return out;
 }

@@ -26,5 +26,6 @@ str8 str8_format(Arena* arena, char *fmt, ...);
 
 // cstring functions that work with allocators
 char* cstr_copy(Arena* arena, char* s);
+char* cstr_format(Arena* arena, char *fmt, ...);
 
 #endif // __TRAINSTD_STRING_H__

@@ -112,7 +112,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             uint32_t speed = command._data.train_speed.speed;
             train_state[train] = (train_state[train] & ~TRAIN_SPEED_MASK) | speed;
 
-            char* msg = str8_to_cstr(str8_format(&tmp, "Setting train %d to speed %d", train, speed));
+            char* msg = cstr_format(&tmp, "Setting train %d to speed %d", train, speed);
             renderer_append_console(renderer_server, msg);
             marklin_train_ctl(marklin_server, train, train_state[train]);
 
@@ -121,7 +121,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
         case PARSER_RESULT_REVERSE: {
             uint32_t train = command._data.reverse.train;
 
-            char* msg = str8_to_cstr(str8_format(&tmp, "Reversing train %d", train));
+            char* msg = cstr_format(&tmp, "Reversing train %d", train);
             renderer_append_console(renderer_server, msg);
 
             marklin_train_ctl(marklin_server, train, SPEED_STOP);
@@ -136,7 +136,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             u32 switch_id = command._data.switch_control.switch_id;
             SwitchMode switch_mode = command._data.switch_control.switch_mode;
 
-            char* msg = str8_to_cstr(str8_format(&tmp, "Setting switch %x to %s", switch_id, (switch_mode == SWITCH_MODE_CURVED) ? "curved" : "straight"));
+            char* msg = cstr_format(&tmp, "Setting switch %x to %s", switch_id, (switch_mode == SWITCH_MODE_CURVED) ? "curved" : "straight");
             renderer_append_console(renderer_server, msg);
 
             marklin_switch_ctl(marklin_server, switch_id, switch_mode);
@@ -157,7 +157,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             uint32_t train = command._data.lights.train;
             bool light_state = command._data.lights.state;
 
-            char* msg = str8_to_cstr(str8_format(&tmp, "Turned lights on train %x %s", train, (light_state) ? "on" : "off"));
+            char* msg = cstr_format(&tmp, "Turned lights on train %d %s", train, (light_state) ? "on" : "off");
             renderer_append_console(renderer_server, msg);
 
             if (light_state) {
