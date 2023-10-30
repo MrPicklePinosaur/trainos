@@ -33,6 +33,13 @@ str8_cmp(str8 a, str8 b)
     return true;
 }
 
+// copies data inside string and returns a new string
+str8
+str8_copy(Arena* arena, str8 s)
+{
+    UNIMPLEMENTED("str8_copy"); 
+}
+
 // helper for str8_format
 char*
 _str8_format_puts(Arena* arena, char* cur, char* buf)
@@ -96,4 +103,13 @@ str8_format(Arena* arena, char *fmt, ...)
 	va_end(va);
 
     return str8(start);
+}
+
+char*
+cstr_copy(Arena* arena, char* s)
+{
+    usize len_str = strlen(s)+1;
+    char* new_str = arena_alloc(arena, char, len_str);
+    strncpy(new_str, s, len_str);
+    return new_str;
 }

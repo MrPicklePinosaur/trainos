@@ -135,6 +135,7 @@ renderTask()
     const usize CONSOLE_ANCHOR_Y = 29;
     const usize CONSOLE_MAX_LINES = 29;
     const usize CONSOLE_INNER_WIDTH = 58;
+    Arena console_arena = arena_new(CONSOLE_MAX_LINES*(CONSOLE_INNER_WIDTH+1));
     CBuf* console_lines = cbuf_new(CONSOLE_MAX_LINES);
     Window console_win = win_init(2, 2, 60, 31);
     win_draw(&console_win);
@@ -195,7 +196,10 @@ renderTask()
             if (cbuf_len(console_lines) >= CONSOLE_MAX_LINES) {
                 cbuf_pop_front(console_lines);
             }
-            cbuf_push_back(console_lines, msg_buf.data.append_console.line);
+
+            // need to first copy the data
+            char* new_str = cstr_copy(&console_arena, msg_buf.data.append_console.line);
+            cbuf_push_back(console_lines, new_str);
 
             for (usize i = 0; i < cbuf_len(console_lines); ++i) {
 
