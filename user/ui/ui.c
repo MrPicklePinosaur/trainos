@@ -20,7 +20,7 @@
 
 typedef u8 TrainState;
 
-void executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command);
+void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command);
 
 // task for querying switch states
 void
@@ -69,6 +69,8 @@ promptTask()
 
     CBuf* line = cbuf_new(32);
 
+    Arena tmp_arena = arena_new(256);
+
     marklin_init(marklin_server);
 
     for (;;) {
@@ -89,13 +91,9 @@ promptTask()
             cbuf_clear(line);
 
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
+            // TODO since we are using a tmp arena, we can technically 
             ParserResult parsed = parse_command(str8(completed_line));
-            if (parsed._type == PARSER_RESULT_ERROR) {
-                // TODO print error message
-                renderer_append_console(renderer_server, "invalid command");
-                continue;
-            }
-            executeCommand(marklin_server, clock_server, renderer_server, train_state, parsed);
+            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, train_state, parsed);
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -105,21 +103,25 @@ promptTask()
 }
 
 void
-executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command)
+executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, TrainState* train_state, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
             uint32_t train = command._data.train_speed.train;
             uint32_t speed = command._data.train_speed.speed;
             train_state[train] = (train_state[train] & ~TRAIN_SPEED_MASK) | speed;
-            renderer_append_console(renderer_server, "Setting train speed");
+
+            char* msg = str8_to_cstr(str8_format(&tmp, "Setting train %d to speed %d", train, speed));
+            renderer_append_console(renderer_server, msg);
             marklin_train_ctl(marklin_server, train, train_state[train]);
+
 			break;
 		}
         case PARSER_RESULT_REVERSE: {
             uint32_t train = command._data.reverse.train;
 
-            renderer_append_console(renderer_server, "Reversing train speed");
+            char* msg = str8_to_cstr(str8_format(&tmp, "Reversing train %d", train));
+            renderer_append_console(renderer_server, msg);
 
             marklin_train_ctl(marklin_server, train, SPEED_STOP);
             Delay(clock_server, 400); // TODO arbritrary delay
@@ -132,7 +134,10 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
         case PARSER_RESULT_SWITCH: {
             u32 switch_id = command._data.switch_control.switch_id;
             SwitchMode switch_mode = command._data.switch_control.switch_mode;
-            renderer_append_console(renderer_server, "Setting switch state");
+
+            char* msg = str8_to_cstr(str8_format(&tmp, "Setting switch %x to %s", switch_id, (switch_mode == SWITCH_MODE_CURVED) ? "curved" : "straight"));
+            renderer_append_console(renderer_server, msg);
+
             marklin_switch_ctl(marklin_server, switch_id, switch_mode);
             renderer_flip_switch(renderer_server, switch_id, switch_mode);
 			break;
@@ -149,8 +154,12 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
 		}
         case PARSER_RESULT_LIGHTS: {
             uint32_t train = command._data.lights.train;
-            renderer_append_console(renderer_server, "Setting train lights");
-            if (command._data.lights.state) {
+            bool light_state = command._data.lights.state;
+
+            char* msg = str8_to_cstr(str8_format(&tmp, "Turned lights on train %x %s", train, (light_state) ? "on" : "off"));
+            renderer_append_console(renderer_server, msg);
+
+            if (light_state) {
                 train_state[train] |= TRAIN_LIGHTS_MASK;
             } else {
                 train_state[train] &= ~TRAIN_LIGHTS_MASK;
@@ -165,7 +174,7 @@ executeCommand(Tid marklin_server, Tid clock_server, Tid renderer_server, TrainS
 			break; // unreachable
 		}
         default: {
-            ULOG_WARN("Parser result was invalid");
+            renderer_append_console(renderer_server, "Invalid command");
         }
     }
 }

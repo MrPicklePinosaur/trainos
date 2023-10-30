@@ -4,10 +4,7 @@
 char*
 str8_to_cstr(str8 s)
 {
-    char* cstr = alloc((s.length+1)*sizeof(char));
-    cstr = memcpy(cstr, s.data, s.length);
-    cstr[s.length] = 0; // set null byte
-    return cstr;
+    return (char*)s.data;
 }
 
 str8

@@ -13,7 +13,6 @@ typedef struct {
     usize length;
 } str8;
 
-// allocate memory and create null terminated cstring
 char* str8_to_cstr(str8 s);
 
 str8 str8_substr(str8 s, usize start, usize end);
