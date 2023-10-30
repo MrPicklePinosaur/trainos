@@ -190,9 +190,9 @@ void
 uiTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid render_tid = Create(2, &renderTask, "render task");
 
-    Tid diagnostic_tid = Create(2, &diagnosticTask, "diagnostic task");
+    Tid render_tid = Create(3, &renderTask, "render task");
+    Tid diagnostic_tid = Create(3, &diagnosticTask, "diagnostic task");
     Tid prompt_tid = Create(2, &promptTask, "prompt task");
     Tid switch_state_tid = Create(2, &switchStateTask, "switch state task");
 

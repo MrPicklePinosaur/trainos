@@ -8,6 +8,12 @@ void
 testString()
 {
     println("Running test suite for string -----------------");
+
+    Arena arena = arena_new(128);
+
+    PRINT("%s", str8("hello world"));
+    PRINT("%s", str8_format(&arena, "abcd"));
+    PRINT("%s", str8_format(&arena, "uint = %u, int = %d, hex = %x, str = %s, char = %c ", 128, -10, 0x69, "locomotive", 'A'));
     
     Exit();
 }
