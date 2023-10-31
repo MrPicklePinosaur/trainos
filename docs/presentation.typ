@@ -7,6 +7,7 @@
   set page(
     paper: "presentation-" + aspect-ratio,
     fill: background-color,
+    margin: (top: 4%, right: 4%, bottom: 4%, left: 4%)
   )
   set text(fill: white.darken(10%), size: 40pt, font: "Fira Sans")
 
@@ -20,7 +21,7 @@
 )
 
 #set page(paper: "presentation-16-9")
-#set text(size: 25pt)
+#set text(size: 22pt)
 
 #polylux-slide[
   #align(horizon + center)[
@@ -51,37 +52,155 @@
 
 #polylux-slide[
     = Tasks & Task Table
+
+    #side-by-side[
+      #set text(18pt)
+      ```c
+      typedef struct {
+          SwitchFrame* sf;
+          Tid tid;
+          Tid parent_tid;
+          const char* name;
+
+          TaskState state;
+          u32 priority;
+          Addrspace addrspace;
+
+          CBuf* receive_queue;
+          SendBuf* send_buf;
+          ReceiveBuf* receive_buf;
+
+          EventId blocking_event;
+      } Task;
+      ```
+    ][
+      - switch frame struct at front
+      - state and priority for scheduler
+      - fields for send and recv 
+    ]
 ]
 
 #polylux-slide[
     = Address space
+
+    Address space struct in array with index corresponding to Tid
+    ```c
+    typedef struct {
+        Address base;
+        Address stackbase;
+    } Addrspace;
+
+
+    static unsigned char* const USER_BASE = (unsigned char*)0x00220000;
+    static const unsigned int USER_ADDRSPACE_SIZE = 0x00010000; // 1mb
+
+    Address base = USER_BASE + USER_ADDRSPACE_SIZE * i;
+    ```
 ]
 
 #polylux-slide[
     = Context Switch
+
+    #set text(18pt)
+    ```asm
+    # save all registers to switchframe struct
+    str x1, [x0, #8]
+    stp x2, x3, [x0, #16]
+    ... 
+    stp x28, x30, [x0, #224]
+
+    # save stack ptr
+    mrs x1, SP_EL0
+    str x1, [x0, #240]
+
+    # load return value
+    mrs x1, ELR_EL1
+    str x1, [x0, #248]
+
+    # load state reg
+    mrs x1, SPSR_EL1
+    str x1, [x0, #256]
+
+    b handle_svc
+    ```
+
 ]
 
 #polylux-slide[
     = Memory Allocation
 
-    Free list based malloc for pages and arena allocations for actual use
+    Free-list based malloc for arbritrary lifetimes
+    ```c
+    SchedulerNode* node = kalloc(sizeof(SchedulerNode));
+    kfree(node);
+    ```
+]
+
+#polylux-slide[
+    = Memory Allocation
+
+    Arena allocator for grouped lifetimes
+    #set text(20pt)
+    ```c
+    void do_stuff(Arena* arena, Arena tmp) {
+      cstr_format(&tmp, "Reversing train %d", train);
+      u32* ret = arena_alloc(arena, u32);
+      *ret = 69;
+    }
+
+    Arena arena = arena_new(256);
+    Arena tmp = arena_new(256);
+
+    do_stuff(&arena, tmp);
+    // after return: arena preserved, tmp not preserved
+
+    arena_release(&arena);
+    arena_release(&tmp);
+    ```
 ]
 
 #polylux-slide[
     = Kernel Events
+
+    ```c
+    typedef enum {
+        EVENT_NONE = 0,
+        EVENT_CLOCK_TICK,
+        EVENT_MARKLIN_RX,
+        EVENT_MARKLIN_CTS,
+        EVENT_CONSOLE_RX,
+        EVENT_TASK_EXIT,
+    } EventId;
+    ```
 ]
 
 #polylux-slide[
-    = Essential tasks
+    = Essential Tasks
 
+    - Init
     - Nameserver
     - Clock  
-    - IO (one for Marklin, one for Console)
+    - IO
     - Idle
 ]
 
 #polylux-slide[
-    = MarklinCTL TUI
+    = Essential Tasks: Init
+
+    - Spawns other essential servers
+    - Prompts user with menu of tasks to run
+]
+
+#polylux-slide[
+    = Essential Tasks: Nameserver
+]
+
+#polylux-slide[
+    = Essential Tasks: IO
+]
+
+#polylux-slide[
+    = MarklinCTL: train control TUI
 
 
 ]
@@ -90,26 +209,51 @@
     = Testing
 
     Test harness for running all of your tests
+    #set text(18pt)
+    ```c
+    void testCbuf() {
+      CBuf* out_stream = cbuf_new(10);
+      TEST(cbuf_len(out_stream) == 0);
+
+      cbuf_push_front(out_stream, 0x1);
+      TEST(cbuf_len(out_stream) == 1);
+
+      cbuf_push_front(out_stream, 0x2);
+      cbuf_push_front(out_stream, 0x3);
+      TEST(cbuf_len(out_stream) == 3);
+
+      u8 val = cbuf_pop_front(out_stream);
+      TEST(cbuf_len(out_stream) == 2);
+      TEST(val == 0x3);
+    }
+    ```
 ]
 
 #polylux-slide[
     = Logging
 
     Multiple log levels and log masks to filter output
+    ```c
+    set_log_level(LOG_LEVEL_INFO);
+    set_log_mask(LOG_MASK_KERN|LOG_MASK_USER|LOG_MASK_IO);
+
+    ULOG_INFO_M(LOG_MASK_IO, "this log message is printed");
+    ULOG_INFO_M(LOG_MASK_PARSER, "this log message is not printed");
+    ```
 ]
 
 #polylux-slide[
     = QEMU
 
-    Only supports up to RPi 3B.
-
-    Use some conditional compilation to work with RPi 3B memory layout.
-
-    Interrupts don't work D:
+    - Only supports up to RPi 3B.
+    - Use some conditional compilation to work with RPi 3B memory layout.
+    - Interrupts don't work D:
 ]
 
 #polylux-slide[
     = Gacha
+
+    - Runs in kernelmode as part of boot process
 
     :D
 ]
@@ -121,7 +265,7 @@
 ]
 
 #polylux-slide[
-    = trainterm.h: ncurses inspired terminal graphics
+    = trainterm.h: ncurses inspired library
 
     Primitive terminal drawing library with ncurses inspired API. Currently no cursor movement optimizations.
     ```c
