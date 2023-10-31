@@ -51,6 +51,49 @@
 ]
 
 #polylux-slide[
+    = Memory Allocation
+
+    Free-list based malloc for arbritrary lifetimes
+    ```c
+    SchedulerNode* node = kalloc(sizeof(SchedulerNode));
+    kfree(node);
+    ```
+]
+
+#polylux-slide[
+    = Memory Allocation
+
+    Arena allocator for grouped lifetimes
+    #set text(20pt)
+    ```c
+    void do_stuff(Arena* arena, Arena tmp) {
+      cstr_format(&tmp, "Reversing train %d", train);
+      u32* ret = arena_alloc(arena, u32);
+      *ret = 69;
+    }
+
+    Arena arena = arena_new(256);
+    Arena tmp = arena_new(256);
+
+    do_stuff(&arena, tmp);
+    // after return: arena preserved, tmp not preserved
+
+    arena_release(&arena);
+    arena_release(&tmp);
+    ```
+]
+
+#polylux-slide[
+    = trainstd.h: the standard library
+
+    - General use functions
+    - Data structures
+      - Linked list
+      - Hash map
+      - Circular buffer
+]
+
+#polylux-slide[
     = Tasks & Task Table
 
     #side-by-side[
@@ -74,16 +117,25 @@
       } Task;
       ```
     ][
-      - switch frame struct at front
+      - switch frame struct at top
       - state and priority for scheduler
-      - fields for send and recv 
+      - fields for send and recv
+      - task table is a hash map
     ]
+]
+
+#polylux-slide[
+    = Scheduler
+
+    - Hash map, priorities are the hashes
 ]
 
 #polylux-slide[
     = Address space
 
-    Address space struct in array with index corresponding to Tid
+    - Each task gets a 1mb stack
+    - Page addresses stored in array, max 256 pages at once
+
     ```c
     typedef struct {
         Address base;
@@ -124,39 +176,7 @@
     b handle_svc
     ```
 
-]
-
-#polylux-slide[
-    = Memory Allocation
-
-    Free-list based malloc for arbritrary lifetimes
-    ```c
-    SchedulerNode* node = kalloc(sizeof(SchedulerNode));
-    kfree(node);
-    ```
-]
-
-#polylux-slide[
-    = Memory Allocation
-
-    Arena allocator for grouped lifetimes
-    #set text(20pt)
-    ```c
-    void do_stuff(Arena* arena, Arena tmp) {
-      cstr_format(&tmp, "Reversing train %d", train);
-      u32* ret = arena_alloc(arena, u32);
-      *ret = 69;
-    }
-
-    Arena arena = arena_new(256);
-    Arena tmp = arena_new(256);
-
-    do_stuff(&arena, tmp);
-    // after return: arena preserved, tmp not preserved
-
-    arena_release(&arena);
-    arena_release(&tmp);
-    ```
+    - Don't need to save kernel state
 ]
 
 #polylux-slide[
@@ -175,6 +195,10 @@
 ]
 
 #polylux-slide[
+    = Message Passing
+]
+
+#polylux-slide[
     = Essential Tasks
 
     - Init
@@ -189,14 +213,46 @@
 
     - Spawns other essential servers
     - Prompts user with menu of tasks to run
+
+    ```
+    ================= SELECT TASK TO RUN =================
+    [0] K1
+    [1] K2
+    [2] K2Perf
+    [3] K3
+    [4] K4
+    [5] sendReceiveReplyTest
+    [6] graphics
+    [7] test
+    ======================================================
+    ```
 ]
 
 #polylux-slide[
     = Essential Tasks: Nameserver
+
+    - A linked list of all named tasks, linear search to retrieve them
+]
+
+#polylux-slide[
+    = Essential Tasks: Clock
+
+    - Notifier pattern
 ]
 
 #polylux-slide[
     = Essential Tasks: IO
+
+    - One server for Marklin, one server for console
+    - Marklin RX, CTS
+    - Console RX
+]
+
+#polylux-slide[
+    = Essential Tasks: Idle
+
+    - Loops on `WFI` instruction
+    - Kernel tracks how long it runs
 ]
 
 #polylux-slide[
@@ -208,7 +264,7 @@
 #polylux-slide[
     = Testing
 
-    Test harness for running all of your tests
+    Test suite for testing code
     #set text(18pt)
     ```c
     void testCbuf() {
@@ -256,12 +312,6 @@
     - Runs in kernelmode as part of boot process
 
     :D
-]
-
-#polylux-slide[
-    = trainstd.h: the standard library
-
-    Contains data structures like linked list, hashmap, circular buffer and more.
 ]
 
 #polylux-slide[
