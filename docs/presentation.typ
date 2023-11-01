@@ -117,23 +117,26 @@
       } Task;
       ```
     ][
-      - switch frame struct at top
-      - state and priority for scheduler
-      - fields for send and recv
-      - task table is a hash map
+      - Heap allocated
+      - Switch frame struct at top, also heap allocated
+      - State and priority for scheduler
+      - Fields for send and receive
+      - Accessed through task table, a hash map
     ]
 ]
 
 #polylux-slide[
     = Scheduler
 
-    - Hash map, priorities are the hashes
+    - Hash map of tasks
+    - Hash function is priority modulo 16
+    - Find next task by searching through all tasks, skipping over blocked tasks
 ]
 
 #polylux-slide[
     = Address space
 
-    - Each task gets a 1mb stack
+    - Each task gets a 1mb page to use as a stack
     - Page addresses stored in array, max 256 pages at once
 
     ```c
@@ -196,6 +199,11 @@
 
 #polylux-slide[
     = Message Passing
+
+    - Messages are structs
+    - Tasks are blocked while waiting for a message
+    - If waiting for a Receive(), Send() messages are stored in task table entry
+    - Each task has a linked list of other tasks waiting for it to call Receive()
 ]
 
 #polylux-slide[
@@ -246,6 +254,8 @@
     - One server for Marklin, one server for console
     - Marklin RX, CTS
     - Console RX
+
+    - One notifier task per interrupt type
 ]
 
 #polylux-slide[
@@ -309,7 +319,7 @@
 #polylux-slide[
     = Gacha
 
-    - Runs in kernelmode as part of boot process
+    - Every time the kernel boots, randomly pulls five UWaterloo courses of various rarities
 
     :D
 ]
@@ -331,4 +341,3 @@
 #polylux-slide[
     = Funny bugs
 ]
-
