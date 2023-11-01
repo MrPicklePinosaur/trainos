@@ -317,6 +317,8 @@ handle_svc(void)
         set_task_state(current_task, TASKSTATE_EXITED);
         tasktable_delete_task(current_tid);
 
+        // TODO reclaim the task's page
+
         // unblock tasks waiting for us to exit
         scheduler_unblock_event(EVENT_TASK_EXIT, current_tid);
 
