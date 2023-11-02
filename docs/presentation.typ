@@ -154,34 +154,71 @@
 ]
 
 #polylux-slide[
-    = Context Switch
+    = Context Switch: Entering kernel
 
-    #set text(18pt)
-    ```asm
-    # save all registers to switchframe struct
-    str x1, [x0, #8]
-    stp x2, x3, [x0, #16]
-    ... 
-    stp x28, x30, [x0, #224]
+    #side-by-side[
+      #set text(18pt)
+      ```asm
+      # save all registers to switchframe struct
+      str x1, [x0, #8]
+      stp x2, x3, [x0, #16]
+      ... 
+      stp x28, x30, [x0, #224]
 
-    # save stack ptr
-    mrs x1, SP_EL0
-    str x1, [x0, #240]
+      # save stack ptr
+      mrs x1, SP_EL0
+      str x1, [x0, #240]
 
-    # load return value
-    mrs x1, ELR_EL1
-    str x1, [x0, #248]
+      # load return value
+      mrs x1, ELR_EL1
+      str x1, [x0, #248]
 
-    # load state reg
-    mrs x1, SPSR_EL1
-    str x1, [x0, #256]
+      # load state reg
+      mrs x1, SPSR_EL1
+      str x1, [x0, #256]
 
-    b handle_svc
-    ```
+      b handle_svc
+      ```
+    ][
+      - Don't need to save kernel state
+    ]
 
-    - Don't need to save kernel state
 ]
 
+#polylux-slide[
+    = Context Switch: Exiting kernel
+
+    #side-by-side[
+      #set text(16pt)
+      ```asm
+      ldp x2, x3, [x0, #16]
+      ...
+      ldp x28, x30, [x0, #224]
+
+      # load stack ptr
+      ldr x1, [x0, #240]
+      msr SP_EL0, x1
+
+      # load return value
+      ldr x1, [x0, #248]
+      msr ELR_EL1, x1
+
+      # load state reg
+      ldr x1, [x0, #256]
+      msr SPSR_EL1, x1
+
+      # reset kernel stack ptr
+      mov sp, #0x00200000
+
+      ldp x0, x1, [x0, #0]
+
+      eret
+      ```
+    ][
+      - Notice that we need to reset kernel stack pointer (more on this later)
+    ]
+
+]
 #polylux-slide[
     = Kernel Events
 
@@ -261,15 +298,15 @@
 #polylux-slide[
     = Essential Tasks: Idle
 
-    - Loops on `WFI` instruction
+    - Loops on WFI instruction
     - Kernel tracks how long it runs
 ]
 
-#polylux-slide[
-    = MarklinCTL: train control TUI
+// #polylux-slide[
+//     = MarklinCTL: train control TUI
 
 
-]
+// ]
 
 #polylux-slide[
     = Testing
@@ -334,8 +371,4 @@
     w_puts_mv("my window", 2, 2);
     w_attr_reset();
     ```
-]
-
-#polylux-slide[
-    = Funny bugs
 ]
