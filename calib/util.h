@@ -4,6 +4,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define sizeof(x)    (size_t)sizeof(x)
+#define alignof(x)   (size_t)_Alignof(x)
+#define countof(a)   (sizeof(a) / sizeof(*(a)))
+#define lengthof(s)  (countof(s) - 1)
+
 // conversions
 int a2d(char ch);
 char a2i( char ch, char **src, int base, int *nump );
