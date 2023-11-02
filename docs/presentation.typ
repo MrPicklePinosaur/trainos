@@ -319,9 +319,7 @@
 #polylux-slide[
     = Gacha
 
-    - Every time the kernel boots, randomly pulls five UWaterloo courses of various rarities
-
-    :D
+    #image("gacha.jpg", width: 60%)
 ]
 
 #polylux-slide[
