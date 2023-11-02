@@ -24,6 +24,7 @@ void marklin_init();
 void marklin_train_ctl(uint32_t train, uint32_t speed);
 void marklin_switch_ctl(uint32_t switch_id, SwitchMode mode);
 void marklin_dump_s88(uint32_t count);
+void marklin_pick_s88(size_t index);
 void marklin_go();
 void marklin_stop();
 

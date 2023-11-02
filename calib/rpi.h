@@ -7,6 +7,10 @@
 #define CONSOLE 1
 #define MARKLIN 2
 
+static char* const  MMIO_BASE = (char*)           0xFE000000;
+
+static char* const TIMER_BASE = (char*)(MMIO_BASE + 0x00003000);
+
 void uart_putc(size_t line, unsigned char c);
 unsigned char uart_getc(size_t line);
 unsigned char uart_try_getc(size_t line);

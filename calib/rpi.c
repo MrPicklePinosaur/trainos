@@ -3,8 +3,6 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-static char* const  MMIO_BASE = (char*)           0xFE000000;
-
 /*********** GPIO CONFIGURATION ********************************/
 
 static char* const GPIO_BASE = (char*)(MMIO_BASE + 0x200000);

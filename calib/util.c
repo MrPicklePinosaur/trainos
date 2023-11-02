@@ -1,5 +1,5 @@
 #include "util.h"
-
+#include "rpi.h"
 
 // ascii digit to integer
 int a2d( char ch ) {
@@ -35,6 +35,13 @@ void i2a( int num, char *bf ) {
 		*bf++ = '-';
 	}
 	ui2a( num, 10, bf );
+}
+
+
+void delay(uint32_t amount) {
+    // Wait 10ms before sending next command
+    uint32_t wait_start = *(volatile uint32_t*)(TIMER_BASE + 0x04);
+    while (*(volatile uint32_t*)(TIMER_BASE + 0x04) < wait_start + amount);
 }
 
 // define our own memset to avoid SIMD instructions emitted from the compiler
