@@ -94,6 +94,20 @@
 ]
 
 #polylux-slide[
+    = trainterm.h: ncurses inspired ui library
+
+    Primitive terminal drawing library with ncurses inspired API. Currently no cursor movement optimizations.
+    ```c
+    Window win = win_init(2, 2, 20, 10);
+    win_draw(&win);
+
+    w_attr(ATTR_RED);
+    w_puts_mv("my window", 2, 2);
+    w_attr_reset();
+    ```
+]
+
+#polylux-slide[
     = Tasks & Task Table
 
     #side-by-side[
@@ -277,12 +291,16 @@
     = Essential Tasks: Nameserver
 
     - A linked list of all named tasks, linear search to retrieve them
+    - WhoIs call will retry a couple times
 ]
 
 #polylux-slide[
     = Essential Tasks: Clock
 
     - Notifier pattern
+    - The task id as well as the target time is pushed into a list
+    - Each tick, any delay requests that have been reached are replied to
+
 ]
 
 #polylux-slide[
@@ -299,7 +317,7 @@
     = Essential Tasks: Idle
 
     - Loops on WFI instruction
-    - Kernel tracks how long it runs
+    - Kernel tracks percentage of runtime spent idling, perf task will fetch this data periodically
 ]
 
 // #polylux-slide[
@@ -357,18 +375,4 @@
     = Gacha
 
     #image("gacha.jpg", width: 60%)
-]
-
-#polylux-slide[
-    = trainterm.h: ncurses inspired library
-
-    Primitive terminal drawing library with ncurses inspired API. Currently no cursor movement optimizations.
-    ```c
-    Window win = win_init(2, 2, 20, 10);
-    win_draw(&win);
-
-    w_attr(ATTR_RED);
-    w_puts_mv("my window", 2, 2);
-    w_attr_reset();
-    ```
 ]
