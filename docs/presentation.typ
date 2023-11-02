@@ -2,7 +2,7 @@
 #import "@preview/polylux:0.3.1": *
 
 #let trainos-theme(aspect-ratio: "16-9", body) = {
-  let background-color = navy
+  let background-color = rgb("#350035")
 
   set page(
     paper: "presentation-" + aspect-ratio,
@@ -25,7 +25,7 @@
 
 #polylux-slide[
   #align(horizon + center)[
-    = TrainOS
+    #image("logo-colored.png", width: 40%)
 
     Daniel Liu and Joey Zhou
   ]
