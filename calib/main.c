@@ -29,6 +29,8 @@ int kmain() {
   uart_getc(MARKLIN);
 
   uart_putc(MARKLIN, 193);
+
+
   for (;;) {
     unsigned char sensor_state = uart_getc(MARKLIN);
     uart_getc(MARKLIN);
