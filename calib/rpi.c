@@ -250,3 +250,9 @@ void uart_printf( size_t line, char *fmt, ... ) {
 	uart_format_print( line, fmt, va );
 	va_end(va);
 }
+
+uint32_t
+get_time(void)
+{
+    return *(volatile uint32_t*)(TIMER_BASE + 0x04);
+}

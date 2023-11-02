@@ -22,4 +22,6 @@ void uart_config_and_enable_marklin();
 void uart_init();
 uint32_t query_gpio_func(uint32_t pin);
 uint32_t query_gpio_puppdn(uint32_t pin);
+
+uint32_t get_time(void);
 #endif /* rpi.h */
