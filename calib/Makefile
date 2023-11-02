@@ -25,17 +25,17 @@ OBJECTS := $(patsubst %.c, %.o, $(patsubst %.S, %.o, $(SOURCES)))
 DEPENDS := $(patsubst %.c, %.d, $(patsubst %.S, %.d, $(SOURCES)))
 
 # The first rule is the default, ie. "make", "make all" and "make kernel8.img" mean the same
-all: iotest.img
+all: calib.img
 
 clean:
-	rm -f $(OBJECTS) $(DEPENDS) iotest.elf iotest.img
+	rm -f $(OBJECTS) $(DEPENDS) calib.elf calib.img
 
-iotest.img: iotest.elf
+calib.img: calib.elf
 	$(OBJCOPY) $< -O binary $@
 
-iotest.elf: $(OBJECTS) linker.ld
+calib.elf: $(OBJECTS) linker.ld
 	$(CC) $(CFLAGS) $(filter-out %.ld, $^) -o $@ $(LDFLAGS)
-	@$(OBJDUMP) -d iotest.elf | fgrep -q q0 && printf "\n***** WARNING: SIMD INSTRUCTIONS DETECTED! *****\n\n" || true
+	@$(OBJDUMP) -d calib.elf | fgrep -q q0 && printf "\n***** WARNING: SIMD INSTRUCTIONS DETECTED! *****\n\n" || true
 
 %.o: %.c Makefile
 	$(CC) $(CFLAGS) -MMD -MP -c $< -o $@

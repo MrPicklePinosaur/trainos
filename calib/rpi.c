@@ -174,6 +174,13 @@ unsigned char uart_getc(size_t line) {
   return(ch);
 }
 
+unsigned char uart_try_getc(size_t line) {
+  if (UART_REG(line, UART_FR) & UART_FR_RXFE) {
+    return 0;
+  }
+  return UART_REG(line, UART_DR);
+}
+
 void uart_putc(size_t line, unsigned char c) {
   // make sure there is room to write more data
   while(UART_REG(line, UART_FR) & UART_FR_TXFF);
