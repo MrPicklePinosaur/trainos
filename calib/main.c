@@ -39,12 +39,41 @@ uint32_t query_sensor(size_t sensor_group) {
 
 }
 
+void calibTrainSpeed();
+void calibTrainStop();
+
 int kmain() {
 
     // initialize GPIO for both console and marklin uarts
     uart_init();
     uart_config_and_enable_marklin();
     marklin_init();
+
+    for (;;) {
+        uart_printf(CONSOLE, "========================\r\n");
+        uart_printf(CONSOLE, "SELECT CALIB TO RUN\r\n");
+        uart_printf(CONSOLE, "1: calibTrainSpeed\r\n");
+        uart_printf(CONSOLE, "2: calibTrainStop\r\n");
+        uart_printf(CONSOLE, "========================\r\n");
+
+        int ch = uart_getc(CONSOLE);
+        switch (ch) {
+            case 1:
+                uart_printf(CONSOLE, "running train speed calib\r\n");
+                calibTrainSpeed();
+                break;
+            case 2:
+                uart_printf(CONSOLE, "running train stop calib\r\n");
+                calibTrainStop();
+                break;
+            default:
+                uart_printf(CONSOLE, "invalid calib task");
+        }
+    }
+
+}
+
+void calibTrainSpeed() {
 
     // Clear any previous sensor detections
     marklin_dump_s88(5);
@@ -106,5 +135,10 @@ int kmain() {
         uart_printf(CONSOLE, "Speed: %d\r\n", SPEEDS[i]/SAMPLES);
     }
 
-    for (;;) {}
+}
+
+void
+calibTrainStop()
+{
+
 }
