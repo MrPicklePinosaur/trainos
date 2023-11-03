@@ -140,7 +140,7 @@ void calibTrainSpeed() {
 void
 calibTrainStop()
 {
-    const uint32_t granularity = 5; // how many binary search cycles to perform
+    const uint32_t granularity = 10; // how many binary search cycles to perform
     const uint32_t timeout = 6000000; // timeout before we asssume that train did not make it to second sensor
     const uint32_t train_number = 2;
     const uint32_t train_speed = 10;
@@ -162,7 +162,7 @@ calibTrainStop()
         marklin_train_ctl(train_number, train_speed);
 
         // how long to wait after first sensor is triggered before issuing stop commanad
-        wait_time = (upper_bound_time-lower_bound_time)/2;
+        wait_time = (upper_bound_time+lower_bound_time)/2;
         
         // wait for sensor B1
         for (;;) {
