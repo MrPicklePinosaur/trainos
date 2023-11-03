@@ -27,6 +27,12 @@ str8_at(str8 s, usize index)
     return s.data[index];
 }
 
+usize
+str8_len(str8 s)
+{
+    return s.length;
+}
+
 bool
 str8_cmp(str8 a, str8 b)
 {

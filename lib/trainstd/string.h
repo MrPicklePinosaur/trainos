@@ -18,6 +18,7 @@ char* str8_to_cstr(str8 s);
 
 str8 str8_substr(str8 s, usize start, usize end);
 u8 str8_at(str8 s, usize index);
+usize str8_len(str8 s);
 bool str8_cmp(str8 a, str8 b);
 str8 str8_copy(Arena* arena, str8 s);
 str8 str8_replicate(Arena* arena, char ch, usize times);

@@ -1,3 +1,4 @@
+#include <trainstd.h>
 #include "path.h"
 #include "track_data.h"
 #include "../include/trainstd.h"
@@ -74,7 +75,23 @@ dijkstra(TrackNode* track, uint32_t src, uint32_t dest)
 }
 
 void
+Pathfind(const char* start, const char* end)
+{
+
+}
+
+void
 pathTask(void)
 {
+    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX + 256); 
+    TrackNode* track_a = track_a_init(&arena);
+    
+    // should be receiver
+
+    // BFS to find track node for start and potenitally end?
+
+    // find path (sequence of switches) for train to take given current train state
+
+    // using calibrated train data, calculate stopping time for train (measured in a delay after a sensor being triggered)
 
 }

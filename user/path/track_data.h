@@ -1,6 +1,8 @@
 #ifndef __TRACK_DATA_H__
 #define __TRACK_DATA_H__
 
+#include <trainstd.h>
+
 typedef enum {
   NODE_NONE,
   NODE_SENSOR,
@@ -16,26 +18,40 @@ typedef enum {
 
 typedef struct TrackNode TrackNode;
 typedef struct TrackEdge TrackEdge;
+typedef struct Track Track;
 
 struct TrackEdge {
-  TrackEdge *reverse;
-  TrackNode *src, *dest;
-  int dist;             /* in millimetres */
+    TrackEdge *reverse;
+    TrackNode *src, *dest;
+    int dist;             /* in millimetres */
 };
 
 struct TrackNode {
-  const char *name;
-  NodeType type;
-  int num;              /* sensor or switch number */
-  TrackNode *reverse;  /* same location, but opposite direction */
-  TrackEdge edge[2];
+    const char *name;
+    NodeType type;
+    int num;              /* sensor or switch number */
+    TrackNode *reverse;  /* same location, but opposite direction */
+    TrackEdge edge[2];
+};
+
+struct Track {
+    HashMap* nodes;
 };
 
 // The track initialization functions expect an array of this size.
 #define TRACK_MAX 144
 
-void init_tracka(TrackNode *track);
-void init_trackb(TrackNode *track);
+TrackNode* track_find(TrackNode* track, const char* name);
+TrackNode* track_pathfind(TrackNode* start, TrackNode* end);
+
+TrackNode* track_a_init(Arena* arena);
+TrackNode* track_b_init(Arena* arena);
+
+TrackNode* track_prev_node(TrackNode* track);
+TrackNode* track_prev_sensor(TrackNode* track);
+
+TrackNode* track_next_node(TrackNode* track);
+TrackNode* track_next_sensor(TrackNode* track);
 
 
 #endif // __TRACK_DATA_H__
