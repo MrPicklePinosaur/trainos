@@ -84,15 +84,15 @@ void calibTrainSpeed() {
     const uint32_t SAMPLES = 3;
     uint32_t BANKS[] = {3, 2, 4, 5, 5, 4, 5, 4, 2, 3, 1, 2};
     uint32_t SENSOR[] = {10, 1, 14, 14, 9, 5, 6, 4, 6, 12, 4, 16};
-    uint32_t DISTANCES[] = {128+231, 404, 239+43, 376, 239+155+239, 376, 50+239, 404, 231+120, 333+43, 437, 50+326};
+    uint64_t DISTANCES[] = {128+231, 404, 239+43, 376, 239+155+239, 376, 50+239, 404, 231+120, 333+43, 437, 50+326};
     size_t SENSOR_COUNT = 12;
-    uint32_t SPEEDS[SENSOR_COUNT];
+    uint64_t SPEEDS[SENSOR_COUNT];
     for (int i = 0; i < SENSOR_COUNT; ++i) {
         SPEEDS[i] = 0;
     }
 
-    uint32_t prev_time = 0;
-    uint32_t current_time = 0;
+    uint64_t prev_time = 0;
+    uint64_t current_time = 0;
 
     for (int sample = 0; sample < SAMPLES+1; ++sample) {
 
@@ -117,7 +117,7 @@ void calibTrainSpeed() {
                 current_time = get_time();
                 if (!(current_sensor == 0 && sample == 0)) {
                     uint32_t speed_index = (current_sensor - 1 + SENSOR_COUNT) % SENSOR_COUNT;
-                    uint32_t speed = DISTANCES[speed_index]*1000000/(current_time-prev_time);
+                    uint64_t speed = DISTANCES[speed_index]*1000000000/(current_time-prev_time);
                     SPEEDS[speed_index] += speed;
                     uart_printf(CONSOLE, "Set speed %d to %d\r\n", speed_index, speed);
                 }
@@ -131,10 +131,12 @@ void calibTrainSpeed() {
         uart_printf(CONSOLE, "sample %d complete\r\n", sample);
     } end_test:
 
+    uint32_t total = 0;
     for (int i = 0; i < SENSOR_COUNT; ++i) {
-        uart_printf(CONSOLE, "Speed: %d\r\n", SPEEDS[i]/SAMPLES);
+        uart_printf(CONSOLE, "Average speed (section %d): %d\r\n", i, SPEEDS[i]/SAMPLES);
+        total += SPEEDS[i];
     }
-
+    uart_printf(CONSOLE, "Average speed (overall): %d\r\n", total/(SENSOR_COUNT*SAMPLES));
 }
 
 void
