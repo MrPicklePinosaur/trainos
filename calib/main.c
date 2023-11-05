@@ -156,11 +156,26 @@ calibTrainStop()
     const int SENSOR_2_GROUP = 5;
     const int SENSOR_2_INDEX = 14;
 
+    const int SPEEDUP_END_GROUP = 3;
+    const int SPEEDUP_END_INDEX = 12;
+
     uint32_t wait_time = 0;
 
     for (int i = 0; i < granularity; ++i) {
 
-        // set train speed
+        // set train to max speed
+        marklin_train_ctl(train_number, 14);
+
+        // wait for sensor C12, then slow down to desired speed
+        for (;;) {
+            uint32_t triggered = query_sensor(SPEEDUP_END_GROUP);
+            if (triggered == 0) continue;
+            char sensor_group = (triggered / 16);
+            uint8_t sensor_index = (triggered % 16)+1;
+            if (sensor_group == SPEEDUP_END_GROUP && sensor_index == SPEEDUP_END_INDEX) {
+                break;
+            }
+        }
         marklin_train_ctl(train_number, train_speed);
 
         // how long to wait after first sensor is triggered before issuing stop commanad
