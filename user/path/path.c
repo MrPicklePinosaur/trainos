@@ -10,9 +10,10 @@
 // Statically allocated arrays used in Dijkstra algorithm
 uint32_t dist[TRACK_MAX];
 uint32_t prev[TRACK_MAX];
+TrackEdge* edges[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
-i32*
+TrackEdge**
 dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 {
     TrackNode* nodes = track->nodes;
@@ -20,6 +21,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
     for (uint32_t i = 0; i < TRACK_MAX; i++) {
         dist[i] = INF;
         prev[i] = NONE;
+        edges[i] = 0;
         visited[i] = 0;
     }
     dist[src] = 0;
@@ -49,37 +51,40 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
         if (rev == dest) break;
 
         if (nodes[curr].type == NODE_SENSOR || nodes[curr].type == NODE_MERGE) {
-            TrackEdge edge_ahead = nodes[curr].edge[DIR_AHEAD];
-            uint32_t ahead = edge_ahead.dest - nodes;  // Use array math to get the index of the neighbor node
-            if (dist[curr] + edge_ahead.dist < dist[ahead]) {
-                dist[ahead] = dist[curr] + edge_ahead.dist;
+            TrackEdge* edge_ahead = &nodes[curr].edge[DIR_AHEAD];
+            uint32_t ahead = edge_ahead->dest - nodes;  // Use array math to get the index of the neighbor node
+            if (dist[curr] + edge_ahead->dist < dist[ahead]) {
+                dist[ahead] = dist[curr] + edge_ahead->dist;
                 prev[ahead] = curr;
+                edges[ahead] = edge_ahead;
             }
         }
         else if (nodes[curr].type == NODE_BRANCH) {
-            TrackEdge edge_straight = nodes[curr].edge[DIR_STRAIGHT];
-            uint32_t straight = edge_straight.dest - nodes;
-            if (dist[curr] + edge_straight.dist < dist[straight]) {
-                dist[straight] = dist[curr] + edge_straight.dist;
+            TrackEdge* edge_straight = &nodes[curr].edge[DIR_STRAIGHT];
+            uint32_t straight = edge_straight->dest - nodes;
+            if (dist[curr] + edge_straight->dist < dist[straight]) {
+                dist[straight] = dist[curr] + edge_straight->dist;
                 prev[straight] = curr;
+                edges[straight] = edge_straight;
             }
 
-            TrackEdge edge_curved = nodes[curr].edge[DIR_CURVED];
-            uint32_t curved = edge_curved.dest - nodes;
-            if (dist[curr] + edge_curved.dist < dist[curved]) {
-                dist[curved] = dist[curr] + edge_curved.dist;
+            TrackEdge* edge_curved = &nodes[curr].edge[DIR_CURVED];
+            uint32_t curved = edge_curved->dest - nodes;
+            if (dist[curr] + edge_curved->dist < dist[curved]) {
+                dist[curved] = dist[curr] + edge_curved->dist;
                 prev[curved] = curr;
+                edges[curved] = edge_curved;
             }
         }
     }
 
-    i32* path_start = arena_alloc(arena, i32);
-    i32* path = path_start;
-    for (uint32_t back = dest; back != NONE; back = prev[back]) {
-        *path = back; 
-        path = arena_alloc(arena, i32);
+    TrackEdge** path_start = arena_alloc(arena, TrackEdge*);
+    TrackEdge** path = path_start;
+    for (uint32_t back = dest; back != src; back = prev[back]) {
+        *path = edges[back]; 
+        path = arena_alloc(arena, TrackEdge*);
     }
-    *path = -1;
+    *path = NULL;
 
     return path_start;
 }
@@ -101,11 +106,14 @@ pathTask(void)
     usize src = (usize)map_get(&track_a.map, str8("C10"), &arena);
     usize dest = (usize)map_get(&track_a.map, str8("D4"), &arena);
 
-    i32* path = dijkstra(&track_a, src, dest, &path_arena); // -1 terminated array
+    TrackEdge** path = dijkstra(&track_a, src, dest, &path_arena); // -1 terminated array
 
-    for (; *path != -1; ++path) {
-        PRINT("%s", track_a.nodes[*path].name); 
+    const u32 stopping_distance = 500;
+    u32 distance = 0;
+    for (; *path != NULL; ++path) {
+        PRINT("%s", (*path)->dest->name); 
     }
+
 
     // should be receiver
 
