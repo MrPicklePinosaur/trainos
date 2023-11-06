@@ -1,0 +1,29 @@
+Train 2 velocities (millimeters/second)
+ 2:  73
+ 5: 224
+ 8: 387
+11: 554
+14: 650
+
+Train 2 stopping times (microseconds before issuing stop command, C10 to E14)
+ 2: sensors didn't work for some reason, maybe integer overflow?
+ 5: 3437504
+ 8: 1344469, 1335055
+11: 497003
+14: 114534
+
+(got two measurements for speed 8)
+
+Train 47 velocities:
+ 2: 75
+ 5: 239
+ 8: 390
+11: 537
+14: 578
+
+Train 47 stopping times:
+ 2: 
+ 5: 3186181
+ 8: 1343748
+11: 625165
+14: 375001
