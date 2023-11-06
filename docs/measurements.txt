@@ -9,21 +9,37 @@ Train 2 stopping times (microseconds before issuing stop command, C10 to E14)
  2: sensors didn't work for some reason, maybe integer overflow?
  5: 3437504
  8: 1344469, 1335055
-11: 497003
-14: 114534
+11:  497003
+14:  114534
 
 (got two measurements for speed 8)
 
 Train 47 velocities:
- 2: 75
+ 2:  75
  5: 239
  8: 390
 11: 537
 14: 578
 
 Train 47 stopping times:
- 2: 
+ 2: sensors didn't work for some reason, maybe integer overflow?
  5: 3186181
  8: 1343748
-11: 625165
-14: 375001
+11:  625165
+14:  375001
+
+Total distance: 1045
+If v is the measured velocity in mm/s and t is the stopping time in microseconds, the stopping distance is:
+1045 - (v*10^(-6)*t)
+
+Train 2 stopping distances (millimeters):
+ 5: 275
+ 8: 525, 528
+11: 770
+14: 971
+
+Train 47 stopping distances:
+ 5: 284
+ 8: 521
+11: 709
+14: 828
