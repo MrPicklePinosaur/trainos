@@ -86,7 +86,7 @@ void calibTrainSpeed() {
         uart_getc(MARKLIN);
     }
 
-    const uint32_t SAMPLES = 3;
+    const uint32_t SAMPLES = 20;
     uint32_t BANKS[] = {3, 2, 4, 5, 5, 4, 5, 4, 2, 3, 1, 2};
     uint32_t SENSOR[] = {10, 1, 14, 14, 9, 5, 6, 4, 6, 12, 4, 16};
     uint64_t DISTANCES[] = {128+231, 404, 239+43, 376, 239+155+239, 376, 50+239, 404, 231+120, 333+43, 437, 50+326};
@@ -155,7 +155,7 @@ calibTrainStop()
     uart_printf(CONSOLE, "Calculating stop time for train %d speed %d\r\n", train_number, train_speed);
 
     uint32_t lower_bound_time = 0;
-    uint32_t upper_bound_time = 700000;
+    uint32_t upper_bound_time = 5000000;
 
     const int SENSOR_1_GROUP = 3;
     const int SENSOR_1_INDEX = 10;
