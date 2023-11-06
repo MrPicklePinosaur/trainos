@@ -90,10 +90,10 @@ pathTask(void)
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX*8);
     Track track_a = track_a_init(&arena);
 
-    PRINT("done init");
-    
     usize src = (usize)map_get(&track_a.map, str8("C10"), &arena);
     usize dest = (usize)map_get(&track_a.map, str8("D4"), &arena);
+
+    PRINT("src %d, dest %d", src, dest);
 
     dijkstra(&track_a, src, dest);
 

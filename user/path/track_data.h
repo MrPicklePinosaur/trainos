@@ -27,7 +27,7 @@ struct TrackEdge {
 };
 
 struct TrackNode {
-    const char *name;
+    char *name;
     NodeType type;
     int num;              /* sensor or switch number */
     TrackNode *reverse;  /* same location, but opposite direction */

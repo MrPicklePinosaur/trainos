@@ -12,6 +12,15 @@ str8_to_cstr(str8 s)
 }
 
 str8
+str8_from_cstr(char* cstr)
+{
+    return (str8) {
+        .data = (u8*)cstr,
+        .length = strlen(cstr)
+    };
+}
+
+str8
 str8_substr(str8 s, usize start, usize end)
 {
     // TODO need to do validtion
