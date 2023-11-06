@@ -3,7 +3,12 @@
 
 // path calculatoin and control task
 
-void Pathfind(const char* start, const char* end);
+#include <trainsys.h>
+#include <traindef.h>
+
+#define PATH_ADDRESS "path"
+
+int PlanPath(Tid path_tid, usize train, const char* end);
 
 void pathTask(void);
 

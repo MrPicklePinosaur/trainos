@@ -1,7 +1,8 @@
 #include <trainstd.h>
+#include <trainsys.h>
 #include "path.h"
 #include "track_data.h"
-#include "../include/trainstd.h"
+#include "../nameserver.h"
 #include <stdint.h>
 
 #define INF 2147483647
@@ -92,23 +93,10 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 }
 
 void
-Pathfind(const char* start, const char* end)
+calculatePath(Track* track, usize src, usize dest, Arena tmp)
 {
 
-}
-
-void
-pathTask(void)
-{
-    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX*8);
-    Arena path_arena = arena_new(sizeof(usize)*TRACK_MAX);
-
-    Track track_a = track_a_init(&arena);
-
-    usize src = (usize)map_get(&track_a.map, str8("C10"), &arena);
-    usize dest = (usize)map_get(&track_a.map, str8("D4"), &arena);
-
-    TrackEdge** path_start = dijkstra(&track_a, src, dest, &path_arena); // -1 terminated array
+    TrackEdge** path_start = dijkstra(track, src, dest, &tmp); // -1 terminated array
 
     // compute which sensor to issue stop command from
     i32 stopping_distance = 500;
@@ -148,15 +136,65 @@ pathTask(void)
         }
     }
 
+}
 
+typedef struct {
+    usize train;
+    const char* end;
+} PathMsg;
 
-    // should be receiver
+typedef struct {
 
-    // find path (sequence of switches) for train to take given current train state
+} PathResp;
 
-    // using calibrated train data, calculate stopping time for train (measured in a delay after a sensor being triggered)
+void
+pathTask(void)
+{
+    RegisterAs(PATH_ADDRESS); 
 
+    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX*8);
+    Arena tmp = arena_new(sizeof(usize)*TRACK_MAX);
 
+    Track track = track_a_init(&arena);
+
+    PathMsg msg_buf;
+    PathResp reply_buf;
+
+    for (;;) {
+        int from_tid;
+        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PathMsg));
+        if (msg_len < 0) {
+            ULOG_WARN("Error when receiving");
+            continue;
+        }
+
+        char* start = "C10";
+        char* end = "D4";
+
+        // find where the train currently is
+
+        usize src = (usize)map_get(&track.map, str8_from_cstr(start), &arena);
+        usize dest = (usize)map_get(&track.map, str8_from_cstr(end), &arena);
+        calculatePath(&track, src, dest, tmp); 
+
+        reply_buf = (PathResp){};        
+        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
+    }
 
     Exit();
 }
+
+int
+PlanPath(Tid path_tid, usize train, const char* end)
+{
+    PathResp resp_buf;
+    PathMsg send_buf = (PathMsg) {
+        .train = train,
+        .end = end
+    };
+
+    int ret = Send(path_tid, (const char*)&send_buf, sizeof(PathMsg), (char*)&resp_buf, sizeof(PathResp));
+
+    return ret;
+}
+
