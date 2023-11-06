@@ -11,6 +11,7 @@
 #include "cbuf.h"
 #include "pair.h"
 #include "hashmap.h"
+#include "map.h"
 #include "conv.h"
 #include "timer.h"
 #include "log.h"

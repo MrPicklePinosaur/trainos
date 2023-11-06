@@ -17,6 +17,8 @@ struct Map {
     mapval_t  value;
 };
 
-mapval_t* insert(Map** m, mapkey_t key, Arena* arena);
+mapval_t map_insert(Map** m, mapkey_t key, mapval_t value, Arena* arena);
+mapval_t map_get(Map** m, mapkey_t key, Arena *arena);
+bool map_contains(Map** m, mapkey_t key, Arena *arena);
 
 #endif // __TRAINSTD_MAP_H__

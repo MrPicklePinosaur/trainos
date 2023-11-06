@@ -18,12 +18,13 @@ equals(mapkey_t a, mapkey_t b)
     return str8_cmp(a, b);
 }
 
-mapval_t*
-map_insert(Map** m, mapkey_t key, Arena* arena)
+mapval_t
+map_insert(Map** m, mapkey_t key, mapval_t value, Arena* arena)
 {
     for (u64 h = hash(key); *m; h <<= 2) {
         if (equals(key, (*m)->key)) {
-            return &(*m)->value;
+            (*m)->value = value;
+            return (*m)->value;
         }
         m = &(*m)->child[h>>62];
     }
@@ -32,7 +33,22 @@ map_insert(Map** m, mapkey_t key, Arena* arena)
     }
     *m = arena_alloc(arena, Map);
     (*m)->key = key;
-    return &(*m)->value;
+    (*m)->value = value;
+    return (*m)->value;
+}
+
+mapval_t
+map_get(Map** m, mapkey_t key, Arena *arena)
+{
+    for (uint64_t h = hash(key); *m; h <<= 2) {
+        if (equals(key, (*m)->key)) {
+            return (*m)->value;
+        }
+        m = &(*m)->child[h>>62];
+    }
+    *m = arena_alloc(arena, Map);
+    (*m)->key = key;
+    return NULL;
 }
 
 bool
