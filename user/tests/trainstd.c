@@ -121,6 +121,14 @@ testList()
 }
 
 void
+testMap()
+{
+    println("Running test suite for map -----------------");
+
+    Exit();
+}
+
+void
 testHashmap()
 {
     println("Running test suite for hashmap -----------------");

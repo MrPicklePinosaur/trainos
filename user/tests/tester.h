@@ -12,6 +12,7 @@ void testHarness();
 void testString();
 void testCbuf();
 void testList();
+void testMap();
 void testHashmap();
 void testAlloc();
 

@@ -19,7 +19,7 @@ equals(mapkey_t a, mapkey_t b)
 }
 
 mapval_t*
-insert(Map** m, mapkey_t key, Arena* arena)
+map_insert(Map** m, mapkey_t key, Arena* arena)
 {
     for (u64 h = hash(key); *m; h <<= 2) {
         if (equals(key, (*m)->key)) {
@@ -33,4 +33,18 @@ insert(Map** m, mapkey_t key, Arena* arena)
     *m = arena_alloc(arena, Map);
     (*m)->key = key;
     return &(*m)->value;
+}
+
+bool
+map_contains(Map** m, mapkey_t key, Arena *arena)
+{
+    for (uint64_t h = hash(key); *m; h <<= 2) {
+        if (equals(key, (*m)->key)) {
+            return 1;
+        }
+        m = &(*m)->child[h>>62];
+    }
+    *m = arena_alloc(arena, Map);
+    (*m)->key = key;
+    return 0;
 }
