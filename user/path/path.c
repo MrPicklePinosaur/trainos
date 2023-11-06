@@ -12,8 +12,8 @@ uint32_t dist[TRACK_MAX];
 uint32_t prev[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
-void
-dijkstra(Track* track, uint32_t src, uint32_t dest)
+i32*
+dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 {
     TrackNode* nodes = track->nodes;
 
@@ -73,9 +73,15 @@ dijkstra(Track* track, uint32_t src, uint32_t dest)
         }
     }
 
+    i32* path_start = arena_alloc(arena, i32);
+    i32* path = path_start;
     for (uint32_t back = dest; back != NONE; back = prev[back]) {
-        println("%s", nodes[back].name);
+        *path = back; 
+        path = arena_alloc(arena, i32);
     }
+    *path = -1;
+
+    return path_start;
 }
 
 void
@@ -88,24 +94,26 @@ void
 pathTask(void)
 {
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX*8);
+    Arena path_arena = arena_new(sizeof(usize)*TRACK_MAX);
+
     Track track_a = track_a_init(&arena);
 
     usize src = (usize)map_get(&track_a.map, str8("C10"), &arena);
     usize dest = (usize)map_get(&track_a.map, str8("D4"), &arena);
 
-    PRINT("src %d, dest %d", src, dest);
+    i32* path = dijkstra(&track_a, src, dest, &path_arena); // -1 terminated array
 
-    dijkstra(&track_a, src, dest);
-
-    PRINT("found");
+    for (; *path != -1; ++path) {
+        PRINT("%s", track_a.nodes[*path].name); 
+    }
 
     // should be receiver
-
-    // BFS to find track node for start and potenitally end?
 
     // find path (sequence of switches) for train to take given current train state
 
     // using calibrated train data, calculate stopping time for train (measured in a delay after a sensor being triggered)
+
+
 
     Exit();
 }
