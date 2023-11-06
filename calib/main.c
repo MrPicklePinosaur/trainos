@@ -75,6 +75,11 @@ int kmain() {
 
 void calibTrainSpeed() {
 
+    const uint32_t train_number = 2;
+    const uint32_t train_speed = 14;
+    uart_printf(CONSOLE, "Calculating train velocity for train %d speed %d\r\n", train_number, train_speed);
+    marklin_train_ctl(train_number, train_speed);
+
     // Clear any previous sensor detections
     marklin_dump_s88(5);
     for (int i = 0; i < BYTE_COUNT; ++i) {
@@ -146,6 +151,8 @@ calibTrainStop()
     const uint32_t timeout = 6000000; // timeout before we asssume that train did not make it to second sensor
     const uint32_t train_number = 2;
     const uint32_t train_speed = 14;
+
+    uart_printf(CONSOLE, "Calculating stop time for train %d speed %d\r\n", train_number, train_speed);
 
     uint32_t lower_bound_time = 0;
     uint32_t upper_bound_time = 700000;
