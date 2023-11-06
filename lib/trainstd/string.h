@@ -25,6 +25,7 @@ str8 str8_copy(Arena* arena, str8 s);
 str8 str8_replicate(Arena* arena, char ch, usize times);
 str8 str8_concat(str8 a, str8 b);
 str8 str8_format(Arena* arena, char *fmt, ...);
+u64 str8_to_u64(str8 s);
 
 // cstring functions that work with allocators
 char* cstr_copy(Arena* arena, char* s);

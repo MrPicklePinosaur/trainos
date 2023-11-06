@@ -78,6 +78,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
         }
     }
 
+    // return edges the train will take
     TrackEdge** path_start = arena_alloc(arena, TrackEdge*);
     TrackEdge** path = path_start;
     for (uint32_t back = dest; back != src; back = prev[back]) {
@@ -85,6 +86,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
         path = arena_alloc(arena, TrackEdge*);
     }
     *path = NULL;
+
 
     return path_start;
 }
@@ -106,13 +108,46 @@ pathTask(void)
     usize src = (usize)map_get(&track_a.map, str8("C10"), &arena);
     usize dest = (usize)map_get(&track_a.map, str8("D4"), &arena);
 
-    TrackEdge** path = dijkstra(&track_a, src, dest, &path_arena); // -1 terminated array
+    TrackEdge** path_start = dijkstra(&track_a, src, dest, &path_arena); // -1 terminated array
 
-    const u32 stopping_distance = 500;
-    u32 distance = 0;
+    // compute which sensor to issue stop command from
+    i32 stopping_distance = 500;
+    // TODO it is possible to run out of path
+    TrackEdge** path = path_start;
     for (; *path != NULL; ++path) {
-        PRINT("%s", (*path)->dest->name); 
+        stopping_distance -= (*path)->dist;
+        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR)
+            break;
     }
+
+    TrackNode* waiting_sensor = (*path)->src; // sensor that we should wait to trip
+    u32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
+
+    PRINT("sensor: %s, disance: %d", waiting_sensor->name, distance_from_sensor);
+
+    // compute desired switch state
+    path = path_start;
+    for (; *path != NULL; ++path) {
+        if ((*path)->src->type == NODE_BRANCH) {
+            // compute id of the switch
+            str8 switch_name = str8_from_cstr((*path)->src->name);
+            PRINT("switch name %s", switch_name);
+            switch_name = str8_substr(switch_name, 2, str8_len(switch_name));
+            u32 switch_num = str8_to_u64(switch_name);
+
+            if (&(*path)->src->edge[DIR_STRAIGHT] == *path) {
+                PRINT("switch %d to straight", switch_num);
+            }
+            else if (&(*path)->src->edge[DIR_CURVED] == *path) {
+                PRINT("switch %d to curved", switch_num);
+
+            }
+            else {
+                UNREACHABLE("invalid branch");
+            }
+        }
+    }
+
 
 
     // should be receiver

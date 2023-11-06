@@ -1,4 +1,5 @@
 #include "conv.h"
+#include <string.h>
 
 // ascii digit to integer
 int a2d( char ch ) {

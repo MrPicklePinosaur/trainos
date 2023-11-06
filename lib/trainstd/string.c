@@ -69,6 +69,17 @@ str8_format(Arena* arena, char *fmt, ...)
     return str8(out);
 }
 
+// TODO: assumes that string consists only of numeric characters
+// also doesn't support negative numbers
+u64
+str8_to_u64(str8 s)
+{
+    u64 out = 0;
+    for (usize i = 0; i < str8_len(s); ++i)
+        out = 10*out + (str8_at(s, i)-'0');
+    return out;
+}
+
 char*
 cstr_copy(Arena* arena, char* s)
 {
@@ -146,4 +157,10 @@ cstr_format(Arena* arena, char *fmt, ...)
     char* out = _cstr_format(arena, fmt, va);
 	va_end(va);
     return out;
+}
+
+u64
+cstr_to_u64(char* str)
+{
+
 }
