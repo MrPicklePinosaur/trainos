@@ -1196,7 +1196,7 @@ Track track_a_init(Arena* arena) {
     track.nodes[143].reverse = &track.nodes[142];
 
     for (usize i = 0; i < TRACK_MAX; ++i)
-        map_insert(&track.map, str8(track.nodes[i].name), (mapval_t)(&track.nodes[i]), arena);
+        map_insert(&track.map, str8(track.nodes[i].name), (mapval_t)i, arena);
 
     return track;
 }
@@ -2369,7 +2369,7 @@ Track track_b_init(Arena* arena) {
     track.nodes[139].reverse = &track.nodes[138];
 
     for (usize i = 0; i < TRACK_MAX; ++i)
-        map_insert(&track.map, str8(track.nodes[i].name), (mapval_t)(&track.nodes[i]), arena);
+        map_insert(&track.map, str8(track.nodes[i].name), (mapval_t)i, arena);
 
     return track;
 }

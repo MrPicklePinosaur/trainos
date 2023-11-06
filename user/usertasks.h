@@ -23,6 +23,9 @@ void K3();
 // K4
 #include "ui/ui.h"
 
+// TC1
+#include "path/path.h"
+
 // Other
 void graphicsTask();
 void testHarness();
