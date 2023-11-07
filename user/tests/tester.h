@@ -17,6 +17,7 @@ void testHashmap();
 void testAlloc();
 
 void testParser();
+void testDijkstra();
 
 void testNameserver();
 void testSensor();
