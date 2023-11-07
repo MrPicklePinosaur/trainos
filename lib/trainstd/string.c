@@ -56,7 +56,15 @@ str8_cmp(str8 a, str8 b)
 str8
 str8_copy(Arena* arena, str8 s)
 {
-    UNIMPLEMENTED("str8_copy"); 
+    char* buf = arena_alloc(arena, char, str8_len(s)+1);
+    for (usize i = 0; i < str8_len(s); ++i) {
+        buf[i] = str8_at(s, i);
+    } 
+    buf[str8_len(s)] = 0; // null byte
+    return (str8) {
+        .data = buf,
+        .length = str8_len(s)
+    };
 }
 
 str8

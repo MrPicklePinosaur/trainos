@@ -64,6 +64,8 @@ initTask()
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
 
+    Tid path_tid = Create(3, &pathTask, "path task");
+
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
         for (size_t i = 0; task_menu[i] != 0; ++i) {

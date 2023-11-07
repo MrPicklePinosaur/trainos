@@ -3,6 +3,9 @@
 #include "path.h"
 #include "track_data.h"
 #include "../nameserver.h"
+#include "../io.h"
+#include "../ui/marklin.h"
+#include "train_data.h"
 #include <stdint.h>
 
 #define INF 2147483647
@@ -93,13 +96,13 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 }
 
 void
-calculatePath(Track* track, usize src, usize dest, Arena tmp)
+calculatePath(Tid io_server, Track* track, usize src, usize dest, usize train_ind, usize train_speed, Arena tmp)
 {
 
     TrackEdge** path_start = dijkstra(track, src, dest, &tmp); // -1 terminated array
 
     // compute which sensor to issue stop command from
-    i32 stopping_distance = 500;
+    i32 stopping_distance = TRAIN_DATA_STOP_DIST[train_ind][train_speed];
     // TODO it is possible to run out of path
     TrackEdge** path = path_start;
     for (; *path != NULL; ++path) {
@@ -109,9 +112,9 @@ calculatePath(Track* track, usize src, usize dest, Arena tmp)
     }
 
     TrackNode* waiting_sensor = (*path)->src; // sensor that we should wait to trip
-    u32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
+    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
-    PRINT("sensor: %s, disance: %d", waiting_sensor->name, distance_from_sensor);
+    //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, distance: %d", waiting_sensor->name, distance_from_sensor);
 
     // compute desired switch state
     path = path_start;
@@ -119,19 +122,19 @@ calculatePath(Track* track, usize src, usize dest, Arena tmp)
         if ((*path)->src->type == NODE_BRANCH) {
             // compute id of the switch
             str8 switch_name = str8_from_cstr((*path)->src->name);
-            PRINT("switch name %s", switch_name);
             switch_name = str8_substr(switch_name, 2, str8_len(switch_name));
             u32 switch_num = str8_to_u64(switch_name);
 
             if (&(*path)->src->edge[DIR_STRAIGHT] == *path) {
-                PRINT("switch %d to straight", switch_num);
+                //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
+                marklin_switch_ctl(io_server, switch_num, SWITCH_MODE_STRAIGHT);
             }
             else if (&(*path)->src->edge[DIR_CURVED] == *path) {
-                PRINT("switch %d to curved", switch_num);
-
+                //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
+                marklin_switch_ctl(io_server, switch_num, SWITCH_MODE_CURVED);
             }
             else {
-                UNREACHABLE("invalid branch");
+                PANIC("invalid branch");
             }
         }
     }
@@ -139,8 +142,8 @@ calculatePath(Track* track, usize src, usize dest, Arena tmp)
 }
 
 typedef struct {
-    usize train;
-    const char* end;
+    u32 train;
+    char* dest;
 } PathMsg;
 
 typedef struct {
@@ -151,9 +154,10 @@ void
 pathTask(void)
 {
     RegisterAs(PATH_ADDRESS); 
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
 
-    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX*8);
-    Arena tmp = arena_new(sizeof(usize)*TRACK_MAX);
+    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
+    Arena tmp = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
     Track track = track_a_init(&arena);
 
@@ -169,13 +173,12 @@ pathTask(void)
         }
 
         char* start = "C10";
-        char* end = "D4";
 
         // find where the train currently is
 
         usize src = (usize)map_get(&track.map, str8_from_cstr(start), &arena);
-        usize dest = (usize)map_get(&track.map, str8_from_cstr(end), &arena);
-        calculatePath(&track, src, dest, tmp); 
+        usize dest = (usize)map_get(&track.map, str8_from_cstr(msg_buf.dest), &arena);
+        calculatePath(io_server, &track, src, dest, TRAIN_2, TRAIN_SPEED_HIGH, tmp); 
 
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
@@ -185,12 +188,12 @@ pathTask(void)
 }
 
 int
-PlanPath(Tid path_tid, usize train, const char* end)
+PlanPath(Tid path_tid, u32 train, char* dest)
 {
     PathResp resp_buf;
     PathMsg send_buf = (PathMsg) {
         .train = train,
-        .end = end
+        .dest = dest
     };
 
     int ret = Send(path_tid, (const char*)&send_buf, sizeof(PathMsg), (char*)&resp_buf, sizeof(PathResp));

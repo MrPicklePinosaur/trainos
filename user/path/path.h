@@ -8,7 +8,7 @@
 
 #define PATH_ADDRESS "path"
 
-int PlanPath(Tid path_tid, usize train, const char* end);
+int PlanPath(Tid path_tid, u32 train, char* dest);
 
 void pathTask(void);
 

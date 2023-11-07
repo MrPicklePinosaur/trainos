@@ -14,6 +14,7 @@ typedef struct {
     PARSER_RESULT_GO,
     PARSER_RESULT_LIGHTS,
     PARSER_RESULT_QUIT,
+    PARSER_RESULT_PATH,
     PARSER_RESULT_ERROR,
   } _type;
 
@@ -37,10 +38,15 @@ typedef struct {
       bool state;
     } lights;
 
+    struct {
+        u32 train;
+        char* dest;
+    } path;
+
   } _data;
 } ParserResult;
 
-ParserResult parse_command(str8 command);
+ParserResult parse_command(Arena arena, str8 command);
 
 #endif // __UI_PARSER_H__
 

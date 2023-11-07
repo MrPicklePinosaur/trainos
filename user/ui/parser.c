@@ -7,7 +7,7 @@ u32 get_number(str8 command, u32* it);
 void eat_whitespace(str8 command, u32* it);
 
 ParserResult
-parse_command(str8 command)
+parse_command(Arena arena, str8 command)
 {
     ParserResult error = (ParserResult) {
         ._type = PARSER_RESULT_ERROR,
@@ -150,6 +150,32 @@ parse_command(str8 command)
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed QUIT command");
         return (ParserResult) {
             ._type = PARSER_RESULT_QUIT,
+        };
+    }
+    else if (str8_cmp(cmd_name, str8("path"))) {
+
+        eat_whitespace(command, &it);
+
+        int train = get_number(command, &it);
+
+        eat_whitespace(command, &it);
+
+        str8 dest = get_word(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s", train, dest);
+
+        // TODO dangling poitner here, so we are allocting some space
+        // str8 copied = str8_copy(&arena, dest);
+        char* dest_cstr = "D4";
+
+        return (ParserResult) {
+            ._type = PARSER_RESULT_PATH,
+            ._data = {
+                .path = {
+                    .train = train,
+                    .dest = dest_cstr
+                }
+            }
         };
     }
 
