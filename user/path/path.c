@@ -5,6 +5,7 @@
 #include "train_data.h"
 #include "user/nameserver.h"
 #include "user/io.h"
+#include "user/clock.h"
 #include "user/marklin.h"
 #include "user/sensor.h"
 
@@ -96,7 +97,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 }
 
 void
-calculatePath(Tid io_server, Tid sensor_server, Track* track, usize src, usize dest, usize train_ind, usize train_speed, Arena tmp)
+calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, Arena tmp)
 {
 
     TrackEdge** path_start = dijkstra(track, src, dest, &tmp); // -1 terminated array
@@ -125,7 +126,9 @@ calculatePath(Tid io_server, Tid sensor_server, Track* track, usize src, usize d
     }
 
     // compute which sensor to issue stop command from
-    i32 stopping_distance = TRAIN_DATA_STOP_DIST[train_ind][train_speed];
+    i32 stopping_distance = train_data_stop_dist(train, train_speed);
+    i32 train_vel = train_data_vel(train, train_speed);
+
     // TODO it is possible to run out of path
     path = path_start;
     for (; *path != NULL; ++path) {
@@ -137,11 +140,21 @@ calculatePath(Tid io_server, Tid sensor_server, Track* track, usize src, usize d
     TrackNode* waiting_sensor = (*path)->src; // sensor that we should wait to trip
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
-    //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, distance: %d", waiting_sensor->name, distance_from_sensor);
+    ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
+    // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
     // block until we hit desired sensor
-    WaitForSensor(sensor_server, waiting_sensor);
+    WaitForSensor(sensor_server, waiting_sensor->num);
+    
+    ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 
+    // now wait before sending stop command
+    u64 delay_ticks = distance_from_sensor*100/train_vel;
+    Delay(clock_server, delay_ticks);
+
+    marklin_train_ctl(io_server, train, 0);
+
+    ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
 }
 
@@ -161,6 +174,7 @@ pathTask(void)
 
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
     Arena tmp = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
@@ -184,7 +198,7 @@ pathTask(void)
 
         usize src = (usize)map_get(&track.map, str8_from_cstr(start), &arena);
         usize dest = (usize)map_get(&track.map, str8_from_cstr(msg_buf.dest), &arena);
-        calculatePath(io_server, sensor_server, &track, src, dest, TRAIN_2, TRAIN_SPEED_HIGH, tmp); 
+        calculatePath(io_server, sensor_server, clock_server, &track, src, dest, 2, TRAIN_SPEED_SLOW, tmp); 
 
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));

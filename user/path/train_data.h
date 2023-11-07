@@ -6,13 +6,10 @@
 #define TRAIN_DATA_TRAIN_COUNT 2
 #define TRAIN_DATA_SPEED_COUNT 4
 
-#define TRAIN_2    0
-#define TRAIN_47   1
-
-#define TRAIN_SPEED_SNAIL  0
-#define TRAIN_SPEED_SLOW   1
-#define TRAIN_SPEED_MED    2
-#define TRAIN_SPEED_HIGH   3
+#define TRAIN_SPEED_SNAIL  5
+#define TRAIN_SPEED_SLOW   8
+#define TRAIN_SPEED_MED    11
+#define TRAIN_SPEED_HIGH   14
 
 static const uint32_t TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47};
 static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {5, 8, 11, 14};

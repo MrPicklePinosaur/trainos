@@ -27,7 +27,7 @@ typedef struct {
 } SensorResp;
 
 int
-WaitForSensor(Tid sensor_server, usize sensor)
+WaitForSensor(Tid sensor_server, isize sensor)
 {
 
     SensorResp resp_buf;
@@ -104,7 +104,7 @@ sensorNotifierTask() {
 
 typedef struct {
     Tid tid;
-    usize sensor_id;
+    isize sensor_id;
 } SensorRequest;
 
 void
@@ -140,7 +140,7 @@ sensorServerTask()
                 SensorRequest* request;
                 while (listiter_next(&it, (void**)&request)) {
 
-                    if (request->sensor_id == *triggered || request->sensor_id == 0) {
+                    if (request->sensor_id == *triggered || request->sensor_id == -1) {
                         ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] unblocking task %d", request->tid);
                         Reply(request->tid, (char*)&reply_buf, sizeof(SensorResp));
                         list_remove(sensor_requests, request);

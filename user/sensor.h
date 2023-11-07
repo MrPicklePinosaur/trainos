@@ -10,7 +10,7 @@ typedef u8 TrainState;
 
 void sensorServerTask();
 
-// passing sensor = 0 means we don't care which sensor
-int WaitForSensor(Tid sensor_server, usize sensor);
+// passing sensor = -1 means we don't care which sensor
+int WaitForSensor(Tid sensor_server, isize sensor);
 
 #endif // __USER_SENSOR_H__
