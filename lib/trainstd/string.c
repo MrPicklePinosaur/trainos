@@ -74,7 +74,7 @@ str8_format(Arena* arena, char *fmt, ...)
 	va_start(va,fmt);
     char* out = _cstr_format(arena, fmt, va);
 	va_end(va);
-    return str8(out);
+    return str8_from_cstr(out);
 }
 
 // TODO: assumes that string consists only of numeric characters
@@ -118,7 +118,12 @@ _cstr_format(Arena* arena, char *fmt, va_list va)
     char* start = arena_alloc(arena, char);
     char* cur = start;
 
-    while ((ch = *(fmt++))) {
+    for (;;) {
+        ch = *(fmt++);
+        if (ch == 0) {
+            *cur = 0; // add null terminator
+            break;
+        }
         if ( ch != '%' ) {
             *cur = ch;
             cur = arena_alloc(arena, char);

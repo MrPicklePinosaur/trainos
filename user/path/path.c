@@ -130,15 +130,23 @@ calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, 
     i32 train_vel = train_data_vel(train, train_speed);
 
     // TODO it is possible to run out of path
+    TrackNode* waiting_sensor = 0;
     path = path_start;
     for (; *path != NULL; ++path) {
         stopping_distance -= (*path)->dist;
-        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR)
+        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR) {
+            waiting_sensor = (*path)->src; // sensor that we should wait to trip
             break;
+        }
     }
 
-    TrackNode* waiting_sensor = (*path)->src; // sensor that we should wait to trip
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
+
+    if (waiting_sensor == 0) {
+        // TODO there are some cases that the src and dest are too close
+        ULOG_WARN("Could not find usable sensor");
+        return;
+    }
 
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
@@ -195,6 +203,8 @@ pathTask(void)
 
         tmp = tmp_saved; // reset arena
 
+        marklin_train_ctl(io_server, msg_buf.train, TRAIN_SPEED_SLOW);
+
         // wait for any sensor trigger, that will be our start node
         int start_sensor = WaitForSensor(sensor_server, -1);
         if (start_sensor < 0) {
@@ -203,11 +213,12 @@ pathTask(void)
         // TODO convert to string (this is kinda dumb, but we need to be able to find the index in tracknode array given the sensor num)
         str8 start_str = str8_format(&tmp, "%c%d", start_sensor/16+'A', (start_sensor%16)+1);
         str8 dest_str = str8_from_cstr(msg_buf.dest);
-        ULOG_INFO_M(LOG_MASK_PATH, "start node %s, dest node %s", str8_to_cstr(start_str), str8_to_cstr(dest_str));
+        ULOG_INFO_M(LOG_MASK_PATH, "start node %s len = %d, dest node %s len = %d", str8_to_cstr(start_str), str8_len(start_str), str8_to_cstr(dest_str), str8_len(dest_str));
 
         usize start = (usize)map_get(&track.map, start_str, &arena);
         usize dest = (usize)map_get(&track.map, dest_str, &arena);
-        // calculatePath(io_server, sensor_server, clock_server, &track, start, dest, 2, TRAIN_SPEED_SLOW, &tmp); 
+        ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
+        calculatePath(io_server, sensor_server, clock_server, &track, start, dest, 2, TRAIN_SPEED_SLOW, &tmp); 
 
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
