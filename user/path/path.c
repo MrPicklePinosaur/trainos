@@ -52,8 +52,11 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
         if (curr == dest) break;
 
         // we don't care which direction we arrive at a sensor from
-        uint32_t rev = nodes[curr].reverse - nodes;
-        if (rev == dest) break;
+        uint32_t dest_rev = nodes[dest].reverse - nodes;
+        if (curr == dest_rev) {
+            dest = dest_rev;
+            break;
+        }
 
         if (nodes[curr].type == NODE_SENSOR || nodes[curr].type == NODE_MERGE) {
             TrackEdge* edge_ahead = &nodes[curr].edge[DIR_AHEAD];
@@ -87,10 +90,9 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
     TrackEdge** path_start = arena_alloc(arena, TrackEdge*);
     TrackEdge** path = path_start;
 
-    // also compute reverse of src
-    uint32_t src_rev = nodes[src].reverse - nodes;
-
     usize iters = 0;
+
+    uint32_t src_rev = nodes[src].reverse - nodes;
     for (uint32_t back = dest; back != src && back != src_rev; back = prev[back]) {
         *path = edges[back]; 
         path = arena_alloc(arena, TrackEdge*);
@@ -119,9 +121,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, 
     for (; *path != NULL; ++path) {
         if ((*path)->src->type == NODE_BRANCH) {
             // compute id of the switch
-            str8 switch_name = str8_from_cstr((*path)->src->name);
-            switch_name = str8_substr(switch_name, 2, str8_len(switch_name));
-            u32 switch_num = str8_to_u64(switch_name);
+            u32 switch_num = (*path)->src->num;
 
             if (&(*path)->src->edge[DIR_STRAIGHT] == *path) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);

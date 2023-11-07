@@ -12,14 +12,14 @@ testHarness()
 {
     TestFn tests[] = {
         //&testSensor,
-        &testString,
+        &testDijkstra,
+        //&testString,
         &testCbuf,
         &testList,
         &testHashmap,
         &testMap,
         &testAlloc,
         &testParser,
-        &testDijkstra,
         /* &testNameserver, */
         0
     };
