@@ -34,11 +34,17 @@ typedef enum {
     LOG_MASK_SENSOR  = 4096,
 } LogMaskBits;
 
+typedef enum {
+    LOG_MODE_STANDARD   = 0,
+    LOG_MODE_TRAIN_TERM = 1,
+} LogMode;
+
 void log_init(void);
 void set_log_level(LogLevel level);
 LogLevel get_log_level(void);
-void set_log_mask(LogMask log_mask);
+void set_log_mask(LogMask mask);
 LogMask get_log_mask(void);
+void set_log_mode(LogMode mode);
 void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);
 
 #define ULOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_USER, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
