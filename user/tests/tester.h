@@ -19,5 +19,6 @@ void testAlloc();
 void testParser();
 
 void testNameserver();
+void testSensor();
 
 #endif // __USER_TESTER_H__

@@ -125,7 +125,7 @@ sensorServerTask()
 
             usize* triggered = msg_buf.data.triggered;
             for (; triggered != 0; ++triggered) {
-                ULOG_INFO("[SENSOR SERVER] triggered %d", *triggered);
+                ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] triggered %d", *triggered);
                 // unblock all tasks that are waiting
 
                 ListIter it = list_iter(sensor_requests); 
@@ -133,6 +133,7 @@ sensorServerTask()
                 while (listiter_next(&it, (void**)&request)) {
 
                     if (request->sensor_id == *triggered || request->sensor_id == 0) {
+                        ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] unblocking task %d", request->tid);
                         Reply(request->tid, (char*)&reply_buf, sizeof(SensorResp));
                         list_remove(sensor_requests, request);
                     }
@@ -145,6 +146,7 @@ sensorServerTask()
             
         }
         else if (msg_buf.type == SENSOR_WAIT) {
+            ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] task %d request wait for sensor %d", from_tid, msg_buf.data.wait);
 
             SensorRequest* request = alloc(sizeof(SensorRequest));
             *request = (SensorRequest) {

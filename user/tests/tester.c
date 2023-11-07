@@ -11,6 +11,7 @@ void
 testHarness()
 {
     TestFn tests[] = {
+        &testSensor,
         &testString,
         &testCbuf,
         &testList,
@@ -22,7 +23,10 @@ testHarness()
         0
     };
 
-    for (usize i = 0; tests[i] != 0; ++i) Create(1, tests[i], "testRunner");
+    for (usize i = 0; tests[i] != 0; ++i) {
+        Tid test_task = Create(1, tests[i], "testRunner");
+        WaitTid(test_task);
+    }
 
     Exit();
 }
