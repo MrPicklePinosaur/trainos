@@ -17,7 +17,7 @@ typedef enum {
 typedef struct {
     SensorMsgType type;
     union {
-        usize triggered[9]; // list of sensors that were triggered (0 terminated array)
+        usize triggered[9]; // list of sensors that were triggered (-1 terminated array)
         usize wait;        // sensor id to wait for
     } data;
 } SensorMsg;
@@ -61,7 +61,7 @@ sensorNotifierTask() {
             u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
 
             // send triggers in batches
-            usize triggered_list[9] = {0}; 
+            usize triggered_list[9];
             usize triggered_list_len = 0;
             for (usize j = 0; j < 8; ++j) {
                 if (((triggered >> j) & 0x1) == 1) {
@@ -77,13 +77,20 @@ sensorNotifierTask() {
 
             // send to server task
             if (triggered_list_len > 0) {
-                SensorMsg msg_buf = (SensorMsg) {
+                ULOG_INFO_M(LOG_MASK_SENSOR, "sending sensor data to sensor server");
+                triggered_list[triggered_list_len] = -1; // set element to be sentinel
+
+                triggered_list_len = 0;
+
+                SensorMsg send_buf = (SensorMsg) {
                     .type = SENSOR_TRIGGERED,
                     .data = {
-                        .triggered = triggered_list
+                        .triggered = {0},
                     }
                 };
-                SensorResp reply_buf;
+                memcpy(send_buf.data.triggered, triggered_list, sizeof(triggered_list));
+                SensorResp resp_buf;
+                Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
                 
             }
         }
@@ -124,7 +131,8 @@ sensorServerTask()
             // read sensor values and reply to anyone waiting
 
             usize* triggered = msg_buf.data.triggered;
-            for (; triggered != 0; ++triggered) {
+            ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] got sensor batch", *triggered);
+            for (; *triggered != -1; ++triggered) {
                 ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] triggered %d", *triggered);
                 // unblock all tasks that are waiting
 

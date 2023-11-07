@@ -11,9 +11,9 @@ testSensor()
 
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     println("waiting for sensor A1...");
-    WaitForSensor(sensor_server, 1);
+    WaitForSensor(sensor_server, 0);
     println("waiting for sensor B1...");
-    WaitForSensor(sensor_server, 17);
+    WaitForSensor(sensor_server, 16);
     println("complete");
 
 

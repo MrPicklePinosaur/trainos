@@ -2,11 +2,11 @@
 #include <trainsys.h>
 #include "path.h"
 #include "track_data.h"
-#include "../nameserver.h"
-#include "../io.h"
-#include "../marklin.h"
 #include "train_data.h"
-#include <stdint.h>
+#include "user/nameserver.h"
+#include "user/io.h"
+#include "user/marklin.h"
+#include "user/sensor.h"
 
 #define INF 2147483647
 #define NONE 2147483647
@@ -96,7 +96,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 }
 
 void
-calculatePath(Tid io_server, Track* track, usize src, usize dest, usize train_ind, usize train_speed, Arena tmp)
+calculatePath(Tid io_server, Tid sensor_server, Track* track, usize src, usize dest, usize train_ind, usize train_speed, Arena tmp)
 {
 
     TrackEdge** path_start = dijkstra(track, src, dest, &tmp); // -1 terminated array
@@ -140,6 +140,7 @@ calculatePath(Tid io_server, Track* track, usize src, usize dest, usize train_in
     //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, distance: %d", waiting_sensor->name, distance_from_sensor);
 
     // block until we hit desired sensor
+    WaitForSensor(sensor_server, waiting_sensor);
 
 
 }
@@ -157,6 +158,8 @@ void
 pathTask(void)
 {
     RegisterAs(PATH_ADDRESS); 
+
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
 
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
@@ -181,7 +184,7 @@ pathTask(void)
 
         usize src = (usize)map_get(&track.map, str8_from_cstr(start), &arena);
         usize dest = (usize)map_get(&track.map, str8_from_cstr(msg_buf.dest), &arena);
-        calculatePath(io_server, &track, src, dest, TRAIN_2, TRAIN_SPEED_HIGH, tmp); 
+        calculatePath(io_server, sensor_server, &track, src, dest, TRAIN_2, TRAIN_SPEED_HIGH, tmp); 
 
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
