@@ -4,7 +4,7 @@
 #include "track_data.h"
 #include "../nameserver.h"
 #include "../io.h"
-#include "../ui/marklin.h"
+#include "../marklin.h"
 #include "train_data.h"
 #include <stdint.h>
 
@@ -101,23 +101,8 @@ calculatePath(Tid io_server, Track* track, usize src, usize dest, usize train_in
 
     TrackEdge** path_start = dijkstra(track, src, dest, &tmp); // -1 terminated array
 
-    // compute which sensor to issue stop command from
-    i32 stopping_distance = TRAIN_DATA_STOP_DIST[train_ind][train_speed];
-    // TODO it is possible to run out of path
-    TrackEdge** path = path_start;
-    for (; *path != NULL; ++path) {
-        stopping_distance -= (*path)->dist;
-        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR)
-            break;
-    }
-
-    TrackNode* waiting_sensor = (*path)->src; // sensor that we should wait to trip
-    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
-
-    //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, distance: %d", waiting_sensor->name, distance_from_sensor);
-
     // compute desired switch state
-    path = path_start;
+    TrackEdge** path = path_start;
     for (; *path != NULL; ++path) {
         if ((*path)->src->type == NODE_BRANCH) {
             // compute id of the switch
@@ -138,6 +123,24 @@ calculatePath(Tid io_server, Track* track, usize src, usize dest, usize train_in
             }
         }
     }
+
+    // compute which sensor to issue stop command from
+    i32 stopping_distance = TRAIN_DATA_STOP_DIST[train_ind][train_speed];
+    // TODO it is possible to run out of path
+    path = path_start;
+    for (; *path != NULL; ++path) {
+        stopping_distance -= (*path)->dist;
+        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR)
+            break;
+    }
+
+    TrackNode* waiting_sensor = (*path)->src; // sensor that we should wait to trip
+    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
+
+    //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, distance: %d", waiting_sensor->name, distance_from_sensor);
+
+    // block until we hit desired sensor
+
 
 }
 

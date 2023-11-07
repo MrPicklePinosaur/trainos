@@ -6,6 +6,7 @@
 #include "user/io.h"
 #include "user/path/path.h"
 #include "user/nameserver.h"
+#include "user/sensor.h"
 #include "parser.h"
 #include "ui.h"
 #include "render.h"
@@ -16,46 +17,7 @@
 #define TRAIN_SPEED_MASK     0b01111
 #define TRAIN_LIGHTS_MASK    0b10000
 
-#define BYTE_COUNT 10
-#define UNIT_COUNT 5
-
-typedef u8 TrainState;
-
 void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid path_server, TrainState* train_state, ParserResult command);
-
-// task for querying switch states
-void
-switchStateTask()
-{
-    u8 sensor_state[BYTE_COUNT] = {0};
-    u8 prev_sensor_state[BYTE_COUNT] = {0};
-
-    Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid renderer_server = WhoIs(RENDERER_ADDRESS);
-
-    for (;;) {
-        marklin_dump_s88(marklin_server, UNIT_COUNT);
-
-        for (usize i = 0; i < BYTE_COUNT; ++i) {
-            u8 sensor_byte = Getc(marklin_server);
-            prev_sensor_state[i] = sensor_state[i];
-            sensor_state[i] = sensor_byte;
-            u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
-            for (usize j = 0; j < 8; ++j) {
-                if (((triggered >> j) & 0x1) == 1) {
-                    u8 index = (7-j);
-                    renderer_sensor_triggered(renderer_server, i*8+index);
-                }
-            }
-        }
-
-        // TODO maybe should use DelayUntil to guarentee uniform fetches
-        Delay(clock_server, 20);
-    }
-
-    Exit();
-}
 
 // task for getting user input form the console
 void
@@ -219,7 +181,6 @@ uiTask()
     Tid render_tid = Create(3, &renderTask, "render task");
     Tid diagnostic_tid = Create(3, &diagnosticTask, "diagnostic task");
     Tid prompt_tid = Create(2, &promptTask, "prompt task");
-    Tid switch_state_tid = Create(2, &switchStateTask, "switch state task");
 
     WaitTid(prompt_tid);
 

@@ -2,7 +2,7 @@
 #define __UI_RENDER_H__
 
 #include <trainsys.h>
-#include "marklin.h"
+#include "../marklin.h"
 
 #define RENDERER_ADDRESS "renderer"
 

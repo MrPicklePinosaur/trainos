@@ -2,6 +2,7 @@
 #include "nameserver.h"
 #include "clock.h"
 #include "io.h"
+#include "sensor.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
@@ -63,6 +64,8 @@ initTask()
 
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
+
+    Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
 
     Tid path_tid = Create(3, &pathTask, "path task");
 

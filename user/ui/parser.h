@@ -3,7 +3,7 @@
 
 #include <traindef.h>
 #include <trainstd.h>
-#include "marklin.h"
+#include "user/marklin.h"
 
 typedef struct {
   enum {
