@@ -19,6 +19,14 @@ marklin_switch_ctl(Tid io_server, u32 switch_id, SwitchMode mode)
 {
     Putc(io_server, mode);
     Putc(io_server, switch_id);
+    if (switch_id == 155) {
+        mode == SWITCH_MODE_STRAIGHT ? Putc(io_server, SWITCH_MODE_CURVED) : Putc(io_server, SWITCH_MODE_STRAIGHT);
+        Putc(io_server, 156);
+    }
+    else if (switch_id == 156) {
+        mode == SWITCH_MODE_STRAIGHT ? Putc(io_server, SWITCH_MODE_CURVED) : Putc(io_server, SWITCH_MODE_STRAIGHT);
+        Putc(io_server, 155);
+    }
     Putc(io_server, 32);
 }
 
