@@ -97,10 +97,10 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
 }
 
 void
-calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, Arena tmp)
+calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, Arena* arena)
 {
 
-    TrackEdge** path_start = dijkstra(track, src, dest, &tmp); // -1 terminated array
+    TrackEdge** path_start = dijkstra(track, src, dest, arena); // -1 terminated array
 
     // compute desired switch state
     TrackEdge** path = path_start;
@@ -177,7 +177,8 @@ pathTask(void)
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Arena tmp = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
+    Arena tmp_saved = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
+    Arena tmp;
 
     Track track = track_a_init(&arena);
 
@@ -192,13 +193,21 @@ pathTask(void)
             continue;
         }
 
-        char* start = "C10";
+        tmp = tmp_saved; // reset arena
 
-        // find where the train currently is
+        // wait for any sensor trigger, that will be our start node
+        int start_sensor = WaitForSensor(sensor_server, -1);
+        if (start_sensor < 0) {
+            PANIC("failed to get starting sensor");
+        }
+        // TODO convert to string (this is kinda dumb, but we need to be able to find the index in tracknode array given the sensor num)
+        str8 start_str = str8_format(&tmp, "%c%d", start_sensor/16+'A', (start_sensor%16)+1);
+        str8 dest_str = str8_from_cstr(msg_buf.dest);
+        ULOG_INFO_M(LOG_MASK_PATH, "start node %s, dest node %s", str8_to_cstr(start_str), str8_to_cstr(dest_str));
 
-        usize src = (usize)map_get(&track.map, str8_from_cstr(start), &arena);
-        usize dest = (usize)map_get(&track.map, str8_from_cstr(msg_buf.dest), &arena);
-        calculatePath(io_server, sensor_server, clock_server, &track, src, dest, 2, TRAIN_SPEED_SLOW, tmp); 
+        usize start = (usize)map_get(&track.map, start_str, &arena);
+        usize dest = (usize)map_get(&track.map, dest_str, &arena);
+        // calculatePath(io_server, sensor_server, clock_server, &track, start, dest, 2, TRAIN_SPEED_SLOW, &tmp); 
 
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));

@@ -165,15 +165,14 @@ parse_command(Arena arena, str8 command)
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s", train, dest);
 
         // TODO dangling poitner here, so we are allocting some space
-        // str8 copied = str8_copy(&arena, dest);
-        char* dest_cstr = "D4";
+        str8 copied = str8_copy(&arena, dest);
 
         return (ParserResult) {
             ._type = PARSER_RESULT_PATH,
             ._data = {
                 .path = {
                     .train = train,
-                    .dest = dest_cstr
+                    .dest = str8_to_cstr(copied)
                 }
             }
         };

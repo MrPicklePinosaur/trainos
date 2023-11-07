@@ -23,7 +23,10 @@ typedef struct {
 } SensorMsg;
 
 typedef struct {
-
+    SensorMsgType type;
+    union {
+        usize wait; // the sensor that was triggered
+    } data;
 } SensorResp;
 
 int
@@ -37,7 +40,12 @@ WaitForSensor(Tid sensor_server, isize sensor)
             .wait = sensor
         }
     };
-    return Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
+    int ret = Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
+    if (ret < 0) {
+        ULOG_WARN("WaitForSensor errored");
+        return -1;
+    }
+    return resp_buf.data.wait;
 }
 
 // task for querying sensor states
@@ -142,6 +150,12 @@ sensorServerTask()
 
                     if (request->sensor_id == *triggered || request->sensor_id == -1) {
                         ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] unblocking task %d", request->tid);
+                        SensorResp reply_buf = (SensorResp) {
+                            .type = SENSOR_WAIT,
+                            .data = {
+                                .wait = *triggered
+                            }
+                        };
                         Reply(request->tid, (char*)&reply_buf, sizeof(SensorResp));
                         list_remove(sensor_requests, request);
                     }
@@ -150,6 +164,9 @@ sensorServerTask()
 
             }
 
+            SensorResp reply_buf = (SensorResp) {
+                .type = SENSOR_TRIGGERED
+            };
             Reply(from_tid, (char*)&reply_buf, sizeof(SensorResp));
             
         }
