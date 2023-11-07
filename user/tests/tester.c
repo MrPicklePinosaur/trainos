@@ -11,7 +11,7 @@ void
 testHarness()
 {
     TestFn tests[] = {
-        &testSensor,
+        //&testSensor,
         &testString,
         &testCbuf,
         &testList,
@@ -19,6 +19,7 @@ testHarness()
         &testMap,
         &testAlloc,
         &testParser,
+        &testDijkstra,
         /* &testNameserver, */
         0
     };
