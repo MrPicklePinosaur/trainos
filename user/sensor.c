@@ -26,6 +26,20 @@ typedef struct {
 
 } SensorResp;
 
+int
+WaitForSensor(Tid sensor_server, usize sensor)
+{
+
+    SensorResp resp_buf;
+    SensorMsg send_buf = (SensorMsg) {
+        .type = SENSOR_WAIT,
+        .data = {
+            .wait = sensor
+        }
+    };
+    return Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
+}
+
 // task for querying sensor states
 void
 sensorNotifierTask() {
@@ -81,11 +95,19 @@ sensorNotifierTask() {
     Exit();
 }
 
+typedef struct {
+    Tid tid;
+    usize sensor_id;
+} SensorRequest;
+
 void
 sensorServerTask()
 {
-    
+    RegisterAs(SENSOR_ADDRESS); 
+
     Tid notifier = Create(2, &sensorNotifierTask, "Sensor Notifier");
+
+    List* sensor_requests = list_init();
 
     SensorMsg msg_buf;
     SensorResp reply_buf;
@@ -104,12 +126,34 @@ sensorServerTask()
             usize* triggered = msg_buf.data.triggered;
             for (; triggered != 0; ++triggered) {
                 ULOG_INFO("[SENSOR SERVER] triggered %d", *triggered);
+                // unblock all tasks that are waiting
+
+                ListIter it = list_iter(sensor_requests); 
+                SensorRequest* request;
+                while (listiter_next(&it, (void**)&request)) {
+
+                    if (request->sensor_id == *triggered || request->sensor_id == 0) {
+                        Reply(request->tid, (char*)&reply_buf, sizeof(SensorResp));
+                        list_remove(sensor_requests, request);
+                    }
+
+                }
+
             }
 
             Reply(from_tid, (char*)&reply_buf, sizeof(SensorResp));
             
         }
         else if (msg_buf.type == SENSOR_WAIT) {
+
+            SensorRequest* request = alloc(sizeof(SensorRequest));
+            *request = (SensorRequest) {
+                .tid = from_tid,
+                .sensor_id = msg_buf.data.wait
+            };
+            list_push_back(sensor_requests, request);
+
+            // Don't reply just yet
 
         } else {
             ULOG_WARN("[SENSOR SERVER] Invalid message type");
