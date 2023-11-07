@@ -86,9 +86,20 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
     // return edges the train will take
     TrackEdge** path_start = arena_alloc(arena, TrackEdge*);
     TrackEdge** path = path_start;
-    for (uint32_t back = dest; back != src; back = prev[back]) {
+
+    // also compute reverse of src
+    uint32_t src_rev = nodes[src].reverse - nodes;
+
+    usize iters = 0;
+    for (uint32_t back = dest; back != src && back != src_rev; back = prev[back]) {
         *path = edges[back]; 
         path = arena_alloc(arena, TrackEdge*);
+
+        if (iters > 128) {
+            ULOG_WARN("[dijkstra] unable to find src when constructing edge graph");
+            return NULL;
+        }
+        ++iters;
     }
     *path = NULL;
 
@@ -101,6 +112,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, 
 {
 
     TrackEdge** path_start = dijkstra(track, src, dest, arena); // -1 terminated array
+    if (path_start == NULL) return;
 
     // compute desired switch state
     TrackEdge** path = path_start;
