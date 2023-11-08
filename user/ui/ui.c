@@ -157,21 +157,6 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
     }
 }
 
-void
-diagnosticTask()
-{
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid renderer_server = WhoIs(RENDERER_ADDRESS);
-    usize ticks = Time(clock_server);
-    for (;;) {
-        ticks += 100; // update every second
-        DelayUntil(clock_server, ticks); 
-        renderer_diagnostic(renderer_server, ticks, get_idle_time());
-    }
-
-    Exit();
-}
-
 // soley responsible for rendering the ui
 void
 uiTask()
@@ -179,7 +164,6 @@ uiTask()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
     Tid render_tid = Create(3, &renderTask, "render task");
-    Tid diagnostic_tid = Create(3, &diagnosticTask, "diagnostic task");
     Tid prompt_tid = Create(2, &promptTask, "prompt task");
 
     WaitTid(prompt_tid);

@@ -6,12 +6,12 @@
 #include "ui.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
+#include "user/clock.h"
 
 typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
     RENDERER_FLIP_SWITCH,
-    RENDERER_DIAGNOSTIC,
 } RendererMsgType;
 
 typedef struct {
@@ -28,10 +28,6 @@ typedef struct {
             usize switch_id;
             SwitchMode mode;
         } flip_switch;
-        struct {
-            usize ticks;
-            usize idle_percent;
-        } diagnostic;
     } data;
 } RendererMsg;
 
@@ -86,24 +82,6 @@ renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode)
     return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
 }
 
-int
-renderer_diagnostic(Tid renderer_tid, usize ticks, usize idle_percent)
-{
-
-    RendererResp resp_buf;
-    RendererMsg send_buf = (RendererMsg) {
-        .type = RENDERER_DIAGNOSTIC,
-        .data = {
-            .diagnostic = {
-                .ticks = ticks,
-                .idle_percent = idle_percent
-            }
-        }
-    };
-
-    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
-}
-
 void
 renderSensorWinTask()
 {
@@ -149,6 +127,45 @@ renderSensorWinTask()
     }
 }
 
+
+void
+renderDiagnosticWinTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    // TODO add arbritrary delay to prevent context switching during draw calls
+    // TODO get rid of this SOON
+    Delay(clock_server, 10);
+
+    const usize DIAGNOSTIC_ANCHOR_X = 1;
+    const usize DIAGNOSTIC_ANCHOR_Y = 1;
+    Window diagnostic_win = win_init(63, 2, 20, 4);
+    win_draw(&diagnostic_win);
+    w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
+
+    usize ticks = Time(clock_server);
+    for (;;) {
+        ticks += 100; // update every second
+        DelayUntil(clock_server, ticks); 
+
+        char ticks_str[20] = {0};
+        char idle_str[20] = {0};
+
+        ui2a(ticks, 10, ticks_str);
+        ui2a(get_idle_time(), 10, idle_str);
+
+        // TODO don't need to keep reredendering this
+        w_puts_mv(&diagnostic_win, "Tick:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y);
+        w_puts_mv(&diagnostic_win, "Idle:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y+1);
+        w_puts_mv(&diagnostic_win, ticks_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y);
+        w_puts_mv(&diagnostic_win, idle_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y+1);
+        w_putc(&diagnostic_win, '%');
+        
+    }
+
+    Exit();
+}
+
 void
 renderTask()
 {
@@ -175,13 +192,6 @@ renderTask()
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
-    // DIAGNOSTICS
-    const usize DIAGNOSTIC_ANCHOR_X = 1;
-    const usize DIAGNOSTIC_ANCHOR_Y = 1;
-    Window diagnostic_win = win_init(63, 2, 20, 4);
-    win_draw(&diagnostic_win);
-    w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
-
     // SWITCH
     const usize SWITCH_ANCHOR_X = 1;
     const usize SWITCH_ANCHOR_Y = 1;
@@ -201,6 +211,7 @@ renderTask()
     w_puts_mv(&switch_win, "11 .    156 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+10);
 
     Create(3, &renderSensorWinTask, "Render sensor win");
+    Create(3, &renderDiagnosticWinTask, "Render diagnostic win");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
@@ -278,21 +289,6 @@ renderTask()
             }
             c_attr_reset();
 
-            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
-        }
-        else if (msg_buf.type == RENDERER_DIAGNOSTIC) {
-            char ticks_str[20] = {0};
-            char idle_str[20] = {0};
-            ui2a(msg_buf.data.diagnostic.ticks, 10, ticks_str);
-            ui2a(msg_buf.data.diagnostic.idle_percent, 10, idle_str);
-
-            // TODO don't need to keep reredendering this
-            w_puts_mv(&diagnostic_win, "Tick:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y);
-            w_puts_mv(&diagnostic_win, "Idle:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y+1);
-            w_puts_mv(&diagnostic_win, ticks_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y);
-            w_puts_mv(&diagnostic_win, idle_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y+1);
-            w_putc(&diagnostic_win, '%');
-            
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
 
