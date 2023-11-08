@@ -213,6 +213,9 @@ pathTask(void)
             continue;
         }
 
+        reply_buf = (PathResp){};
+        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
+
         tmp = tmp_saved; // reset arena
 
         marklin_train_ctl(io_server, msg_buf.train, TRAIN_SPEED_LOW);
@@ -231,8 +234,6 @@ pathTask(void)
         usize dest = (usize)map_get(&track.map, dest_str, &arena);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
         calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, TRAIN_SPEED_LOW, &tmp);
-        reply_buf = (PathResp){};        
-        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
     }
 
     Exit();
