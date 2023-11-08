@@ -8,7 +8,7 @@
 #include "user/nameserver.h"
 #include "user/sensor.h"
 #include "parser.h"
-#include "ui.h"
+#include "prompt.h"
 #include "render.h"
 
 #include "kern/perf.h"
@@ -155,22 +155,6 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             renderer_append_console(renderer_server, "Invalid command");
         }
     }
-}
-
-// soley responsible for rendering the ui
-void
-uiTask()
-{
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-
-    Tid render_tid = Create(3, &renderTask, "render task");
-    Tid prompt_tid = Create(2, &promptTask, "prompt task");
-
-    WaitTid(prompt_tid);
-
-    //  TODO impleement Kill() syscall
-
-    Exit();
 }
 
 void

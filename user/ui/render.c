@@ -3,7 +3,7 @@
 #include <trainsys.h>
 #include <ctype.h>
 #include "render.h"
-#include "ui.h"
+#include "prompt.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
 #include "user/clock.h"
@@ -294,4 +294,20 @@ renderTask()
 
 
     }
+}
+
+
+// soley responsible for rendering the ui
+void
+uiTask()
+{
+
+    Tid render_tid = Create(3, &renderTask, "render task");
+    Tid prompt_tid = Create(2, &promptTask, "prompt task");
+
+    WaitTid(prompt_tid);
+
+    //  TODO impleement Kill() syscall
+
+    Exit();
 }

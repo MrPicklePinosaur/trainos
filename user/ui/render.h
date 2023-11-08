@@ -12,4 +12,6 @@ int renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode);
 int renderer_diagnostic(Tid renderer_tid, usize ticks, usize idle_percent);
 void renderTask();
 
+void uiTask();
+
 #endif // __UI_RENDER_H__
