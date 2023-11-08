@@ -5,11 +5,11 @@
 #include "render.h"
 #include "ui.h"
 #include "user/nameserver.h"
+#include "user/sensor.h"
 
 typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
-    RENDERER_SENSOR_TRIGGERED,
     RENDERER_FLIP_SWITCH,
     RENDERER_DIAGNOSTIC,
 } RendererMsgType;
@@ -24,9 +24,6 @@ typedef struct {
         struct {
             char ch;
         } prompt;
-        struct {
-            usize sensor_id;
-        } sensor_triggered;
         struct {
             usize switch_id;
             SwitchMode mode;
@@ -73,22 +70,6 @@ renderer_prompt(Tid renderer_tid, char ch)
 }
 
 int
-renderer_sensor_triggered(Tid renderer_tid, usize sensor_id)
-{
-    RendererResp resp_buf;
-    RendererMsg send_buf = (RendererMsg) {
-        .type = RENDERER_SENSOR_TRIGGERED,
-        .data = {
-            .sensor_triggered = {
-                .sensor_id = sensor_id
-            }
-        }
-    };
-
-    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
-}
-
-int
 renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode)
 {
     RendererResp resp_buf;
@@ -124,6 +105,51 @@ renderer_diagnostic(Tid renderer_tid, usize ticks, usize idle_percent)
 }
 
 void
+renderSensorWinTask()
+{
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+
+    const usize SENSOR_LIST_ANCHOR_X = 1;
+    const usize SENSOR_LIST_ANCHOR_Y = 1;
+    const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
+    const usize MAX_SENSORS = 15;
+    CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
+    Window sensor_win = win_init(63, 6, 20, 17);
+    win_draw(&sensor_win);
+    w_puts_mv(&sensor_win, "[sensors]", 2, 0);
+
+    for (;;) {
+
+        usize next_sensor_id = WaitForSensor(sensor_server, -1);
+        
+        if (cbuf_len(triggered_sensors) >= MAX_SENSORS) {
+            cbuf_pop_back(triggered_sensors);
+        }
+        cbuf_push_front(triggered_sensors, next_sensor_id);
+
+        for (usize i = 0; i < min(MAX_SENSORS, cbuf_len(triggered_sensors)); ++i) {
+            // build string from raw sensor id
+            usize sensor_id = cbuf_get(triggered_sensors, i);
+
+            usize sensor_group = sensor_id / 16;
+            usize sensor_index = (sensor_id % 16) + 1;
+            w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
+            w_puts(&sensor_win, "   ");
+            w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
+
+            char sensor_index_str[5] = {0};
+
+            c_attr(SENSOR_COLORS[sensor_group]);
+            w_putc(&sensor_win, sensor_group+'A');
+            ui2a(sensor_index, 10, sensor_index_str); 
+            w_puts(&sensor_win, sensor_index_str);
+            c_attr_reset();
+
+        } 
+    }
+}
+
+void
 renderTask()
 {
     RegisterAs(RENDERER_ADDRESS);
@@ -156,16 +182,6 @@ renderTask()
     win_draw(&diagnostic_win);
     w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
 
-    // SENSOR
-    const usize SENSOR_LIST_ANCHOR_X = 1;
-    const usize SENSOR_LIST_ANCHOR_Y = 1;
-    const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
-    const usize MAX_SENSORS = 15;
-    CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
-    Window sensor_win = win_init(63, 6, 20, 17);
-    win_draw(&sensor_win);
-    w_puts_mv(&sensor_win, "[sensors]", 2, 0);
-
     // SWITCH
     const usize SWITCH_ANCHOR_X = 1;
     const usize SWITCH_ANCHOR_Y = 1;
@@ -183,6 +199,8 @@ renderTask()
     w_puts_mv(&switch_win, "09 .    154 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+8);
     w_puts_mv(&switch_win, "10 .    155 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+9);
     w_puts_mv(&switch_win, "11 .    156 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+10);
+
+    Create(3, &renderSensorWinTask, "Render sensor win");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
@@ -232,37 +250,6 @@ renderTask()
                 w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
                 prompt_length += 1;
             }
-
-            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
-        }
-        else if (msg_buf.type == RENDERER_SENSOR_TRIGGERED) {
-
-            usize next_sensor_id = msg_buf.data.sensor_triggered.sensor_id;
-
-            if (cbuf_len(triggered_sensors) >= MAX_SENSORS) {
-                cbuf_pop_back(triggered_sensors);
-            }
-            cbuf_push_front(triggered_sensors, next_sensor_id);
-
-            for (usize i = 0; i < min(MAX_SENSORS, cbuf_len(triggered_sensors)); ++i) {
-                // build string from raw sensor id
-                usize sensor_id = cbuf_get(triggered_sensors, i);
-
-                usize sensor_group = sensor_id / 16;
-                usize sensor_index = (sensor_id % 16) + 1;
-                w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
-                w_puts(&sensor_win, "   ");
-                w_mv(&sensor_win, SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y+i);
-
-                char sensor_index_str[5] = {0};
-
-                c_attr(SENSOR_COLORS[sensor_group]);
-                w_putc(&sensor_win, sensor_group+'A');
-                ui2a(sensor_index, 10, sensor_index_str); 
-                w_puts(&sensor_win, sensor_index_str);
-                c_attr_reset();
-
-            } 
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
