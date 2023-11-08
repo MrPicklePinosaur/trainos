@@ -386,21 +386,21 @@ handle_interrupt(void)
     } else if (interrupt_id == 153) {
         // Handle whatever interrupts occurred
         if (uart_is_cts_interrupt(MARKLIN)) {
-            KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin CTS interrupt");
+            KLOG_INFO_M(LOG_MASK_ISR, "[INTERRUPT] Marklin CTS interrupt");
             if (uart_get_cts(MARKLIN)) {  // If CTS is high
-                KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Unblocking CTS");
+                KLOG_INFO_M(LOG_MASK_ISR, "[INTERRUPT] Unblocking CTS");
                 scheduler_unblock_event(EVENT_MARKLIN_CTS, 0);
             }
             uart_clear_cts(MARKLIN);
         }
         if (uart_is_rx_interrupt(MARKLIN)) {
-            KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Marklin RX interrupt");
+            KLOG_INFO_M(LOG_MASK_ISR, "[INTERRUPT] Marklin RX interrupt");
             scheduler_unblock_event(EVENT_MARKLIN_RX, 0);
             uart_clear_rx(MARKLIN);
         }
 
         if (uart_is_rx_interrupt(CONSOLE)) {
-            KLOG_INFO_M(LOG_MASK_IO, "[INTERRUPT] Console RX interrupt");
+            KLOG_INFO_M(LOG_MASK_ISR, "[INTERRUPT] Console RX interrupt");
             scheduler_unblock_event(EVENT_CONSOLE_RX, 0);
             uart_clear_rx(CONSOLE);
         }

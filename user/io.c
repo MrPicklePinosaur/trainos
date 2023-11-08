@@ -211,9 +211,6 @@ ioServer(size_t line)
 
         if (msg_buf.type == IO_GETC) {
             // Getc() implementation
-
-            ULOG_INFO_M(LOG_MASK_IO, "Line %d Getc request from %d with name %s", line, from_tid, TaskName(from_tid));
-
             bool is_buffer_empty;
             unsigned char ch = uart_getc_buffered(line, &is_buffer_empty);
 
@@ -242,12 +239,12 @@ ioServer(size_t line)
             ULOG_INFO_M(LOG_MASK_IO, "Line %d Putc request from %d with name %s", line, from_tid, TaskName(from_tid));
 
             if (cts) {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, sent immediately", line);
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, writing %d immediately", line, msg_buf.data.putc.ch);
                 uart_putc(line, msg_buf.data.putc.ch);
                 cts = false;
             }
             else {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued", line);
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, msg_buf.data.putc.ch);
                 list_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
             }
 
@@ -303,11 +300,11 @@ ioServer(size_t line)
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
 
             if (list_len(output_fifo) > 0) {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is a queued char, printing", line);
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is a queued char %d, printing", line, msg_buf.data.putc.ch);
                 uart_putc(line, list_pop_front(output_fifo));
             }
             else {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS signal received, there is no queued char", line);
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is no queued char", line);
                 cts = true;
             }
         }
