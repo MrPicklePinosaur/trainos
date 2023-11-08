@@ -41,6 +41,8 @@ struct Track {
 
 // The track initialization functions expect an array of this size.
 #define TRACK_MAX 144
+#define TRACK_A_SIZE 144
+#define TRACK_B_SIZE 140
 
 TrackNode* track_find(TrackNode* track, const char* name);
 TrackNode* track_pathfind(TrackNode* start, TrackNode* end);

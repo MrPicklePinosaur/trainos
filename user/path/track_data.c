@@ -1195,7 +1195,7 @@ Track track_a_init(Arena* arena) {
     track.nodes[143].type = NODE_EXIT;
     track.nodes[143].reverse = &track.nodes[142];
 
-    for (usize i = 0; i < TRACK_MAX; ++i) {
+    for (usize i = 0; i < TRACK_A_SIZE; ++i) {
         map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, arena);
     }
 
@@ -2369,8 +2369,9 @@ Track track_b_init(Arena* arena) {
     track.nodes[139].type = NODE_EXIT;
     track.nodes[139].reverse = &track.nodes[138];
 
-    for (usize i = 0; i < TRACK_MAX; ++i)
+    for (usize i = 0; i < TRACK_B_SIZE; ++i) {
         map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, arena);
+    }
 
     return track;
 }
