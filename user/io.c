@@ -21,7 +21,8 @@ typedef struct {
             unsigned char ch;
         } putc;
         struct {
-            unsigned char* s;
+            unsigned char s[PUTS_BLOCK_SIZE];
+            usize data_length;
         } puts;
         struct { } rx;
         struct { } cts;
@@ -93,18 +94,22 @@ Putc(Tid io_server, unsigned char ch)
     return 0;
 }
 
+// Currently has max buffer length of 8
 int
-Puts(Tid io_server, unsigned char* s)
+Puts(Tid io_server, unsigned char* s, usize data_length)
 {
     IOResp resp_buf;
     IOMsg send_buf = (IOMsg) {
         .type = IO_PUTS,
         .data = {
             .puts = {
-                .s = s
+                .s = {0},
+                .data_length = data_length
             }
         }
     };
+
+    memcpy(send_buf.data.puts.s, s, min(data_length, PUTS_BLOCK_SIZE*sizeof(unsigned char)));
 
     int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
     if (ret < 0) {
@@ -119,7 +124,7 @@ Puts(Tid io_server, unsigned char* s)
     return 0;
 }
 
-void
+int
 SendRX(Tid io_server)
 {
     IOResp resp_buf;
@@ -143,7 +148,7 @@ SendRX(Tid io_server)
     return 0;
 }
 
-void
+int
 SendCTS(Tid io_server)
 {
     IOResp resp_buf;
@@ -294,21 +299,18 @@ ioServer(size_t line)
 
             unsigned char* s = msg_buf.data.puts.s;
 
-            if (s[0] != 255) {
-                if (cts) {
-                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, writing %d immediately", line, s[0]);
-                    uart_putc(line, s[0]);
+            for (usize i = 0; i < min(PUTS_BLOCK_SIZE, msg_buf.data.puts.data_length); ++i) {
+                
+                if (i == 0 && cts) {
+                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, writing %d immediately", line, s[i]);
+                    uart_putc(line, s[i]);
                     cts = false;
-                }
-                else {
-                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, s[0]);
-                    list_push_back(output_fifo, (void*) s[0]);
+                    continue;
                 }
 
-                for (uint32_t i = 1; s[i] != 255; i++) {
-                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, s[i]);
-                    list_push_back(output_fifo, (void*) s[i]);
-                }
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, s[i]);
+                list_push_back(output_fifo, (void*) s[i]);
+
             }
 
             reply_buf = (IOResp) {
