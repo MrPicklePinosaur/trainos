@@ -9,6 +9,7 @@
 
 int Getc(Tid tid);
 int Putc(Tid tid, unsigned char ch);
+int Puts(Tid tid, unsigned char* s);  // String is delimited by 255
 
 void marklinIO(void);
 void consoleIO(void);

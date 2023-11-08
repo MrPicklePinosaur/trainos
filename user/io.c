@@ -7,6 +7,7 @@
 typedef enum {
     IO_GETC = 1,
     IO_PUTC,
+    IO_PUTS,
     IO_RX,
     IO_CTS,
 } IOMsgType;
@@ -19,6 +20,9 @@ typedef struct {
         struct {
             unsigned char ch;
         } putc;
+        struct {
+            unsigned char* s;
+        } puts;
         struct { } rx;
         struct { } cts;
     } data;
@@ -32,6 +36,7 @@ typedef struct {
             unsigned char ch;
         } getc;
         struct { } putc;
+        struct { } puts;
         struct { } rx;
         struct { } cts;
     } data;
@@ -82,6 +87,32 @@ Putc(Tid io_server, unsigned char ch)
     }
     if (resp_buf.type != IO_PUTC) {
         ULOG_WARN("[TID %d] WARNING, the reply to Putc()'s Send() call is not the right type", MyTid());
+        return -2;  // -2 is not in the kernel description for Putc()
+    }
+
+    return 0;
+}
+
+int
+Puts(Tid io_server, unsigned char* s)
+{
+    IOResp resp_buf;
+    IOMsg send_buf = (IOMsg) {
+        .type = IO_PUTS,
+        .data = {
+            .puts = {
+                .s = s
+            }
+        }
+    };
+
+    int ret = Send(io_server, (const char*)&send_buf, sizeof(IOMsg), (char*)&resp_buf, sizeof(IOResp));
+    if (ret < 0) {
+        ULOG_WARN("[TID %d] WARNING, Puts()'s Send() call returned a negative value", MyTid());
+        return -1;
+    }
+    if (resp_buf.type != IO_PUTS) {
+        ULOG_WARN("[TID %d] WARNING, the reply to Puts()'s Send() call is not the right type", MyTid());
         return -2;  // -2 is not in the kernel description for Putc()
     }
 
@@ -252,6 +283,38 @@ ioServer(size_t line)
                 .type = IO_PUTC,
                 .data = {
                     .putc = {}
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
+        }
+        else if (msg_buf.type == IO_PUTS) {
+            // Puts() implementation
+
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Puts request from %d with name %s", line, from_tid, TaskName(from_tid));
+
+            unsigned char* s = msg_buf.data.puts.s;
+
+            if (s[0] != 255) {
+                if (cts) {
+                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, writing %d immediately", line, s[0]);
+                    uart_putc(line, s[0]);
+                    cts = false;
+                }
+                else {
+                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, s[0]);
+                    list_push_back(output_fifo, (void*) s[0]);
+                }
+
+                for (uint32_t i = 1; s[i] != 255; i++) {
+                    ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, s[i]);
+                    list_push_back(output_fifo, (void*) s[i]);
+                }
+            }
+
+            reply_buf = (IOResp) {
+                .type = IO_PUTS,
+                .data = {
+                    .puts = {}
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
