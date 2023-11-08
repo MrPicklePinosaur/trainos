@@ -230,7 +230,7 @@ pathTask(void)
         usize start = (usize)map_get(&track.map, start_str, &arena);
         usize dest = (usize)map_get(&track.map, dest_str, &arena);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
-        calculatePath(io_server, sensor_server, clock_server, &track, start, dest, 2, TRAIN_SPEED_SLOW, &tmp); 
+        calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, TRAIN_SPEED_SLOW, &tmp);
 
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
