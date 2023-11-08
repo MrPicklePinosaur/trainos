@@ -88,13 +88,14 @@ renderSensorWinTask()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
 
     const usize SENSOR_LIST_ANCHOR_X = 1;
-    const usize SENSOR_LIST_ANCHOR_Y = 1;
+    const usize SENSOR_LIST_ANCHOR_Y = 2;
     const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
-    const usize MAX_SENSORS = 15;
+    const usize MAX_SENSORS = 14;
     CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
     Window sensor_win = win_init(63, 6, 20, 17);
     win_draw(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
+    w_puts_mv(&sensor_win, "    PTIME  PDIST", SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y-1);
 
     for (;;) {
 
