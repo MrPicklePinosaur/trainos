@@ -5,6 +5,7 @@
 #include "user/clock.h"
 #include "user/io.h"
 #include "user/path/path.h"
+#include "user/path/train_data.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
 #include "parser.h"
@@ -144,11 +145,31 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             uint32_t train = command._data.path.train;
             char* dest = command._data.path.dest;
 
-            char* msg = cstr_format(&tmp, "Sending train %s%d%s to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, dest, ANSI_RESET);
-            renderer_append_console(renderer_server, msg);
+            uint32_t speed = command._data.path.speed;
+            if (
+                speed == TRAIN_SPEED_SNAIL ||
+                speed == TRAIN_SPEED_LOW ||
+                speed == TRAIN_SPEED_MED ||
+                speed == TRAIN_SPEED_HIGH
+            ) {
+                char* msg = cstr_format(&tmp, "Sending train %s%d%s to %s%s%s at speed %s%d%s",
+                    ANSI_CYAN, train, ANSI_RESET,
+                    ANSI_GREEN, dest, ANSI_RESET,
+                    ANSI_GREEN, speed, ANSI_RESET
+                );
+                renderer_append_console(renderer_server, msg);
 
-            PlanPath(path_server, train, dest);
-
+                PlanPath(path_server, train, speed, dest);
+            }
+            else {
+                char* msg = cstr_format(&tmp, "Invalid speed, must be %s%d%s, %s%d%s, %s%d%s, or %s%d%s",
+                    ANSI_GREEN, TRAIN_SPEED_SNAIL, ANSI_RESET,
+                    ANSI_GREEN, TRAIN_SPEED_LOW, ANSI_RESET,
+                    ANSI_GREEN, TRAIN_SPEED_MED, ANSI_RESET,
+                    ANSI_GREEN, TRAIN_SPEED_HIGH, ANSI_RESET
+                );
+                renderer_append_console(renderer_server, msg);
+            }
 			break;
         } 
         default: {

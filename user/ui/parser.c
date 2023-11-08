@@ -162,7 +162,11 @@ parse_command(Arena arena, str8 command)
 
         str8 dest = get_word(command, &it);
 
-        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s", train, dest);
+        eat_whitespace(command, &it);
+
+        int speed = get_number(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s, speed = %d", train, dest, speed);
 
         // TODO dangling poitner here, so we are allocting some space
         str8 copied = str8_copy(&arena, dest);
@@ -172,6 +176,7 @@ parse_command(Arena arena, str8 command)
             ._data = {
                 .path = {
                     .train = train,
+                    .speed = speed,
                     .dest = str8_to_cstr(copied)
                 }
             }

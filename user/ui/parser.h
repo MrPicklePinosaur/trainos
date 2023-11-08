@@ -40,6 +40,7 @@ typedef struct {
 
     struct {
         u32 train;
+        u32 speed;
         char* dest;
     } path;
 
