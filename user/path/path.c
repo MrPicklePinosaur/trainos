@@ -215,7 +215,7 @@ pathTask(void)
 
         tmp = tmp_saved; // reset arena
 
-        marklin_train_ctl(io_server, msg_buf.train, TRAIN_SPEED_SLOW);
+        marklin_train_ctl(io_server, msg_buf.train, TRAIN_SPEED_LOW);
 
         // wait for any sensor trigger, that will be our start node
         int start_sensor = WaitForSensor(sensor_server, -1);
@@ -230,8 +230,7 @@ pathTask(void)
         usize start = (usize)map_get(&track.map, start_str, &arena);
         usize dest = (usize)map_get(&track.map, dest_str, &arena);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
-        calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, TRAIN_SPEED_SLOW, &tmp);
-
+        calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, TRAIN_SPEED_LOW, &tmp);
         reply_buf = (PathResp){};        
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
     }

@@ -7,7 +7,7 @@
 #define TRAIN_DATA_SPEED_COUNT 4
 
 #define TRAIN_SPEED_SNAIL  5
-#define TRAIN_SPEED_SLOW   8
+#define TRAIN_SPEED_LOW   8
 #define TRAIN_SPEED_MED    11
 #define TRAIN_SPEED_HIGH   14
 
