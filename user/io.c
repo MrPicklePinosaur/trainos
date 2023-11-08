@@ -300,7 +300,7 @@ ioServer(size_t line)
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
 
             if (list_len(output_fifo) > 0) {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is a queued char %d, printing", line, msg_buf.data.putc.ch);
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is a queued char %d, printing", line, list_peek_front(output_fifo));
                 uart_putc(line, list_pop_front(output_fifo));
             }
             else {
