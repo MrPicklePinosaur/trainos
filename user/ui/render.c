@@ -13,6 +13,8 @@
 #include "user/switch.h"
 #include "user/trainstate.h"
 
+#include "kern/dev/uart.h"
+
 typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
@@ -201,14 +203,21 @@ renderTrainStateWinTask()
         if (predicted_sensor_time != 0) {
             isize t_err = elapsed-predicted_sensor_time;
             w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
-            w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", t_err), TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
+            //w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", t_err), TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
+            w_mv(&train_state_win, TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
+            uart_printf(CONSOLE, "%d", t_err);
             isize d_err = (t_err)*train_vel/100;
-            char* d_err_str = cstr_format(&tmp, "%d", d_err);
+            // TODO there is some really weird memory bug somewhere here, should run some extensives tests on cstr_format
+            //char* d_err_str = cstr_format(&tmp, "%d", d_err);
             // TODO don't print if too long :P
-            if (strlen(d_err_str) <= 5) {
-                w_puts_mv(&train_state_win, d_err_str, TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
-            }
+            //if (strlen(d_err_str) <= 5) {
+            //    w_puts_mv(&train_state_win, d_err_str, TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
+            //}
             w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
+            if (-9999 <= d_err && d_err <= 9999) {
+                w_mv(&train_state_win, TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
+                uart_printf(CONSOLE, "%d", d_err);
+            }
         } else {
             w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
             w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
@@ -216,7 +225,9 @@ renderTrainStateWinTask()
 
         // predict sensor time
         // TODO careful for division by zero
-        if (train_vel == 0) PANIC("division by zero");
+        if (train_vel == 0) {
+            PANIC("division by zero");
+        }
         predicted_sensor_time = (dist_to_next/train_vel)*100; // predicted is in ticks
     }
     Exit();
