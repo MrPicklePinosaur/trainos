@@ -357,7 +357,7 @@ handle_svc(void)
         sf->x0 = tasktable_get_task(sf->x0)->name;
 
     } else {
-        KLOG_WARN("Uncaught syscall with opcode %x", opcode);
+        PANIC("Uncaught syscall with opcode %x", opcode);
     }
 
     Tid next_tid = find_next_task();

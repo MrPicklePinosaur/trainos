@@ -97,6 +97,7 @@ renderTrainStateWinTask()
     w_puts_mv(&train_state_win, "47                           ", 1, 4);
 
     Arena tmp_base = arena_new(256);
+    Arena tmp;
 
     const usize TRAIN = 2;
     usize next_sensor_id = 0;
@@ -104,52 +105,69 @@ renderTrainStateWinTask()
     usize predicted_sensor_time = 0;
 
     for (;;) {
-        Arena tmp = tmp_base; 
+        tmp = tmp_base; 
 
         // TODO this currently only supports one train
-        int sensor_id = WaitForSensor(sensor_server, -1);
+        usize sensor_id = WaitForSensor(sensor_server, -1);
 
         // TODO this is bad duplicated code (should use cstr_format instead)
         usize sensor_group = sensor_id / 16;
         usize sensor_index = (sensor_id % 16) + 1;
         c_attr(SENSOR_COLORS[sensor_group]);
-        char* sensor_str = cstr_format(&tmp_base, "%c%d", sensor_group+'A', sensor_index);
+        str8 sensor_str = str8_format(&tmp, "%c%d", sensor_group+'A', sensor_index);
         w_puts_mv(&train_state_win, "    ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
-        w_puts_mv(&train_state_win, sensor_str, TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
+        w_puts_mv(&train_state_win, str8_to_cstr(sensor_str), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
         c_attr_reset();
 
         // predict what the next sensor will be using switch states to walk the graph
-        usize cur_node_ind = (usize)map_get(&track.map, str8_from_cstr(sensor_str), &arena);
-        TrackNode* cur_node = &track.nodes[cur_node_ind];
-        ULOG_INFO("starting at %s", cur_node->name);
-        do {
-            
-            ULOG_INFO("walking to %s", cur_node->name);
+        usize cur_node_ind = (usize)map_get(&track.map, sensor_str, &arena);
+        if ((void*)cur_node_ind == NULL) {
+            PANIC("invalid sensor query %s", sensor_str);
+        }
+        ULOG_INFO("starting at index %d", cur_node_ind);
 
-            if (cur_node->type == NODE_BRANCH) {
+        TrackNode cur_node = track.nodes[cur_node_ind];
+        bool is_unknown = false;
+        ULOG_INFO("starting at %s", cur_node.name);
+        do {
+
+            if (cur_node.type == NODE_EXIT || cur_node.type == NODE_NONE) {
+                ULOG_INFO("hit exit or none node");
+                is_unknown = true;
+                break;
+            }
+
+            if (cur_node.type == NODE_BRANCH) {
                 // query switch state to find next
-                SwitchMode switch_mode = SwitchQuery(switch_server, cur_node->num);
+                SwitchMode switch_mode = SwitchQuery(switch_server, cur_node.num);
+                ULOG_INFO("queried switch mode for switch %d: %d", cur_node.num, switch_mode);
                 if (switch_mode == SWITCH_MODE_UNKNOWN) {
-                    cur_node = NULL;
+                    ULOG_INFO("hit switch with unknown state");
+                    is_unknown = true;
                     break;
                 }
                 else if (switch_mode == SWITCH_MODE_STRAIGHT) {
-                    cur_node = cur_node->edge[DIR_STRAIGHT].dest;
+                    cur_node = *(cur_node.edge[DIR_STRAIGHT].dest);
                 }
                 else if (switch_mode == SWITCH_MODE_CURVED) {
-                    cur_node = cur_node->edge[DIR_CURVED].dest;
+                    cur_node = *(cur_node.edge[DIR_CURVED].dest);
+                } else {
+                    UNREACHABLE("unexpected switch mode");
                 }
             } else {
-                cur_node = cur_node->edge[DIR_AHEAD].dest;
+                cur_node = *(cur_node.edge[DIR_AHEAD].dest);
             }
 
-        } while (cur_node->type != NODE_SENSOR);
+            ULOG_INFO("walking to %s", cur_node.name);
 
-        if (cur_node == NULL) {
+        } while (cur_node.type != NODE_SENSOR);
+
+        if (is_unknown) {
             w_puts_mv(&train_state_win, "XXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
         } else {
-            c_attr(SENSOR_COLORS[cur_node->name[0]-'A']);
-            w_puts_mv(&train_state_win, cur_node->name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+            c_attr(SENSOR_COLORS[cur_node.name[0]-'A']);
+            w_puts_mv(&train_state_win, "    ", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+            w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
             c_attr_reset();
         }
 
