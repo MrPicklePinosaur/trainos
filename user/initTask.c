@@ -51,7 +51,6 @@ initTask()
         &(TaskMenuEntry){ "K2Perf", &K2Perf },
         &(TaskMenuEntry){ "K3", &K3 },
         &(TaskMenuEntry){ "K4", &uiTask },
-        &(TaskMenuEntry){ "TC1", &pathTask },
         &(TaskMenuEntry){ "sendReceiveReplyTest", &sendReceiveReplyTestTask },
         &(TaskMenuEntry){ "graphics", &graphicsTask },
         &(TaskMenuEntry){ "test", &testHarness },
