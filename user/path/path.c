@@ -146,7 +146,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     }
 
     // compute which sensor to issue stop command from
-    i32 stopping_distance = train_data_stop_dist(train, train_speed);
+    i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
     i32 train_vel = train_data_vel(train, train_speed);
 
     // TODO it is possible to run out of path
@@ -160,15 +160,15 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
         }
     }
 
-    i32 distance_from_sensor = (-stopping_distance+offset); // distance after sensor in which to send stop command
+    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
     if (waiting_sensor == 0) {
         // TODO there are some cases that the src and dest are too close
         ULOG_WARN("[PATH] Could not find usable sensor");
         return CALCULATE_PATH_NO_PATH;
     }
-
     // compute desired switch state
+
     path = path_start;
     for (; *path != NULL; ++path) {
         if ((*path)->src->type == NODE_BRANCH) {

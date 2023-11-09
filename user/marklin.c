@@ -28,6 +28,12 @@ marklin_dump_s88(Tid io_server, usize count)
 }
 
 void
+marklin_get_s88(Tid io_server, usize index)
+{
+    Putc(io_server, 192+index);
+}
+
+void
 marklin_go(Tid io_server)
 {
     char s[] = {96, 96};
