@@ -4,10 +4,12 @@
 #include <ctype.h>
 #include "render.h"
 #include "prompt.h"
+#include "user/path/track_data.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
 #include "user/switch.h"
 #include "user/clock.h"
+#include "user/switch.h"
 
 typedef enum {
     RENDERER_APPEND_CONSOLE,
@@ -32,6 +34,8 @@ typedef struct {
 } RendererMsg;
 
 typedef struct { } RendererResp;
+
+const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
 
 int
 renderer_append_console(Tid renderer_tid, char* line)
@@ -66,19 +70,106 @@ renderer_prompt(Tid renderer_tid, char ch)
 }
 
 void
+renderTrainStateWinTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+
+    const int TRAIN_STATE_TABLE_Y = 3;
+    const int TRAIN_STATE_TABLE_CURR_X = 8;
+    const int TRAIN_STATE_TABLE_NEXT_X = 14;
+    const int TRAIN_STATE_TABLE_TERR_X = 20;
+    const int TRAIN_STATE_TABLE_DERR_X = 26;
+
+    Delay(clock_server, 30);
+
+    // TODO i dont like how we are loading the track twice (perhaps have some global accessable way of querying current track)
+    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
+    Track track = track_a_init(&arena);
+
+    Window train_state_win = win_init(84, 2, 32, 17);
+    win_draw(&train_state_win);
+    w_puts_mv(&train_state_win, "[train state]", 2, 0);
+
+    w_puts_mv(&train_state_win, "train  curr  next  terr  derr", 1, 2);
+    w_puts_mv(&train_state_win, "2                            ", 1, 3);
+    w_puts_mv(&train_state_win, "47                           ", 1, 4);
+
+    Arena tmp_base = arena_new(256);
+
+    const usize TRAIN = 2;
+    usize next_sensor_id = 0;
+    usize last_sensor_time = 0;
+    usize predicted_sensor_time = 0;
+
+    for (;;) {
+        Arena tmp = tmp_base; 
+
+        // TODO this currently only supports one train
+        int sensor_id = WaitForSensor(sensor_server, -1);
+
+        // TODO this is bad duplicated code (should use cstr_format instead)
+        usize sensor_group = sensor_id / 16;
+        usize sensor_index = (sensor_id % 16) + 1;
+        c_attr(SENSOR_COLORS[sensor_group]);
+        char* sensor_str = cstr_format(&tmp_base, "%c%d", sensor_group+'A', sensor_index);
+        w_puts_mv(&train_state_win, "    ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
+        w_puts_mv(&train_state_win, sensor_str, TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
+        c_attr_reset();
+
+        // predict what the next sensor will be using switch states to walk the graph
+        usize cur_node_ind = (usize)map_get(&track.map, str8_from_cstr(sensor_str), &arena);
+        TrackNode* cur_node = &track.nodes[cur_node_ind];
+        ULOG_INFO("starting at %s", cur_node->name);
+        do {
+            
+            ULOG_INFO("walking to %s", cur_node->name);
+
+            if (cur_node->type == NODE_BRANCH) {
+                // query switch state to find next
+                SwitchMode switch_mode = SwitchQuery(switch_server, cur_node->num);
+                if (switch_mode == SWITCH_MODE_UNKNOWN) {
+                    cur_node = NULL;
+                    break;
+                }
+                else if (switch_mode == SWITCH_MODE_STRAIGHT) {
+                    cur_node = cur_node->edge[DIR_STRAIGHT].dest;
+                }
+                else if (switch_mode == SWITCH_MODE_CURVED) {
+                    cur_node = cur_node->edge[DIR_CURVED].dest;
+                }
+            } else {
+                cur_node = cur_node->edge[DIR_AHEAD].dest;
+            }
+
+        } while (cur_node->type != NODE_SENSOR);
+
+        if (cur_node == NULL) {
+            w_puts_mv(&train_state_win, "XXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+        } else {
+            c_attr(SENSOR_COLORS[cur_node->name[0]-'A']);
+            w_puts_mv(&train_state_win, cur_node->name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+            c_attr_reset();
+        }
+
+         
+    }
+    Exit();
+}
+
+void
 renderSensorWinTask()
 {
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
 
     const usize SENSOR_LIST_ANCHOR_X = 1;
     const usize SENSOR_LIST_ANCHOR_Y = 2;
-    const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
     const usize MAX_SENSORS = 14;
     CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
     Window sensor_win = win_init(63, 6, 20, 17);
     win_draw(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
-    w_puts_mv(&sensor_win, "    PTIME  PDIST", SENSOR_LIST_ANCHOR_X, SENSOR_LIST_ANCHOR_Y-1);
 
     for (;;) {
 
@@ -234,6 +325,7 @@ renderTask()
     Create(3, &renderSwitchWinTask, "Render switch win");
     Create(3, &renderSensorWinTask, "Render sensor win");
     Create(3, &renderDiagnosticWinTask, "Render diagnostic win");
+    Create(3, &renderTrainStateWinTask, "Render train state win");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
