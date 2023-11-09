@@ -32,6 +32,7 @@ typedef enum {
     LOG_MASK_MARKLIN = 1024,
     LOG_MASK_PATH    = 2048,
     LOG_MASK_SENSOR  = 4096,
+    LOG_MASK_SWITCH  = 8192
 } LogMaskBits;
 
 typedef enum {

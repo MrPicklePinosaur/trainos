@@ -111,7 +111,7 @@ try_unblock(SwitchMode* states, List* switch_requests, isize switch_id)
     SwitchRequest* request;
     while (listiter_next(&it, (void**)&request)) {
         if (request->switch_id == switch_id || request->switch_id == -1) {
-            ULOG_INFO_M(LOG_MASK_SENSOR, "[SWITCH SERVER] unblocking task %d", request->tid);
+            ULOG_INFO_M(LOG_MASK_SWITCH, "[SWITCH SERVER] unblocking task %d", request->tid);
             SwitchResp reply_buf = (SwitchResp) {
                 .type = SWITCH_WAIT,
                 .data = {
