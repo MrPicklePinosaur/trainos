@@ -8,6 +8,7 @@
 #include "user/clock.h"
 #include "user/marklin.h"
 #include "user/sensor.h"
+#include "user/switch.h"
 
 #define INF 2147483647
 #define NONE 2147483647
@@ -116,7 +117,7 @@ typedef enum {
 } CalculatePathRet;
 
 int
-calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
+calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
 {
 
     TrackEdge** path_start = dijkstra(track, src, dest, arena); // -1 terminated array
@@ -176,11 +177,11 @@ calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, 
 
             if (&(*path)->src->edge[DIR_STRAIGHT] == *path) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
-                marklin_switch_ctl(io_server, switch_num, SWITCH_MODE_STRAIGHT);
+                SwitchChange(switch_server, switch_num, SWITCH_MODE_STRAIGHT);
             }
             else if (&(*path)->src->edge[DIR_CURVED] == *path) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
-                marklin_switch_ctl(io_server, switch_num, SWITCH_MODE_CURVED);
+                SwitchChange(switch_server, switch_num, SWITCH_MODE_CURVED);
             }
             else {
                 PANIC("invalid branch");
@@ -224,6 +225,7 @@ pathTask(void)
     RegisterAs(PATH_ADDRESS); 
 
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
@@ -262,7 +264,7 @@ pathTask(void)
         usize dest = (usize)map_get(&track.map, dest_str, &arena);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
 
-        CalculatePathRet ret = calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
+        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, &track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 
         reply_buf = (PathResp){};
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
