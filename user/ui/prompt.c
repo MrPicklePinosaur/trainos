@@ -8,6 +8,7 @@
 #include "user/path/train_data.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
+#include "user/switch.h"
 #include "parser.h"
 #include "prompt.h"
 #include "render.h"
@@ -18,7 +19,7 @@
 #define TRAIN_SPEED_MASK     0b01111
 #define TRAIN_LIGHTS_MASK    0b10000
 
-void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid path_server, TrainState* train_state, ParserResult command);
+void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, TrainState* train_state, ParserResult command);
 
 // task for getting user input form the console
 void
@@ -28,6 +29,7 @@ promptTask()
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid path_server = WhoIs(PATH_ADDRESS);
 
     TrainState train_state[NUMBER_OF_TRAINS] = {0};
@@ -61,7 +63,7 @@ promptTask()
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             // TODO since we are using a tmp arena, we can technically 
             ParserResult parsed = parse_command(parser_arena, str8(completed_line));
-            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, path_server, train_state, parsed);
+            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, path_server, train_state, parsed);
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -71,7 +73,7 @@ promptTask()
 }
 
 void
-executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid path_server, TrainState* train_state, ParserResult command)
+executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, TrainState* train_state, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
@@ -106,7 +108,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             char* msg = cstr_format(&tmp, "Setting switch %s%x%s to %s%s%s", ANSI_CYAN, switch_id, ANSI_RESET, ANSI_GREEN, (switch_mode == SWITCH_MODE_CURVED) ? "curved" : "straight", ANSI_RESET);
             renderer_append_console(renderer_server, msg);
 
-            marklin_switch_ctl(marklin_server, switch_id, switch_mode);
+            SwitchChange(switch_server, switch_id, switch_mode);
             renderer_flip_switch(renderer_server, switch_id, switch_mode);
 			break;
 		}

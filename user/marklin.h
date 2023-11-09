@@ -16,6 +16,7 @@ typedef enum {
 } SwitchGroup;
 
 typedef enum {
+  SWITCH_MODE_UNKNOWN = 0,
   SWITCH_MODE_STRAIGHT = 33,
   SWITCH_MODE_CURVED = 34,
 } SwitchMode;
