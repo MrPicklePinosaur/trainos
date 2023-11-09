@@ -39,7 +39,7 @@
 
 Gitlab repository name: `d278liu/trainos`
 
-Commit SHA: `TBD`
+Commit SHA: `d08ee18b862cab6445fdb780454232f0cda60519`
 
 = Running Train Control 1
 
@@ -67,6 +67,7 @@ So `A3` with an offset of 200mm will stop either 200mm in front of or behind `A3
 
 A new window has been added to our TUI which predicts when the next sensor will be triggered.
 This window is in the top right of the TUI.
+The predicted time error is measured in clock ticks (1 clock tick is 10 milliseconds), and the corresponding distance is in millimeters.
 
 = Measurement Methodology
 
@@ -118,9 +119,16 @@ This should stop the train near the destination.
 = Servers
 
 We have implemented several new servers to help with train control.
-We have one server for tracking train speeds and predicting train locations, one for detecting sensor data, and one for tracking switch positions.
+We have one server for train state, one server for routing trains, one for detecting sensor data, and one for tracking switch positions.
+These all have high priorities (3 for the router, 2 for the latter two) so that they can be responsive to requests.
 
-Any tasks can get train data or sensor data or switch data by sending messages to these servers.
+The train state server allows for getting and setting train speeds.
+
+The routing server stores the track graph and does pathfinding on it.
+
+The sensor server queries the Marklin for sensor data, and allows tasks to wait for certain sensors to be triggered.
+
+The switch server stores the states of all the switches, provides methods for other tasks to get and set the states of switches, and allows tasks to wait for certain switches to switch.
 
 = Kernel Changes
 
@@ -132,3 +140,8 @@ Notably, this means that being interrupted between bytes in a multi-byte command
 
 There are issues pathfinding to a destination too close to the train (i.e. within stopping distance).
 We plan to support this case by running Dijkstra starting from a sensor after the destination.
+
+Our switch display is inaccurate, and sometimes doesn't update when a switch is switched.
+The state of the switches is stored accurately internally, though.
+
+The kernel occasionally panics due to an unknown opcode instruction.
