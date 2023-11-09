@@ -4,6 +4,7 @@
 
 str8 get_word(str8 command, u32* it);
 u32 get_number(str8 command, u32* it);
+i32 get_signed_number(str8 command, u32* it);
 void eat_whitespace(str8 command, u32* it);
 
 ParserResult
@@ -156,7 +157,7 @@ parse_command(Arena arena, str8 command)
 
         eat_whitespace(command, &it);
 
-        int train = get_number(command, &it);
+        u32 train = get_number(command, &it);
 
         eat_whitespace(command, &it);
 
@@ -164,9 +165,13 @@ parse_command(Arena arena, str8 command)
 
         eat_whitespace(command, &it);
 
-        int speed = get_number(command, &it);
+        u32 speed = get_number(command, &it);
 
-        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s, speed = %d", train, dest, speed);
+        eat_whitespace(command, &it);
+
+        i32 offset = get_signed_number(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s, speed = %d, offset = %d", train, dest, speed, offset);
 
         // TODO dangling poitner here, so we are allocting some space
         str8 copied = str8_copy(&arena, dest);
@@ -177,6 +182,7 @@ parse_command(Arena arena, str8 command)
                 .path = {
                     .train = train,
                     .speed = speed,
+                    .offset = offset,
                     .dest = str8_to_cstr(copied)
                 }
             }
@@ -216,6 +222,34 @@ get_number(str8 command, u32* it)
     ++(*it);
   }
   return number;
+}
+
+i32
+get_signed_number(str8 command, u32* it)
+{
+  i32 number = 0;
+  i32 sign = 1;
+  usize char_ind = 0;
+  while (1) {
+    char c = str8_at(command, *it);
+
+    if (char_ind == 0 && c == '+') {
+        sign = 1;
+    }
+    else if (char_ind == 0 && c == '-') {
+        sign = -1;
+    }
+    else if (isdigit(c)) {
+        number = number*10 + (c-'0');
+    } else {
+        // invalid char, don't parse
+        break;
+    }
+
+    ++(*it);
+    ++char_ind;
+  }
+  return number*sign;
 }
 
 void

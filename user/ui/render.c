@@ -256,7 +256,7 @@ renderTask()
                 for (usize i = 0; i < prompt_length; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
                 prompt_length = 0;
             }
-            else if (isalnum(ch) || isblank(ch)) {
+            else if (isalnum(ch) || isblank(ch) || isprint(ch)) {
                 // normal character
                 // TODO max length for prompt
                 w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);

@@ -75,3 +75,8 @@ If the destination is closer to the train than the stopping distance of the trai
 This typically makes the train loop around the track.
 
 = Kernel Changes
+
+= Known Bugs
+
+
+

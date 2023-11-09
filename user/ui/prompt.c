@@ -46,7 +46,7 @@ promptTask()
 
         renderer_prompt(renderer_server, c);
 
-        if (isalnum(c) || isblank(c)) {
+        if (isalnum(c) || isblank(c) || isprint(c)) {
             cbuf_push_back(line, c);
         } else if (c == CH_ENTER) {
             // drain the buffer
@@ -142,20 +142,22 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 			break; // unreachable
 		}
         case PARSER_RESULT_PATH: {
-            uint32_t train = command._data.path.train;
+            u32 train = command._data.path.train;
             char* dest = command._data.path.dest;
+            u32 speed = command._data.path.speed;
+            i32 offset = command._data.path.offset;
 
-            uint32_t speed = command._data.path.speed;
             if (
                 speed == TRAIN_SPEED_SNAIL ||
                 speed == TRAIN_SPEED_LOW ||
                 speed == TRAIN_SPEED_MED ||
                 speed == TRAIN_SPEED_HIGH
             ) {
-                char* msg = cstr_format(&tmp, "Sending train %s%d%s to %s%s%s at speed %s%d%s",
+                char* msg = cstr_format(&tmp, "Sending train %s%d%s to %s%s%s at speed %s%d%s with offset %s%d%s",
                     ANSI_CYAN, train, ANSI_RESET,
                     ANSI_GREEN, dest, ANSI_RESET,
-                    ANSI_GREEN, speed, ANSI_RESET
+                    ANSI_GREEN, speed, ANSI_RESET,
+                    ANSI_GREEN, offset, ANSI_RESET
                 );
                 renderer_append_console(renderer_server, msg);
 
