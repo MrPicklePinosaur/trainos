@@ -246,6 +246,9 @@ pathTask(void)
             continue;
         }
 
+        reply_buf = (PathResp){};
+        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
+
         tmp = tmp_saved; // reset arena
 
         marklin_train_ctl(io_server, msg_buf.train, msg_buf.speed);
@@ -266,8 +269,6 @@ pathTask(void)
 
         CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, &track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 
-        reply_buf = (PathResp){};
-        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
 
     }
 

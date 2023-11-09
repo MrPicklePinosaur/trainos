@@ -12,18 +12,11 @@
 #include "parser.h"
 #include "prompt.h"
 #include "render.h"
+#include "user/trainstate.h"
 
 #include "kern/perf.h"
 
-void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, TrainState* train_state, ParserResult command);
-
-TrainState train_state[NUMBER_OF_TRAINS] = {0};
-
-// TODO this is rly horrible and dumb please move this to it's own train state server
-TrainState get_train_state(usize train)
-{
-    return train_state[train];
-}
+void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, Tid trainstate_server, ParserResult command);
 
 // task for getting user input form the console
 void
@@ -35,6 +28,7 @@ promptTask()
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid path_server = WhoIs(PATH_ADDRESS);
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     CBuf* line = cbuf_new(32);
 
@@ -65,7 +59,7 @@ promptTask()
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             // TODO since we are using a tmp arena, we can technically 
             ParserResult parsed = parse_command(parser_arena, str8(completed_line));
-            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, path_server, train_state, parsed);
+            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, path_server, trainstate_server, parsed);
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -75,18 +69,16 @@ promptTask()
 }
 
 void
-executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, TrainState* train_state, ParserResult command)
+executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, Tid trainstate_server, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
             uint32_t train = command._data.train_speed.train;
             uint32_t speed = command._data.train_speed.speed;
-            train_state[train] = (train_state[train] & ~TRAIN_SPEED_MASK) | speed;
 
             char* msg = cstr_format(&tmp, "Setting train %s%d%s to speed %s%d%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, speed, ANSI_RESET);
             renderer_append_console(renderer_server, msg);
-            ULOG_INFO("train state for train %d is %d", train, train_state[train]);
-            marklin_train_ctl(marklin_server, train, train_state[train]);
+            TrainstateSetSpeed(trainstate_server, train, speed);
 
 			break;
 		}
@@ -96,11 +88,13 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             char* msg = cstr_format(&tmp, "Reversing train %s%d%s", ANSI_CYAN, train, ANSI_CYAN);
             renderer_append_console(renderer_server, msg);
 
-            marklin_train_ctl(marklin_server, train, SPEED_STOP);
+            usize previous_speed = TrainstateGet(trainstate_server, train) & TRAIN_SPEED_MASK;
+
+            TrainstateSetSpeed(trainstate_server, train, SPEED_STOP);
             Delay(clock_server, 400); // TODO arbritrary delay
-            marklin_train_ctl(marklin_server, train, SPEED_REVERSE);
+            TrainstateSetSpeed(trainstate_server, train, SPEED_REVERSE);
             Delay(clock_server, 10); // TODO arbritrary delay
-            marklin_train_ctl(marklin_server, train, train_state[train]);
+            TrainstateSetSpeed(trainstate_server, train, previous_speed);
 
 			break;
 		}
@@ -131,12 +125,8 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             char* msg = cstr_format(&tmp, "Turned lights on train %s%d%s %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, (light_state) ? "on" : "off", ANSI_RESET);
             renderer_append_console(renderer_server, msg);
 
-            if (light_state) {
-                train_state[train] |= TRAIN_LIGHTS_MASK;
-            } else {
-                train_state[train] &= ~TRAIN_LIGHTS_MASK;
-            }
-            marklin_train_ctl(marklin_server, train, train_state[train]);
+            TrainstateSetLights(trainstate_server, train, light_state);
+
 			break;
 		}
         case PARSER_RESULT_QUIT: {

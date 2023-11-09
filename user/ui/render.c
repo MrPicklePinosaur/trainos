@@ -77,6 +77,7 @@ renderTrainStateWinTask()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     const int TRAIN_STATE_TABLE_Y = 3;
     const int TRAIN_STATE_TABLE_CURR_X = 8;
@@ -169,6 +170,7 @@ renderTrainStateWinTask()
 
         } while (cur_node.type != NODE_SENSOR);
 
+#if 0
         if (is_unknown) {
             w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
             continue;
@@ -180,7 +182,7 @@ renderTrainStateWinTask()
         w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
         c_attr_reset();
 
-        usize train_speed = get_train_state(TRAIN) & TRAIN_SPEED_MASK;
+        usize train_speed = TrainstateGet(trainstate_server, TRAIN) & TRAIN_SPEED_MASK;
         if (!(train_speed == TRAIN_SPEED_SNAIL || train_speed == TRAIN_SPEED_LOW || train_speed == TRAIN_SPEED_MED || train_speed == TRAIN_SPEED_HIGH)) {
             continue;
         }
@@ -211,7 +213,9 @@ renderTrainStateWinTask()
 
         // predict sensor time
         // TODO careful for division by zero
+        if (train_vel == 0) PANIC("division by zero");
         predicted_sensor_time = (dist_to_next/train_vel)*100; // predicted is in ticks
+#endif
     }
     Exit();
 }

@@ -4,6 +4,7 @@
 #include "io.h"
 #include "sensor.h"
 #include "switch.h"
+#include "trainstate.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
@@ -67,6 +68,8 @@ initTask()
 
     Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");
+
+    Tid trainstate_server = Create(2, &trainStateServer, "train state server");
 
     Tid path_tid = Create(3, &pathTask, "path task");
 
