@@ -12,7 +12,7 @@
 
 TrackEdge** dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena);
 
-int PlanPath(Tid path_tid, u32 train, u32 speed, char* dest);
+int PlanPath(Tid path_tid, u32 train, u32 speed, i32 offset, char* dest);
 
 void pathTask(void);
 

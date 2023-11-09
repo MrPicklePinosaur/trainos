@@ -109,15 +109,66 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
     return path_start;
 }
 
-void
-calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, Arena* arena)
+typedef enum {
+    CALCULATE_PATH_OK = 0,
+    CALCULATE_PATH_NO_PATH,
+    CALCULATE_PATH_INVALID_OFFSET,
+} CalculatePathRet;
+
+int
+calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
 {
 
     TrackEdge** path_start = dijkstra(track, src, dest, arena); // -1 terminated array
-    if (path_start == NULL) return;
+    if (path_start == NULL) {
+        ULOG_WARN("[PATH] dijkstra can't find path");
+        return CALCULATE_PATH_NO_PATH;
+    }
+
+    // check if offset is valid
+    TrackNode dest_node = track->nodes[dest];
+
+    // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
+    if (offset != 0 && dest_node.type != NODE_SENSOR) {
+        ULOG_WARN("[PATH] can't use offset from node other than sensor");
+        return CALCULATE_PATH_INVALID_OFFSET;
+    }
+    i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
+    if (offset > 0 && offset > max_fwd_dist) {
+        ULOG_WARN("[PATH] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
+        return CALCULATE_PATH_INVALID_OFFSET;
+    }
+    i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
+    if (offset < 0 && -offset > max_bck_dist) {
+        ULOG_WARN("[PATH] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
+        return CALCULATE_PATH_INVALID_OFFSET;
+    }
+
+    // compute which sensor to issue stop command from
+    i32 stopping_distance = train_data_stop_dist(train, train_speed);
+    i32 train_vel = train_data_vel(train, train_speed);
+
+    // TODO it is possible to run out of path
+    TrackNode* waiting_sensor = 0;
+    TrackEdge** path = path_start;
+    for (; *path != NULL; ++path) {
+        stopping_distance -= (*path)->dist;
+        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR) {
+            waiting_sensor = (*path)->src; // sensor that we should wait to trip
+            break;
+        }
+    }
+
+    i32 distance_from_sensor = (-stopping_distance+offset); // distance after sensor in which to send stop command
+
+    if (waiting_sensor == 0) {
+        // TODO there are some cases that the src and dest are too close
+        ULOG_WARN("[PATH] Could not find usable sensor");
+        return CALCULATE_PATH_NO_PATH;
+    }
 
     // compute desired switch state
-    TrackEdge** path = path_start;
+    path = path_start;
     for (; *path != NULL; ++path) {
         if ((*path)->src->type == NODE_BRANCH) {
             // compute id of the switch
@@ -137,29 +188,6 @@ calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, 
         }
     }
 
-    // compute which sensor to issue stop command from
-    i32 stopping_distance = train_data_stop_dist(train, train_speed);
-    i32 train_vel = train_data_vel(train, train_speed);
-
-    // TODO it is possible to run out of path
-    TrackNode* waiting_sensor = 0;
-    path = path_start;
-    for (; *path != NULL; ++path) {
-        stopping_distance -= (*path)->dist;
-        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR) {
-            waiting_sensor = (*path)->src; // sensor that we should wait to trip
-            break;
-        }
-    }
-
-    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
-
-    if (waiting_sensor == 0) {
-        // TODO there are some cases that the src and dest are too close
-        ULOG_WARN("Could not find usable sensor");
-        return;
-    }
-
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
     // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
@@ -176,11 +204,13 @@ calculatePath(Tid io_server, Tid sensor_server, Tid clock_server, Track* track, 
 
     ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
+    return CALCULATE_PATH_OK;
 }
 
 typedef struct {
     u32 train;
     u32 speed;
+    i32 offset;
     char* dest;
 } PathMsg;
 
@@ -214,9 +244,6 @@ pathTask(void)
             continue;
         }
 
-        reply_buf = (PathResp){};
-        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
-
         tmp = tmp_saved; // reset arena
 
         marklin_train_ctl(io_server, msg_buf.train, msg_buf.speed);
@@ -234,19 +261,25 @@ pathTask(void)
         usize start = (usize)map_get(&track.map, start_str, &arena);
         usize dest = (usize)map_get(&track.map, dest_str, &arena);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
-        calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, msg_buf.speed, &tmp);
+
+        CalculatePathRet ret = calculatePath(io_server, sensor_server, clock_server, &track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
+
+        reply_buf = (PathResp){};
+        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
+
     }
 
     Exit();
 }
 
 int
-PlanPath(Tid path_tid, u32 train, u32 speed, char* dest)
+PlanPath(Tid path_tid, u32 train, u32 speed, i32 offset, char* dest)
 {
     PathResp resp_buf;
     PathMsg send_buf = (PathMsg) {
         .train = train,
         .speed = speed,
+        .offset = offset,
         .dest = dest
     };
 

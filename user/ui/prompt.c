@@ -161,7 +161,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                 );
                 renderer_append_console(renderer_server, msg);
 
-                PlanPath(path_server, train, speed, dest);
+                PlanPath(path_server, train, speed, offset, dest);
             }
             else {
                 char* msg = cstr_format(&tmp, "Invalid speed, must be %s%d%s, %s%d%s, %s%d%s, or %s%d%s",
