@@ -6,12 +6,12 @@
 #include "prompt.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
+#include "user/switch.h"
 #include "user/clock.h"
 
 typedef enum {
     RENDERER_APPEND_CONSOLE,
     RENDERER_PROMPT, // rerender prompt
-    RENDERER_FLIP_SWITCH,
 } RendererMsgType;
 
 typedef struct {
@@ -65,23 +65,6 @@ renderer_prompt(Tid renderer_tid, char ch)
     return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
 }
 
-int
-renderer_flip_switch(Tid renderer_tid, usize switch_id, SwitchMode mode)
-{
-    RendererResp resp_buf;
-    RendererMsg send_buf = (RendererMsg) {
-        .type = RENDERER_FLIP_SWITCH,
-        .data = {
-            .flip_switch = {
-                .switch_id = switch_id,
-                .mode = mode
-            }
-        }
-    };
-
-    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
-}
-
 void
 renderSensorWinTask()
 {
@@ -125,6 +108,61 @@ renderSensorWinTask()
             c_attr_reset();
 
         } 
+    }
+}
+
+
+void
+renderSwitchWinTask()
+{
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    // Arbritrary delay to prevent context switch issues during draw calls
+    // TODO get rid of this SOON
+    Delay(clock_server, 20);
+
+    const usize SWITCH_ANCHOR_X = 1;
+    const usize SWITCH_ANCHOR_Y = 1;
+    Window switch_win = win_init(63, 23, 20, 13);
+    win_draw(&switch_win);
+    w_puts_mv(&switch_win, "[switches]", 2, 0);
+    w_puts_mv(&switch_win, "01 .     12 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+0);
+    w_puts_mv(&switch_win, "02 .     13 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+1);
+    w_puts_mv(&switch_win, "03 .     14 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+2);
+    w_puts_mv(&switch_win, "04 .     15 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+3);
+    w_puts_mv(&switch_win, "05 .     16 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+4);
+    w_puts_mv(&switch_win, "06 .     17 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+5);
+    w_puts_mv(&switch_win, "07 .     18 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+6);
+    w_puts_mv(&switch_win, "08 .    153 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+7);
+    w_puts_mv(&switch_win, "09 .    154 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+8);
+    w_puts_mv(&switch_win, "10 .    155 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+9);
+    w_puts_mv(&switch_win, "11 .    156 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+10);
+
+    for (;;) {
+        WaitForSwitchResult data = WaitForSwitch(switch_server, -1);
+        isize switch_id = data.first;
+        SwitchMode mode = data.second;
+
+        usize grid_id;
+        if (1 <= switch_id && switch_id <= 18) {
+            grid_id = switch_id - 1;
+        }
+        else if (153 <= switch_id && switch_id <= 156) {
+            grid_id = switch_id - 153 + 18;
+        }
+
+        usize row = grid_id % 11;
+        usize column = grid_id / 11;
+
+        if (mode == SWITCH_MODE_CURVED) {
+            c_attr(ATTR_YELLOW);
+            w_putc_mv(&switch_win, 'C', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
+        } else if (mode == SWITCH_MODE_STRAIGHT) {
+            c_attr(ATTR_CYAN);
+            w_putc_mv(&switch_win, 'S', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
+        }
+        c_attr_reset();
     }
 }
 
@@ -193,24 +231,7 @@ renderTask()
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
-    // SWITCH
-    const usize SWITCH_ANCHOR_X = 1;
-    const usize SWITCH_ANCHOR_Y = 1;
-    Window switch_win = win_init(63, 23, 20, 13);
-    win_draw(&switch_win);
-    w_puts_mv(&switch_win, "[switches]", 2, 0);
-    w_puts_mv(&switch_win, "01 .     12 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+0);
-    w_puts_mv(&switch_win, "02 .     13 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+1);
-    w_puts_mv(&switch_win, "03 .     14 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+2);
-    w_puts_mv(&switch_win, "04 .     15 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+3);
-    w_puts_mv(&switch_win, "05 .     16 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+4);
-    w_puts_mv(&switch_win, "06 .     17 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+5);
-    w_puts_mv(&switch_win, "07 .     18 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+6);
-    w_puts_mv(&switch_win, "08 .    153 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+7);
-    w_puts_mv(&switch_win, "09 .    154 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+8);
-    w_puts_mv(&switch_win, "10 .    155 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+9);
-    w_puts_mv(&switch_win, "11 .    156 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+10);
-
+    Create(3, &renderSwitchWinTask, "Render switch win");
     Create(3, &renderSensorWinTask, "Render sensor win");
     Create(3, &renderDiagnosticWinTask, "Render diagnostic win");
 
@@ -265,35 +286,6 @@ renderTask()
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
-        else if (msg_buf.type == RENDERER_FLIP_SWITCH) {
-
-            usize switch_id = msg_buf.data.flip_switch.switch_id;
-            SwitchMode mode = msg_buf.data.flip_switch.mode;
-
-            usize grid_id;
-            if (1 <= switch_id && switch_id <= 18) {
-                grid_id = switch_id - 1;
-            }
-            else if (153 <= switch_id && switch_id <= 156) {
-                grid_id = switch_id - 153 + 18;
-            }
-
-            usize row = grid_id % 11;
-            usize column = grid_id / 11;
-
-            if (mode == SWITCH_MODE_CURVED) {
-                c_attr(ATTR_YELLOW);
-                w_putc_mv(&switch_win, 'C', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
-            } else if (mode == SWITCH_MODE_STRAIGHT) {
-                c_attr(ATTR_CYAN);
-                w_putc_mv(&switch_win, 'S', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
-            }
-            c_attr_reset();
-
-            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
-        }
-
-
     }
 }
 

@@ -25,7 +25,10 @@ typedef struct {
     SwitchMsgType type;
     union {
         SwitchMode query;
-        isize wait; // the switch that was changed
+        struct {
+            isize switch_id;
+            SwitchMode mode;
+        } wait;
     } data;
 } SwitchResp;
 
@@ -73,7 +76,7 @@ SwitchQuery(Tid switch_server, isize switch_id)
     return resp_buf.data.query;
 }
 
-int
+WaitForSwitchResult
 WaitForSwitch(Tid switch_server, isize switch_id)
 {
     SwitchResp resp_buf;
@@ -86,9 +89,15 @@ WaitForSwitch(Tid switch_server, isize switch_id)
     int ret = Send(switch_server, (const char*)&send_buf, sizeof(SwitchMsg), (char*)&resp_buf, sizeof(SwitchResp));
     if (ret < 0) {
         ULOG_WARN("WaitForSwitch errored");
-        return -1;
+        return (WaitForSwitchResult) {
+            .first = -1,
+            .second = SWITCH_MODE_UNKNOWN
+        };
     }
-    return resp_buf.data.wait;
+    return (WaitForSwitchResult) {
+        .first = resp_buf.data.wait.switch_id,
+        .second = resp_buf.data.wait.mode
+    };
 }
 
 usize
@@ -107,6 +116,7 @@ void
 try_unblock(SwitchMode* states, List* switch_requests, isize switch_id)
 {
     // Unblock tasks waiting for switches
+    // TODO Sometimes the renderer doesn't update switches
     ListIter it = list_iter(switch_requests);
     SwitchRequest* request;
     while (listiter_next(&it, (void**)&request)) {
@@ -115,7 +125,10 @@ try_unblock(SwitchMode* states, List* switch_requests, isize switch_id)
             SwitchResp reply_buf = (SwitchResp) {
                 .type = SWITCH_WAIT,
                 .data = {
-                    .wait = switch_id
+                    .wait = {
+                        .switch_id = switch_id,
+                        .mode = states[switch_index(switch_id)]
+                    }
                 }
             };
             Reply(request->tid, (char*)&reply_buf, sizeof(SwitchResp));

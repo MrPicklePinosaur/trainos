@@ -109,7 +109,6 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             renderer_append_console(renderer_server, msg);
 
             SwitchChange(switch_server, switch_id, switch_mode);
-            renderer_flip_switch(renderer_server, switch_id, switch_mode);
 			break;
 		}
         case PARSER_RESULT_STOP: {

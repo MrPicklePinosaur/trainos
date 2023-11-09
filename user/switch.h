@@ -3,6 +3,7 @@
 
 #include <traindef.h>
 #include <trainsys.h>
+#include <trainstd.h>
 #include "marklin.h"
 
 #define SWITCH_ADDRESS "switch"
@@ -12,11 +13,13 @@
 #define SWITCH_RANGE_2_LOW 153
 #define SWITCH_RANGE_2_HIGH 156
 
+typedef PAIR(isize, SwitchMode) WaitForSwitchResult;
+
 void switchServerTask();
 
 int SwitchChange(Tid switch_server, isize switch_id, SwitchMode mode);
 int SwitchQuery(Tid switch_server, isize switch_id);
 // passing switch = -1 means we don't care which switch
-int WaitForSwitch(Tid switch_server, isize switch_id);
+WaitForSwitchResult WaitForSwitch(Tid switch_server, isize switch_id);
 
 #endif // __USER_SWITCH_H__
