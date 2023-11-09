@@ -5,10 +5,10 @@ LogLevel log_level;
 LogMask log_mask;
 LogMode log_mode;
 
-uint32_t train_term_log_y;
-const uint32_t train_term_log_x = 84;
+const uint32_t train_term_log_x = 117;
 const uint32_t train_term_log_min_y = 2;
 const uint32_t train_term_log_max_y = 35;
+uint32_t train_term_log_y;
 
 void
 log_init(void)
