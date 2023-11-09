@@ -15,11 +15,15 @@
 
 #include "kern/perf.h"
 
-#define NUMBER_OF_TRAINS 80
-#define TRAIN_SPEED_MASK     0b01111
-#define TRAIN_LIGHTS_MASK    0b10000
-
 void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, TrainState* train_state, ParserResult command);
+
+TrainState train_state[NUMBER_OF_TRAINS] = {0};
+
+// TODO this is rly horrible and dumb please move this to it's own train state server
+TrainState get_train_state(usize train)
+{
+    return train_state[train];
+}
 
 // task for getting user input form the console
 void
@@ -31,8 +35,6 @@ promptTask()
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid path_server = WhoIs(PATH_ADDRESS);
-
-    TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
     CBuf* line = cbuf_new(32);
 
@@ -83,6 +85,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
             char* msg = cstr_format(&tmp, "Setting train %s%d%s to speed %s%d%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, speed, ANSI_RESET);
             renderer_append_console(renderer_server, msg);
+            ULOG_INFO("train state for train %d is %d", train, train_state[train]);
             marklin_train_ctl(marklin_server, train, train_state[train]);
 
 			break;

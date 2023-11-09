@@ -5,11 +5,13 @@
 #include "render.h"
 #include "prompt.h"
 #include "user/path/track_data.h"
+#include "user/path/train_data.h"
 #include "user/nameserver.h"
 #include "user/sensor.h"
 #include "user/switch.h"
 #include "user/clock.h"
 #include "user/switch.h"
+#include "user/trainstate.h"
 
 typedef enum {
     RENDERER_APPEND_CONSOLE,
@@ -109,6 +111,7 @@ renderTrainStateWinTask()
 
         // TODO this currently only supports one train
         usize sensor_id = WaitForSensor(sensor_server, -1);
+        Delay(clock_server, 5);
 
         // TODO this is bad duplicated code (should use cstr_format instead)
         usize sensor_group = sensor_id / 16;
@@ -124,15 +127,16 @@ renderTrainStateWinTask()
         if ((void*)cur_node_ind == NULL) {
             PANIC("invalid sensor query %s", sensor_str);
         }
-        ULOG_INFO("starting at index %d", cur_node_ind);
+        //ULOG_INFO("starting at index %d", cur_node_ind);
 
         TrackNode cur_node = track.nodes[cur_node_ind];
         bool is_unknown = false;
-        ULOG_INFO("starting at %s", cur_node.name);
+        int dist_to_next = 0; // distance from current sensor to next sensor
+        //ULOG_INFO("starting at %s", cur_node.name);
         do {
 
             if (cur_node.type == NODE_EXIT || cur_node.type == NODE_NONE) {
-                ULOG_INFO("hit exit or none node");
+                //ULOG_INFO("hit exit or none node");
                 is_unknown = true;
                 break;
             }
@@ -140,38 +144,74 @@ renderTrainStateWinTask()
             if (cur_node.type == NODE_BRANCH) {
                 // query switch state to find next
                 SwitchMode switch_mode = SwitchQuery(switch_server, cur_node.num);
-                ULOG_INFO("queried switch mode for switch %d: %d", cur_node.num, switch_mode);
+                //ULOG_INFO("queried switch mode for switch %d: %d", cur_node.num, switch_mode);
                 if (switch_mode == SWITCH_MODE_UNKNOWN) {
-                    ULOG_INFO("hit switch with unknown state");
+                    //ULOG_INFO("hit switch with unknown state");
                     is_unknown = true;
                     break;
                 }
                 else if (switch_mode == SWITCH_MODE_STRAIGHT) {
                     cur_node = *(cur_node.edge[DIR_STRAIGHT].dest);
+                    dist_to_next += cur_node.edge[DIR_STRAIGHT].dist;
                 }
                 else if (switch_mode == SWITCH_MODE_CURVED) {
                     cur_node = *(cur_node.edge[DIR_CURVED].dest);
+                    dist_to_next += cur_node.edge[DIR_CURVED].dist;
                 } else {
                     UNREACHABLE("unexpected switch mode");
                 }
             } else {
                 cur_node = *(cur_node.edge[DIR_AHEAD].dest);
+                dist_to_next += cur_node.edge[DIR_AHEAD].dist;
             }
 
-            ULOG_INFO("walking to %s", cur_node.name);
+            //ULOG_INFO("walking to %s", cur_node.name);
 
         } while (cur_node.type != NODE_SENSOR);
 
         if (is_unknown) {
-            w_puts_mv(&train_state_win, "XXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-        } else {
-            c_attr(SENSOR_COLORS[cur_node.name[0]-'A']);
-            w_puts_mv(&train_state_win, "    ", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-            w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-            c_attr_reset();
+            w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+            continue;
         }
 
-         
+        // print next sensor
+        c_attr(SENSOR_COLORS[cur_node.name[0]-'A']);
+        w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+        w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
+        c_attr_reset();
+
+        usize train_speed = get_train_state(TRAIN) & TRAIN_SPEED_MASK;
+        if (!(train_speed == TRAIN_SPEED_SNAIL || train_speed == TRAIN_SPEED_LOW || train_speed == TRAIN_SPEED_MED || train_speed == TRAIN_SPEED_HIGH)) {
+            continue;
+        }
+
+        // TODO we only support prediction for speed 5, 8, 11, 14
+        // get train speed
+        usize train_vel = train_data_vel(TRAIN, train_speed);
+
+        usize elapsed = Time(clock_server) - last_sensor_time; // elapsed is in ticks
+        last_sensor_time = Time(clock_server);
+
+        // Compare elapsed time with our predicted
+        if (predicted_sensor_time != 0) {
+            usize t_err = elapsed-predicted_sensor_time;
+            w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
+            w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", t_err), TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
+            usize d_err = (t_err)*train_vel/100;
+            char* d_err_str = cstr_format(&tmp, "%d", d_err);
+            // TODO don't print if too long :P
+            if (strlen(d_err_str) <= 5) {
+                w_puts_mv(&train_state_win, d_err_str, TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
+            }
+            w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
+        } else {
+            w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
+            w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
+        }
+
+        // predict sensor time
+        // TODO careful for division by zero
+        predicted_sensor_time = (dist_to_next/train_vel)*100; // predicted is in ticks
     }
     Exit();
 }

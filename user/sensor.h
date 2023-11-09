@@ -6,8 +6,6 @@
 
 #define SENSOR_ADDRESS "sensor"
 
-typedef u8 TrainState;
-
 void sensorServerTask();
 
 // passing sensor = -1 means we don't care which sensor
