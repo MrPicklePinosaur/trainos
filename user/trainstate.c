@@ -40,6 +40,16 @@ typedef struct {
 int
 TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
 {
+
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+    if (!(0 <= speed && train <= 14)) {
+        ULOG_WARN("invalid train speed %d", speed);
+        return -1;
+    }
+
     TrainstateResp resp_buf;
     TrainstateMsg send_buf = (TrainstateMsg) {
         .type = TRAINSTATE_SET_SPEED,
@@ -61,6 +71,11 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
 int
 TrainstateSetLights(Tid trainstate_server, usize train, bool lights)
 {
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
     TrainstateResp resp_buf;
     TrainstateMsg send_buf = (TrainstateMsg) {
         .type = TRAINSTATE_SET_LIGHTS,
@@ -82,6 +97,11 @@ TrainstateSetLights(Tid trainstate_server, usize train, bool lights)
 TrainState
 TrainstateGet(Tid trainstate_server, usize train)
 {
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
     TrainstateResp resp_buf;
     TrainstateMsg send_buf = (TrainstateMsg) {
         .type = TRAINSTATE_GET_STATE,
@@ -133,7 +153,6 @@ trainStateServer()
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
         } else if (msg_buf.type == TRAINSTATE_SET_SPEED) {
-
 
             usize train = msg_buf.data.set_speed.train;
             usize speed = msg_buf.data.set_speed.speed;

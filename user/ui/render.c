@@ -170,14 +170,17 @@ renderTrainStateWinTask()
 
         } while (cur_node.type != NODE_SENSOR);
 
-#if 0
         if (is_unknown) {
             w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
             continue;
         }
 
         // print next sensor
-        c_attr(SENSOR_COLORS[cur_node.name[0]-'A']);
+        usize color_index = cur_node.name[0]-'A';
+        if (!(0 <= color_index && color_index <= 5)) {
+            PANIC("INVALID COLOR INDEX %d", color_index);
+        }
+        c_attr(SENSOR_COLORS[color_index]);
         w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
         w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
         c_attr_reset();
@@ -191,15 +194,15 @@ renderTrainStateWinTask()
         // get train speed
         usize train_vel = train_data_vel(TRAIN, train_speed);
 
-        usize elapsed = Time(clock_server) - last_sensor_time; // elapsed is in ticks
+        isize elapsed = Time(clock_server) - last_sensor_time; // elapsed is in ticks
         last_sensor_time = Time(clock_server);
 
         // Compare elapsed time with our predicted
         if (predicted_sensor_time != 0) {
-            usize t_err = elapsed-predicted_sensor_time;
+            isize t_err = elapsed-predicted_sensor_time;
             w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
             w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", t_err), TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
-            usize d_err = (t_err)*train_vel/100;
+            isize d_err = (t_err)*train_vel/100;
             char* d_err_str = cstr_format(&tmp, "%d", d_err);
             // TODO don't print if too long :P
             if (strlen(d_err_str) <= 5) {
@@ -215,7 +218,6 @@ renderTrainStateWinTask()
         // TODO careful for division by zero
         if (train_vel == 0) PANIC("division by zero");
         predicted_sensor_time = (dist_to_next/train_vel)*100; // predicted is in ticks
-#endif
     }
     Exit();
 }
