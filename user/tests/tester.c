@@ -1,9 +1,8 @@
-#include "user/usertasks.h"
-#include "user/nameserver.h"
-#include "tester.h"
 #include <trainsys.h>
 #include <trainstd.h>
-#include <stdbool.h>
+#include <traintasks.h>
+#include "user/usertasks.h"
+#include "tester.h"
 
 /* user tasks for running userland tests such as data structures */
 

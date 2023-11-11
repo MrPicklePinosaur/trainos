@@ -2,6 +2,7 @@
 #define __TRAINTERM_H__
 
 #include <traindef.h>
+#include "render.h"
 
 /* Library for manipulating the terminal */
 
@@ -41,14 +42,13 @@ typedef enum {
     ATTR_RESET,
 } Attr;
 
+void traintermTask();
+
 // initialize screen for tui mode
 void term_init(void);
 
 // clear the screen
 void term_clear(void);
-
-// render the screen
-void term_render(void);
 
 // window commands
 Window win_init(usize x, usize y, usize w, usize h);

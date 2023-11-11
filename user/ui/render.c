@@ -1,15 +1,14 @@
 #include <trainterm.h>
 #include <trainstd.h>
 #include <trainsys.h>
+#include <traintasks.h>
 #include <ctype.h>
 #include "render.h"
 #include "prompt.h"
 #include "user/path/track_data.h"
 #include "user/path/train_data.h"
-#include "user/nameserver.h"
 #include "user/sensor.h"
 #include "user/switch.h"
-#include "user/clock.h"
 #include "user/switch.h"
 #include "user/trainstate.h"
 

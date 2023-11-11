@@ -5,7 +5,6 @@
 void
 term_init(void)
 {
-    renderer_init();
     print("%s%s", ANSI_CLEAR, ANSI_HIDE);
 }
 

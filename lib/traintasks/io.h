@@ -1,5 +1,5 @@
-#ifndef __IO_H__
-#define __IO_H__
+#ifndef __TRAINTASKS_IO_H__
+#define __TRAINTASKS_IO_H__
 
 #include <trainsys.h>
 #include <trainstd.h>
@@ -16,4 +16,5 @@ int Puts(Tid io_server, unsigned char* s, usize data_length);
 void marklinIO(void);
 void consoleIO(void);
 
-#endif // __IO_H__
+
+#endif // __TRAINTASKS_IO_H__

@@ -2,7 +2,6 @@
 #include <trainstd.h>
 #include <stdbool.h>
 #include <string.h>
-#include "usertasks.h"
 #include "nameserver.h"
 
 typedef struct NsdbEntry NsdbEntry;

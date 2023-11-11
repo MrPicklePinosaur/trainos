@@ -1,8 +1,7 @@
 #include "usertasks.h"
-#include "nameserver.h"
-#include "clock.h"
 #include <trainsys.h>
 #include <trainstd.h>
+#include <traintasks.h>
 
 typedef struct {
     u32 delay;

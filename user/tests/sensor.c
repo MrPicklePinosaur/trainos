@@ -1,8 +1,8 @@
 #include <trainstd.h>
 #include <trainsys.h>
+#include <traintasks.h>
 #include "tester.h"
 #include "user/sensor.h"
-#include "user/nameserver.h"
 
 void
 testSensor()

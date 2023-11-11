@@ -1,8 +1,8 @@
 #include "usertasks.h"
-#include "nameserver.h"
 #include <string.h>
 #include <trainsys.h>
 #include <trainstd.h>
+#include <traintasks.h>
 
 static Tid receive_tid;
 static Tid sender_tid;

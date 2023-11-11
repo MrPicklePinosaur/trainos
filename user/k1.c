@@ -1,6 +1,6 @@
 #include "usertasks.h"
-#include "trainsys.h"
-#include "trainstd.h"
+#include <trainsys.h>
+#include <trainstd.h>
 
 void
 firstUserTask()

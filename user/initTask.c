@@ -1,13 +1,11 @@
 #include "usertasks.h"
-#include "nameserver.h"
-#include "clock.h"
-#include "io.h"
 #include "sensor.h"
 #include "switch.h"
 #include "trainstate.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
+#include <traintasks.h>
 #include <stddef.h>
 
 #include "kern/perf.h"

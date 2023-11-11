@@ -1,7 +1,6 @@
+#include <traintasks.h>
 #include "switch.h"
 #include "user/marklin.h"
-#include "nameserver.h"
-#include "io.h"
 
 typedef enum {
     SWITCH_CHANGE,

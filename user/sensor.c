@@ -1,10 +1,7 @@
 #include <trainsys.h>
+#include <traintasks.h>
 #include "sensor.h"
 #include "marklin.h"
-#include "nameserver.h"
-#include "io.h"
-#include "clock.h"
-#include "ui/render.h"
 
 #define UNIT_COUNT 5
 #define BYTE_PER_UNIT 2
@@ -57,7 +54,6 @@ sensorNotifierTask() {
 
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    //Tid renderer_server = WhoIs(RENDERER_ADDRESS);
     Tid sensor_server = MyParentTid();
 
     for (;;) {

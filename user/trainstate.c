@@ -1,7 +1,6 @@
 #include <trainstd.h>
 #include <trainsys.h>
-#include "user/nameserver.h"
-#include "user/io.h"
+#include <traintasks.h>
 #include "user/marklin.h"
 #include "trainstate.h"
 

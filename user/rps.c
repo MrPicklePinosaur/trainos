@@ -1,7 +1,7 @@
 #include <trainsys.h>
 #include <trainstd.h>
+#include <traintasks.h>
 
-#include "nameserver.h"
 
 #define RPS_ADDRESS "RPS"
 

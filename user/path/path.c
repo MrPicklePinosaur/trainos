@@ -1,11 +1,9 @@
 #include <trainstd.h>
 #include <trainsys.h>
+#include <traintasks.h>
 #include "path.h"
 #include "track_data.h"
 #include "train_data.h"
-#include "user/nameserver.h"
-#include "user/io.h"
-#include "user/clock.h"
 #include "user/marklin.h"
 #include "user/sensor.h"
 #include "user/switch.h"
