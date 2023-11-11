@@ -2,7 +2,7 @@
 #define __TRAINTERM_H__
 
 #include <traindef.h>
-#include "render.h"
+#include <trainsys.h>
 
 /* Library for manipulating the terminal */
 
@@ -31,6 +31,7 @@ typedef struct {
     usize w;
     usize h;
     usize buf_ptr;
+    Tid server;
     char write_buffer[WIN_BUF_SIZE];
 } Window;
 

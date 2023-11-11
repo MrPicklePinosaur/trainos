@@ -6,6 +6,7 @@
 #include <trainstd.h>
 #include <trainsys.h>
 #include <traintasks.h>
+#include <trainterm.h>
 #include <stddef.h>
 
 #include "kern/perf.h"
@@ -68,6 +69,7 @@ initTask()
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");
 
     Tid trainstate_server = Create(2, &trainStateServer, "train state server");
+    Tid trainterm_server = Create(3, &traintermTask, "train term server");
 
     Tid path_tid = Create(3, &pathTask, "path task");
 

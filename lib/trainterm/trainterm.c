@@ -1,7 +1,9 @@
 #include <trainstd.h>
+#include <traintasks.h>
 #include "./trainterm.h"
 #include "window.h"
 #include "render.h"
+
 
 void
 term_init(void)
@@ -104,5 +106,7 @@ w_flush(Window* win)
 {
     // write all bytes and clear window
     //print(win->write_buffer);
+    // TODO this is kind lazy
+    FlushWin(win->server, win);
     win_flush(win);
 }
