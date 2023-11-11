@@ -58,14 +58,8 @@ void term_clear(void);
 Window win_init(usize x, usize y, usize w, usize h);
 void win_draw(Window* win);
 
-// canvas commands
-void c_mv(usize x, usize y);
-void c_putc(char ch);
-void c_putc_mv(char ch, usize x, usize y);
-void c_puts(char* s);
-void c_puts_mv(char* s, usize x, usize y);
-void c_attr(Attr attr);
-void c_attr_reset(void);
+void w_attr(Window* win, Attr attr);
+void w_attr_reset(Window* win);
 
 // window commands
 void w_mv(Window* win, usize x, usize y);

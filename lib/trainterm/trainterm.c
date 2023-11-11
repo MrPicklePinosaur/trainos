@@ -16,75 +16,45 @@ term_clear(void)
 }
 
 void
-c_mv(usize x, usize y)
+w_attr(Window* win, Attr attr)
 {
-    print(ANSI_MOVE, y, x);
-}
-
-void
-c_putc(char ch)
-{
-    print("%c", ch);
-}
-
-void
-c_putc_mv(char ch, usize x, usize y)
-{
-    c_mv(x, y);
-    c_putc(ch);
-}
-
-void
-c_puts(char* s)
-{
-    print("%s", s);
-}
-
-void
-c_puts_mv(char* s, usize x, usize y)
-{
-    c_mv(x, y);
-    c_puts(s);
-}
-
-void
-c_attr(Attr attr)
-{
+    char* attr_str;
     switch (attr) {
         case ATTR_BLACK:
-            c_puts(ANSI_BLACK);
+            attr_str = ANSI_BLACK;
             break;
         case ATTR_RED:
-            c_puts(ANSI_RED);
+            attr_str = ANSI_RED;
             break;
         case ATTR_GREEN:
-            c_puts(ANSI_GREEN);
+            attr_str = ANSI_GREEN;
             break;
         case ATTR_YELLOW:
-            c_puts(ANSI_YELLOW);
+            attr_str = ANSI_YELLOW;
             break;
         case ATTR_BLUE:
-            c_puts(ANSI_BLUE);
+            attr_str = ANSI_BLUE;
             break;
         case ATTR_MAGENTA:
-            c_puts(ANSI_MAGENTA);
+            attr_str = ANSI_MAGENTA;
             break;
         case ATTR_CYAN:
-            c_puts(ANSI_CYAN);
+            attr_str = ANSI_CYAN;
             break;
         case ATTR_WHITE:
-            c_puts(ANSI_WHITE);
+            attr_str = ANSI_WHITE;
             break;
         case ATTR_RESET:
-            c_puts(ANSI_RESET);
+            attr_str = ANSI_RESET;
             break;
     }
+    win_queue(win, attr_str, strlen(attr_str));
 }
 
 void
-c_attr_reset(void)
+w_attr_reset(Window* win)
 {
-    c_attr(ATTR_RESET);
+    w_attr(win, ATTR_RESET);
 }
 
 void
@@ -133,6 +103,6 @@ void
 w_flush(Window* win)
 {
     // write all bytes and clear window
-    print(win->write_buffer);
+    //print(win->write_buffer);
     win_flush(win);
 }

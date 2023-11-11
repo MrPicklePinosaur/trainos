@@ -118,11 +118,11 @@ renderTrainStateWinTask()
         // TODO this is bad duplicated code (should use cstr_format instead)
         usize sensor_group = sensor_id / 16;
         usize sensor_index = (sensor_id % 16) + 1;
-        c_attr(SENSOR_COLORS[sensor_group]);
+        w_attr(&train_state_win, SENSOR_COLORS[sensor_group]);
         str8 sensor_str = str8_format(&tmp, "%c%d", sensor_group+'A', sensor_index);
         w_puts_mv(&train_state_win, "    ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
         w_puts_mv(&train_state_win, str8_to_cstr(sensor_str), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
-        c_attr_reset();
+        w_attr_reset(&train_state_win);
 
         // predict what the next sensor will be using switch states to walk the graph
         usize cur_node_ind = (usize)map_get(&track.map, sensor_str, &arena);
@@ -181,10 +181,10 @@ renderTrainStateWinTask()
         if (!(0 <= color_index && color_index <= 5)) {
             PANIC("INVALID COLOR INDEX %d", color_index);
         }
-        c_attr(SENSOR_COLORS[color_index]);
+        w_attr(&train_state_win, SENSOR_COLORS[color_index]);
         w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
         w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-        c_attr_reset();
+        w_attr_reset(&train_state_win);
 
         usize train_speed = TrainstateGet(trainstate_server, TRAIN) & TRAIN_SPEED_MASK;
         if (!(train_speed == TRAIN_SPEED_SNAIL || train_speed == TRAIN_SPEED_LOW || train_speed == TRAIN_SPEED_MED || train_speed == TRAIN_SPEED_HIGH)) {
@@ -266,11 +266,11 @@ renderSensorWinTask()
 
             char sensor_index_str[5] = {0};
 
-            c_attr(SENSOR_COLORS[sensor_group]);
+            w_attr(&sensor_win, SENSOR_COLORS[sensor_group]);
             w_putc(&sensor_win, sensor_group+'A');
             ui2a(sensor_index, 10, sensor_index_str); 
             w_puts(&sensor_win, sensor_index_str);
-            c_attr_reset();
+            w_attr_reset(&sensor_win);
 
         } 
     }
@@ -321,13 +321,13 @@ renderSwitchWinTask()
         usize column = grid_id / 11;
 
         if (mode == SWITCH_MODE_CURVED) {
-            c_attr(ATTR_YELLOW);
+            w_attr(&switch_win, ATTR_YELLOW);
             w_putc_mv(&switch_win, 'C', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
         } else if (mode == SWITCH_MODE_STRAIGHT) {
-            c_attr(ATTR_CYAN);
+            w_attr(&switch_win, ATTR_CYAN);
             w_putc_mv(&switch_win, 'S', SWITCH_ANCHOR_X+3+column*9, SWITCH_ANCHOR_Y+row);
         }
-        c_attr_reset();
+        w_attr_reset(&switch_win);
     }
 }
 

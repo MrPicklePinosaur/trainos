@@ -37,7 +37,6 @@ void
 win_draw(Window* win)
 {
     // TURBO naive window drawing
-
     w_puts_mv(win, "╭", 0, 0);
     for (unsigned int i = 0; i < (win->w)-2; ++i) w_puts(win, "─"); // TODO make this more efficient by building the string ahead of time
     w_puts(win, "╮");
