@@ -9,9 +9,29 @@ win_init(usize x, usize y, usize w, usize h)
         .y = y,
         .w = w,
         .h = h,
+        .buf_ptr = 0,
+        .write_buffer = {0},
     };
 }
 
+// add bytes to the window write queue
+void
+win_queue(Window* win, char* data, usize len)
+{
+    if (win->buf_ptr+len >= WIN_BUF_SIZE) {
+        PANIC("window queue out of memory");
+    }
+
+    memcpy(win->write_buffer+win->buf_ptr, data, len);
+    win->buf_ptr += len;
+}
+
+void
+win_flush(Window* win)
+{
+    win->buf_ptr = 0;
+    memset(win->write_buffer, 0, WIN_BUF_SIZE);
+}
 
 void
 win_draw(Window* win)

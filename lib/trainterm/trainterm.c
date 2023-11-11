@@ -1,5 +1,6 @@
-#include "trainstd.h"
+#include <trainstd.h>
 #include "./trainterm.h"
+#include "window.h"
 #include "render.h"
 
 void
@@ -12,12 +13,6 @@ void
 term_clear(void)
 {
     print("%s", ANSI_CLEAR);
-}
-
-void
-term_render(void)
-{
-
 }
 
 void
@@ -95,32 +90,49 @@ c_attr_reset(void)
 void
 w_mv(Window* win, usize x, usize y)
 {
-    // TODO currently windows don't have cursor of their own
-    c_mv(win->x+x, win->y+y);
+    char ybuf[12] = {0};
+    ui2a(win->y+y, 10, ybuf);
+    char xbuf[12] = {0};
+    ui2a(win->x+x, 10, xbuf);
+
+    // TODO this code is ugly
+    win_queue(win, "\033[", strlen("\033["));
+    win_queue(win, ybuf, strlen(ybuf));
+    win_queue(win, ";", strlen(";"));
+    win_queue(win, xbuf, strlen(xbuf));
+    win_queue(win, "H", strlen("H"));
 }
 
 void
 w_putc(Window* win, char ch)
 {
-    // TODO cursor local to each window
-    c_putc(ch);
+    win_queue(win, &ch, 1);
 }
 
 void
 w_putc_mv(Window* win, char ch, usize x, usize y)
 {
-    c_putc_mv(ch, win->x+x, win->y+y);
+    w_mv(win, x, y);
+    w_putc(win, ch);
 }
 
 void
 w_puts(Window* win, char* s)
 {
-    // TODO cursor local to each window
-    c_puts(s);
+    win_queue(win, s, strlen(s));
 }
 
 void
 w_puts_mv(Window* win, char* s, usize x, usize y)
 {
-    c_puts_mv(s, win->x+x, win->y+y);
+    w_mv(win, x, y);
+    w_puts(win, s);
+}
+
+void
+w_flush(Window* win)
+{
+    // write all bytes and clear window
+    print(win->write_buffer);
+    win_flush(win);
 }

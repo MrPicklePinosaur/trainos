@@ -23,11 +23,15 @@
 
 #define ANSI_RESET "\033[0m"
 
+#define WIN_BUF_SIZE 512
+
 typedef struct {
     usize x;
     usize y;
     usize w;
     usize h;
+    usize buf_ptr;
+    char write_buffer[WIN_BUF_SIZE];
 } Window;
 
 typedef enum {
@@ -69,5 +73,6 @@ void w_putc(Window* win, char ch);
 void w_putc_mv(Window* win, char ch, usize x, usize y);
 void w_puts(Window* win, char* s);
 void w_puts_mv(Window* win, char* s, usize x, usize y);
+void w_flush(Window* win);
 
 #endif // __TRAINTERM_H__

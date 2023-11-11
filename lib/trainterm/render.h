@@ -3,6 +3,6 @@
 
 #include "./trainterm.h"
 
-void traintermTask();
+#define TRAINTERM_ADDRESS "trainterm"
 
 #endif // __TRAINTERM_RENDER_H__
