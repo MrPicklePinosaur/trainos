@@ -110,6 +110,7 @@ renderTrainStateWinTask()
 
     for (;;) {
         tmp = tmp_base; 
+        w_flush(&train_state_win);
 
         // TODO this currently only supports one train
         usize sensor_id = WaitForSensor(sensor_server, -1);
@@ -247,6 +248,8 @@ renderSensorWinTask()
 
     for (;;) {
 
+        w_flush(&sensor_win);
+
         usize next_sensor_id = WaitForSensor(sensor_server, -1);
         
         if (cbuf_len(triggered_sensors) >= MAX_SENSORS) {
@@ -305,6 +308,8 @@ renderSwitchWinTask()
     w_puts_mv(&switch_win, "11 .    156 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+10);
 
     for (;;) {
+        w_flush(&switch_win);
+
         WaitForSwitchResult data = WaitForSwitch(switch_server, -1);
         isize switch_id = data.first;
         SwitchMode mode = data.second;
@@ -349,6 +354,9 @@ renderDiagnosticWinTask()
 
     usize ticks = Time(clock_server);
     for (;;) {
+
+        w_flush(&diagnostic_win);
+
         ticks += 100; // update every second
         DelayUntil(clock_server, ticks); 
 
@@ -387,6 +395,7 @@ renderTask()
     Window console_win = win_init(2, 2, 60, 31);
     win_draw(&console_win);
     w_puts_mv(&console_win, "[console]", 2, 0);
+    w_flush(&console_win);
 
     // PROMPT
     const usize PROMPT_ANCHOR_X = 3;
@@ -395,6 +404,7 @@ renderTask()
     Window prompt_win = win_init(2, 33, 60, 3);
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
+    w_flush(&prompt_win);
 
     Create(3, &renderSwitchWinTask, "Render switch win");
     Create(3, &renderSensorWinTask, "Render sensor win");
@@ -429,6 +439,7 @@ renderTask()
                 w_puts(&console_win, (char*)cbuf_get(console_lines, i));
 
             }
+            w_flush(&console_win);
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
@@ -438,15 +449,18 @@ renderTask()
             if (ch == CH_BACKSPACE) {
                 prompt_length = usize_sub(prompt_length, PROMPT_ANCHOR_Y);
                 w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+                w_flush(&prompt_win);
             }
             else if (ch == CH_ENTER) {
                 for (usize i = 0; i < prompt_length; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
+                w_flush(&prompt_win);
                 prompt_length = 0;
             }
             else if (isalnum(ch) || isblank(ch) || isprint(ch)) {
                 // normal character
                 // TODO max length for prompt
                 w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+                w_flush(&prompt_win);
                 prompt_length += 1;
             }
 
