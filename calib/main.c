@@ -136,6 +136,7 @@ void calibTrainSpeed() {
         uart_printf(CONSOLE, "sample %d complete\r\n", sample);
     } end_test:
 
+    marklin_train_ctl(train_number, 0);
     uint32_t total = 0;
     for (int i = 0; i < SENSOR_COUNT; ++i) {
         uart_printf(CONSOLE, "Average speed (section %d): %d\r\n", i, SPEEDS[i]/SAMPLES);
