@@ -28,6 +28,30 @@ Train 47 stopping times:
 11:  625165
 14:  375001
 
+Train 58 velocities:
+ 5:  66
+ 8: 190
+11: 371
+14: 579
+
+Train 58 stopping times:
+ 5: 3704121 (total distance 359 instead of 1045, from C10 to B1)
+ 8: 3667663
+11: 886166
+14: 937523 (total distance 1797 instead of 1045, from B16 to E9)
+
+Train 77 velocities:
+ 5:  99
+ 8: 232
+11: 408
+14: 612
+
+Train 77 stopping times:
+ 5: 1874765 (total distance 359 instead of 1045, from C10 to B1)
+ 8: 2578129
+11:  285465
+14:  341439, 375008 (total distance 1797 instead of 1045, from B16 to E9)
+
 Total distance: 1045
 If v is the measured velocity in mm/s and t is the stopping time in microseconds, the stopping distance is:
 1045 - (v*10^(-6)*t)
@@ -43,3 +67,15 @@ Train 47 stopping distances:
  8: 521
 11: 709
 14: 828
+
+Train 58 stopping distances:
+ 5:  115
+ 8:  348
+11:  716
+14: 1254
+
+Train 77 stopping distances:
+ 5:  173
+ 8:  447
+11:  929
+14: 1588, 1567
