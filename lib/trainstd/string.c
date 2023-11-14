@@ -144,7 +144,7 @@ _cstr_format(Arena* arena, char *fmt, va_list va)
                 cur = _cstr_format_puts(arena, cur, bf);
                 break;
             case 's':
-                cur =_cstr_format_puts(arena, cur, va_arg( va, char* ));
+                cur = _cstr_format_puts(arena, cur, va_arg( va, char* ));
                 break;
             case 'c':
                 *cur = va_arg( va, int );
