@@ -280,7 +280,7 @@ handle_svc(void)
 
     u32 opcode = asm_esr_el1() & 0x1FFFFFF;
     /* KLOG_DEBUG("jumped to vector table handler with opcode = %x", opcode); */
-    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] In task %d with name %s", current_tid, current_task->name);
+    KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] In task %u '%s'", current_tid, current_task->name);
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {
@@ -357,12 +357,12 @@ handle_svc(void)
         sf->x0 = tasktable_get_task(sf->x0)->name;
 
     } else {
-        PANIC("Uncaught syscall with opcode %x", opcode);
+        PANIC("Uncaught syscall with opcode %x, current task %u '%s'", opcode, current_tid, current_task->name);
     }
 
     Tid next_tid = find_next_task();
 
-    KLOG_DEBUG_M(LOG_MASK_SYSCALL, "returning to task %d with name %s", next_tid, tasktable_get_task(next_tid)->name);
+    KLOG_DEBUG_M(LOG_MASK_SYSCALL, "returning to task %u '%s'", next_tid, tasktable_get_task(next_tid)->name);
     tasktable_set_current_task(next_tid);
 
     on_exit_kernelmode(next_tid);

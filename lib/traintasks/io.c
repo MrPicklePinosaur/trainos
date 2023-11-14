@@ -272,7 +272,7 @@ ioServer(size_t line)
         else if (msg_buf.type == IO_PUTC) {
             // Putc() implementation
 
-            ULOG_INFO_M(LOG_MASK_IO, "Line %d Putc request from %d with name %s", line, from_tid, TaskName(from_tid));
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Putc request from %u '%s'", line, from_tid, TaskName(from_tid));
 
             if (cts) {
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS on, writing %d immediately", line, msg_buf.data.putc.ch);
@@ -295,7 +295,7 @@ ioServer(size_t line)
         else if (msg_buf.type == IO_PUTS) {
             // Puts() implementation
 
-            ULOG_INFO_M(LOG_MASK_IO, "Line %d Puts request from %d with name %s", line, from_tid, TaskName(from_tid));
+            ULOG_INFO_M(LOG_MASK_IO, "Line %d Puts request from %u '%s'", line, from_tid, TaskName(from_tid));
 
             unsigned char* s = msg_buf.data.puts.s;
 
