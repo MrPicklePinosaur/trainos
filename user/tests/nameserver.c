@@ -24,8 +24,8 @@ testNameserver()
 {
     println("Running test suite for nameserver -----------------");
 
-    Tid task1 = Create(1, &testingTask1, "testingTask1");
-    Tid task2 = Create(1, &testingTask2, "testingTask2");
+    Tid task1 = Create(1, &testingTask1, "Testing Task 1");
+    Tid task2 = Create(1, &testingTask2, "Testing Task 2");
     Yield();
 
     // TODO we need to wait for task1 and task2 to run, so sorta sus

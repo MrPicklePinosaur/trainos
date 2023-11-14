@@ -406,10 +406,10 @@ renderTask()
     w_putc_mv(&prompt_win, '>', 1, 1);
     w_flush(&prompt_win);
 
-    Create(3, &renderSwitchWinTask, "Render switch win");
-    Create(3, &renderSensorWinTask, "Render sensor win");
-    Create(3, &renderDiagnosticWinTask, "Render diagnostic win");
-    Create(3, &renderTrainStateWinTask, "Render train state win");
+    Create(3, &renderSwitchWinTask, "Render Switch Window");
+    Create(3, &renderSensorWinTask, "Render Sensor Window");
+    Create(3, &renderDiagnosticWinTask, "Render Diagnostic Window");
+    Create(3, &renderTrainStateWinTask, "Render Train State Window");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
@@ -475,8 +475,8 @@ void
 uiTask()
 {
 
-    Tid render_tid = Create(3, &renderTask, "render task");
-    Tid prompt_tid = Create(2, &promptTask, "prompt task");
+    Tid render_tid = Create(3, &renderTask, "Render Task");
+    Tid prompt_tid = Create(2, &promptTask, "Prompt Task");
 
     WaitTid(prompt_tid);
 

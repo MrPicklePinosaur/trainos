@@ -68,10 +68,10 @@ initTask()
     Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");
 
-    Tid trainstate_server = Create(2, &trainStateServer, "train state server");
-    Tid trainterm_server = Create(3, &traintermTask, "train term server");
+    Tid trainstate_server = Create(2, &trainStateServer, "Train State Server");
+    Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");
 
-    Tid path_tid = Create(3, &pathTask, "path task");
+    Tid path_tid = Create(3, &pathTask, "Path Task");
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
