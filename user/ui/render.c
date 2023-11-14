@@ -437,9 +437,8 @@ renderTask()
                 // render the line
                 w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
                 w_puts(&console_win, (char*)cbuf_get(console_lines, i));
-
+                w_flush(&console_win);
             }
-            w_flush(&console_win);
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }
