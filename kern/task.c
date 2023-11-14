@@ -94,7 +94,8 @@ tasktable_get_task(Tid tid)
             return current->task;
         }
     }
-    PANIC("getting invalid tid %d", tid);
+    Tid current_task = tasktable_current_task();
+    PANIC("getting invalid tid %d, current tid %u '%s'", tid, current_task, tasktable_get_task(current_task)->name);
     return nullptr;
 }
 
