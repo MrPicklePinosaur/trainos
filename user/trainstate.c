@@ -8,6 +8,9 @@ typedef enum {
     TRAINSTATE_GET_STATE,
     TRAINSTATE_SET_SPEED,
     TRAINSTATE_SET_LIGHTS,
+    TRAINSTATE_REVERSE,
+    TRAINSTATE_REVERSE_REVERSE,
+    TRAINSTATE_REVERSE_RESTART,
 } TrainstateMsgType;
 
 typedef struct {
@@ -24,6 +27,9 @@ typedef struct {
             usize train;
             bool lights;
         } set_lights;
+        struct {
+            usize train;
+        } reverse;
     } data;
 } TrainstateMsg;
 
@@ -33,6 +39,9 @@ typedef struct {
         struct {
             TrainState state;
         } get;
+        struct {
+            bool was_already_reversing;
+        } reverse;
     } data;
 } TrainstateResp;
 
@@ -62,6 +71,35 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
         ULOG_WARN("TrainstateSetSpeed errored");
+        return -1;
+    }
+    return 0;
+}
+
+int
+TrainstateReverse(Tid trainstate_server, usize train)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_REVERSE,
+        .data = {
+            .reverse = {
+                .train = train,
+            }
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (resp_buf.data.reverse.was_already_reversing) {
+        ULOG_WARN("Train was already reversing");
+        return -1;
+    }
+    if (ret < 0) {
+        ULOG_WARN("TrainstateReverse errored");
         return -1;
     }
     return 0;
@@ -119,6 +157,29 @@ TrainstateGet(Tid trainstate_server, usize train)
 }
 
 void
+reverseTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf;
+
+    Delay(clock_server, 400); // TODO arbitrary delay
+    send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_REVERSE_REVERSE,
+    };
+    Send(MyParentTid(), (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+
+    Delay(clock_server, 10); // TODO arbitrary delay
+    send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_REVERSE_RESTART,
+    };
+    Send(MyParentTid(), (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+
+    Exit();
+}
+
+void
 trainStateServer()
 {
     RegisterAs(TRAINSTATE_ADDRESS); 
@@ -126,6 +187,7 @@ trainStateServer()
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
 
     TrainState train_state[NUMBER_OF_TRAINS] = {0};
+    Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
     TrainstateMsg msg_buf;
     TrainstateResp reply_buf;
@@ -162,6 +224,73 @@ trainStateServer()
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_SPEED,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_REVERSE) {
+
+            usize train = msg_buf.data.reverse.train;
+
+            bool was_already_reversing;
+            if (reverse_tasks[train] != 0) {
+                was_already_reversing = true;
+            }
+            else {
+                was_already_reversing = false;
+                marklin_train_ctl(marklin_server, train, 0 | (train_state[train] & TRAIN_LIGHTS_MASK));
+                reverse_tasks[train] = Create(2, reverseTask, "Trainstate Reverse Task");
+            }
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_REVERSE,
+                .data = {
+                    .reverse = {
+                        .was_already_reversing = was_already_reversing
+                    }
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_REVERSE_REVERSE) {
+
+            usize train = NUMBER_OF_TRAINS;
+            for (usize i = 0; i < NUMBER_OF_TRAINS; i++) {
+                if (reverse_tasks[i] == from_tid) {
+                    train = i;
+                    break;
+                }
+            }
+            if (train == NUMBER_OF_TRAINS) {
+                PANIC("Couldn't find train associated with reverse task");
+            }
+
+            marklin_train_ctl(marklin_server, train, 15 | (train_state[train] & TRAIN_LIGHTS_MASK));
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_REVERSE_REVERSE,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_REVERSE_RESTART) {
+
+            usize train = NUMBER_OF_TRAINS;
+            for (usize i = 0; i < NUMBER_OF_TRAINS; i++) {
+                if (reverse_tasks[i] == from_tid) {
+                    train = i;
+                    break;
+                }
+            }
+            if (train == NUMBER_OF_TRAINS) {
+                PANIC("Couldn't find train associated with reverse task");
+            }
+
+            marklin_train_ctl(marklin_server, train, train_state[train]);
+            reverse_tasks[train] = 0;
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_REVERSE_RESTART,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));

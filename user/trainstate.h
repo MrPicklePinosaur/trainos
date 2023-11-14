@@ -13,6 +13,7 @@
 typedef u8 TrainState;
 
 int TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed);
+int TrainstateReverse(Tid trainstate_server, usize train);
 int TrainstateSetLights(Tid trainstate_server, usize train, bool lights);
 TrainState TrainstateGet(Tid trainstate_server, usize train);
 void trainStateServer();

@@ -85,14 +85,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
             char* msg = cstr_format(&tmp, "Reversing train %s%d%s", ANSI_CYAN, train, ANSI_CYAN);
             renderer_append_console(renderer_server, msg);
-
-            usize previous_speed = TrainstateGet(trainstate_server, train) & TRAIN_SPEED_MASK;
-
-            TrainstateSetSpeed(trainstate_server, train, SPEED_STOP);
-            Delay(clock_server, 400); // TODO arbritrary delay
-            TrainstateSetSpeed(trainstate_server, train, SPEED_REVERSE);
-            Delay(clock_server, 10); // TODO arbritrary delay
-            TrainstateSetSpeed(trainstate_server, train, previous_speed);
+            TrainstateReverse(trainstate_server, train);
 
 			break;
 		}
