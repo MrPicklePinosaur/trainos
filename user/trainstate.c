@@ -44,7 +44,7 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
         ULOG_WARN("invalid train number %d", train);
         return -1;
     }
-    if (!(0 <= speed && train <= 14)) {
+    if (!(0 <= speed && speed <= 14)) {
         ULOG_WARN("invalid train speed %d", speed);
         return -1;
     }
