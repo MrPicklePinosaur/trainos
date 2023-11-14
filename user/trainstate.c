@@ -61,7 +61,7 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
     };
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
-        ULOG_WARN("TrainstateSet errored");
+        ULOG_WARN("TrainstateSetSpeed errored");
         return -1;
     }
     return 0;
@@ -87,7 +87,7 @@ TrainstateSetLights(Tid trainstate_server, usize train, bool lights)
     };
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
-        ULOG_WARN("TrainstateSet errored");
+        ULOG_WARN("TrainstateSetLights errored");
         return -1;
     }
     return 0;
