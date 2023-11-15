@@ -128,7 +128,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 {
 
     // path is in reverse
-    CBuf* path = dijkstra(track, src, dest, true, arena);
+    CBuf* path = dijkstra(track, src, dest, false, arena);
     if (path == NULL) {
         ULOG_WARN("[PATH] dijkstra can't find path");
         return CALCULATE_PATH_NO_PATH;
@@ -199,22 +199,18 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
-#if 0
-    path = path_end;
-    for (; *path != NULL; ++path) {
+    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
+        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
         // wait for sensor
-        if ((*path)->dest->type == NODE_SENSOR) {
+        if (edge->dest->type == NODE_SENSOR) {
             // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
             // block until we hit desired sensor
-            ULOG_INFO("expecting sensor %d", (*path)->dest->num);
-            WaitForSensor(sensor_server, (*path)->dest->num);
-            ULOG_INFO("got sensor %d", (*path)->dest->num);
-            if ((*path)->dest->num == waiting_sensor->num) break;
+            ULOG_INFO("expecting sensor %s", edge->dest->name);
+            WaitForSensor(sensor_server, edge->dest->num);
+            ULOG_INFO("got sensor %s", edge->dest->name);
+            if (edge->dest->num == waiting_sensor->num) break;
         }
     }
-#endif
-
-    WaitForSensor(sensor_server, waiting_sensor->num);
     
     ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 
