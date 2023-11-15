@@ -12,6 +12,11 @@ typedef enum {
   NODE_EXIT,
 } NodeType;
 
+typedef enum {
+    EDGE_FORWARD = 0,
+    EDGE_REVERSE
+} EdgeType;
+
 #define DIR_AHEAD 0
 #define DIR_STRAIGHT 0
 #define DIR_CURVED 1
@@ -25,6 +30,7 @@ struct TrackEdge {
     TrackEdge *reverse;
     TrackNode *src, *dest;
     int dist;             /* in millimetres */
+    EdgeType type;
 };
 
 struct TrackNode {

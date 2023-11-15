@@ -18,7 +18,7 @@ TrackEdge* edges[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
 TrackEdge**
-dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
+dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* arena)
 {
     TrackNode* nodes = track->nodes;
 
@@ -85,11 +85,13 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
         }
 
         // also add in the reverse edge
-        uint32_t rev = nodes[curr].reverse - nodes;
-        if (dist[curr] < dist[rev]) {
-            dist[rev] = dist[curr];
-            prev[rev] = curr;
-            edges[rev] = &nodes[curr].edge[DIR_REVERSE];
+        if (allow_reversal) {
+            uint32_t rev = nodes[curr].reverse - nodes;
+            if (dist[curr] < dist[rev]) {
+                dist[rev] = dist[curr];
+                prev[rev] = curr;
+                edges[rev] = &nodes[curr].edge[DIR_REVERSE];
+            }
         }
 
     }
@@ -127,7 +129,7 @@ int
 calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
 {
 
-    TrackEdge** path_start = dijkstra(track, src, dest, arena); // -1 terminated array
+    TrackEdge** path_start = dijkstra(track, src, dest, true, arena); // -1 terminated array
     if (path_start == NULL) {
         ULOG_WARN("[PATH] dijkstra can't find path");
         return CALCULATE_PATH_NO_PATH;
@@ -198,9 +200,16 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
-    // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
-    // block until we hit desired sensor
-    WaitForSensor(sensor_server, waiting_sensor->num);
+    path = path_start;
+    for (; *path != NULL; ++path) {
+        // wait for sensor
+        if ((*path)->dest->type == NODE_SENSOR) {
+            // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
+            // block until we hit desired sensor
+            WaitForSensor(sensor_server, (*path)->dest->num);
+            if ((*path)->dest->num == waiting_sensor->num) break;
+        }
+    }
     
     ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 

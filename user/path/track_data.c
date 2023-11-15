@@ -1206,6 +1206,7 @@ Track track_a_init(Arena* arena) {
         track.nodes[i].edge[DIR_REVERSE].src = &track.nodes[i];
         track.nodes[i].edge[DIR_REVERSE].dest = rev;
         track.nodes[i].edge[DIR_REVERSE].dist = 0;
+        track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
     return track;
@@ -2389,6 +2390,7 @@ Track track_b_init(Arena* arena) {
         track.nodes[i].edge[DIR_REVERSE].src = &track.nodes[i];
         track.nodes[i].edge[DIR_REVERSE].dest = rev;
         track.nodes[i].edge[DIR_REVERSE].dist = 0;
+        track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
     return track;

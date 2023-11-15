@@ -9,7 +9,7 @@ runDijkstra(Track track, str8 start_str, str8 dest_str, Arena* arena, Arena* tmp
     println("running dijkstra from %s to %s", str8_to_cstr(start_str), str8_to_cstr(dest_str));
     usize start = (usize)map_get(&track.map, start_str, arena);
     usize dest = (usize)map_get(&track.map, dest_str, arena);
-    TrackEdge** path = dijkstra(&track, start, dest, tmp);
+    TrackEdge** path = dijkstra(&track, start, dest, true, tmp);
     if (path == NULL) {
         return;
     }
