@@ -239,7 +239,7 @@ trainStateServer()
             else {
                 was_already_reversing = false;
                 marklin_train_ctl(marklin_server, train, 0 | (train_state[train] & TRAIN_LIGHTS_MASK));
-                reverse_tasks[train] = Create(2, reverseTask, "Trainstate Reverse Task");
+                reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
             }
 
             reply_buf = (TrainstateResp) {
