@@ -4,7 +4,6 @@
 #include "marklin.h"
 
 #define UNIT_COUNT 5
-#define BYTE_PER_UNIT 2
 #define BYTE_COUNT 10
 #define MAX_TRIGGERED 8
 
@@ -59,53 +58,48 @@ sensorNotifierTask() {
 
     for (;;) {
 
-        for (usize sensor_index = 0; sensor_index < UNIT_COUNT; ++sensor_index) {
+        marklin_dump_s88(marklin_server, UNIT_COUNT);
 
-            marklin_get_s88(marklin_server, sensor_index+1);
+        for (usize i = 0; i < BYTE_COUNT; ++i) {
+            u8 sensor_byte = Getc(marklin_server);
+            prev_sensor_state[i] = sensor_state[i];
+            sensor_state[i] = sensor_byte;
+            u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
 
-            for (usize byte_index = 0; byte_index < BYTE_PER_UNIT; ++byte_index) {
+            // send triggers in batches
+            usize triggered_list[9];
+            usize triggered_list_len = 0;
+            for (usize j = 0; j < 8; ++j) {
+                if (((triggered >> j) & 0x1) == 1) {
+                    usize index = (7-j);
 
-                usize i = sensor_index*2 + byte_index;
+                    triggered_list[triggered_list_len] = i*8+index;
+                    ++triggered_list_len;
+                }
+            }
 
-                u8 sensor_byte = Getc(marklin_server);
-                prev_sensor_state[i] = sensor_state[i];
-                sensor_state[i] = sensor_byte;
-                u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
+            // send to server task
+            if (triggered_list_len > 0) {
+                ULOG_INFO_M(LOG_MASK_SENSOR, "sending sensor data to sensor server");
+                triggered_list[triggered_list_len] = -1; // set element to be sentinel
 
-                // send triggers in batches
-                usize triggered_list[MAX_TRIGGERED+1];
-                usize triggered_list_len = 0;
-                for (usize j = 0; j < 8; ++j) {
-                    if (((triggered >> j) & 0x1) == 1) {
-                        usize index = (7-j);
+                triggered_list_len = 0;
 
-                        triggered_list[triggered_list_len] = i*8+index;
-                        ++triggered_list_len;
+                SensorMsg send_buf = (SensorMsg) {
+                    .type = SENSOR_TRIGGERED,
+                    .data = {
+                        .triggered = {0},
                     }
-                }
-
-                // send to server task
-                if (triggered_list_len > 0) {
-                    ULOG_INFO_M(LOG_MASK_SENSOR, "sending sensor data to sensor server");
-                    triggered_list[triggered_list_len] = -1; // set element to be sentinel
-
-                    triggered_list_len = 0;
-
-                    SensorMsg send_buf = (SensorMsg) {
-                        .type = SENSOR_TRIGGERED,
-                        .data = {
-                            .triggered = {0},
-                        }
-                    };
-                    memcpy(send_buf.data.triggered, triggered_list, sizeof(triggered_list));
-                    SensorResp resp_buf;
-                    Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
-                    
-                }
+                };
+                memcpy(send_buf.data.triggered, triggered_list, sizeof(triggered_list));
+                SensorResp resp_buf;
+                Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
             }
         }
 
-        Delay(clock_server, 5);
+        // TODO maybe should use DelayUntil to guarentee uniform fetches
+        Delay(clock_server, 20);
+
     }
 
     Exit();
