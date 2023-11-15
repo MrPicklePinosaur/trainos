@@ -17,7 +17,7 @@ uint32_t prev[TRACK_MAX];
 TrackEdge* edges[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
-TrackEdge**
+CBuf*
 dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* arena)
 {
     TrackNode* nodes = track->nodes;
@@ -97,15 +97,15 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
     }
 
     // return edges the train will take
-    TrackEdge** path_start = arena_alloc(arena, TrackEdge*);
-    TrackEdge** path = path_start;
+    CBuf* path = cbuf_new(128);
 
     usize iters = 0;
 
     uint32_t src_rev = nodes[src].reverse - nodes;
     for (uint32_t back = dest; back != src && back != src_rev; back = prev[back]) {
-        *path = edges[back]; 
-        path = arena_alloc(arena, TrackEdge*);
+        TrackEdge** new_edge = arena_alloc(arena, TrackEdge*);
+        *new_edge = edges[back]; 
+        cbuf_push_back(path, new_edge);
 
         if (iters > 128) {
             ULOG_WARN("[dijkstra] unable to find src when constructing edge graph");
@@ -113,10 +113,8 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
         }
         ++iters;
     }
-    *path = NULL;
 
-
-    return path_start;
+    return path;
 }
 
 typedef enum {
@@ -129,8 +127,9 @@ int
 calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
 {
 
-    TrackEdge** path_start = dijkstra(track, src, dest, true, arena); // -1 terminated array
-    if (path_start == NULL) {
+    // path is in reverse
+    CBuf* path = dijkstra(track, src, dest, true, arena);
+    if (path == NULL) {
         ULOG_WARN("[PATH] dijkstra can't find path");
         return CALCULATE_PATH_NO_PATH;
     }
@@ -160,11 +159,11 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
-    TrackEdge** path = path_start;
-    for (; *path != NULL; ++path) {
-        stopping_distance -= (*path)->dist;
-        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR) {
-            waiting_sensor = (*path)->src; // sensor that we should wait to trip
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        stopping_distance -= edge->dist;
+        if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
+            waiting_sensor = edge->src; // sensor that we should wait to trip
             break;
         }
     }
@@ -176,19 +175,19 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
         ULOG_WARN("[PATH] Could not find usable sensor");
         return CALCULATE_PATH_NO_PATH;
     }
+
     // compute desired switch state
-
-    path = path_start;
-    for (; *path != NULL; ++path) {
-        if ((*path)->src->type == NODE_BRANCH) {
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        if (edge->src->type == NODE_BRANCH) {
             // compute id of the switch
-            u32 switch_num = (*path)->src->num;
+            u32 switch_num = edge->src->num;
 
-            if (&(*path)->src->edge[DIR_STRAIGHT] == *path) {
+            if (&edge->src->edge[DIR_STRAIGHT] == edge) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
                 SwitchChange(switch_server, switch_num, SWITCH_MODE_STRAIGHT);
             }
-            else if (&(*path)->src->edge[DIR_CURVED] == *path) {
+            else if (&edge->src->edge[DIR_CURVED] == edge) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
                 SwitchChange(switch_server, switch_num, SWITCH_MODE_CURVED);
             }
@@ -200,16 +199,22 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
-    path = path_start;
+#if 0
+    path = path_end;
     for (; *path != NULL; ++path) {
         // wait for sensor
         if ((*path)->dest->type == NODE_SENSOR) {
             // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
             // block until we hit desired sensor
+            ULOG_INFO("expecting sensor %d", (*path)->dest->num);
             WaitForSensor(sensor_server, (*path)->dest->num);
+            ULOG_INFO("got sensor %d", (*path)->dest->num);
             if ((*path)->dest->num == waiting_sensor->num) break;
         }
     }
+#endif
+
+    WaitForSensor(sensor_server, waiting_sensor->num);
     
     ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 

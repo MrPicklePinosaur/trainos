@@ -14,7 +14,7 @@ int kmain() {
     kern_init();
 
     set_log_level(LOG_LEVEL_DEBUG);
-    set_log_mask(LOG_MASK_KERN|LOG_MASK_USER);
+    set_log_mask(LOG_MASK_KERN|LOG_MASK_USER|LOG_MASK_PATH);
 
     // print the banner
     PRINT("");
