@@ -44,6 +44,7 @@ struct TrackNode {
 struct Track {
     Map* map; // name to node ref
     TrackNode* nodes;
+    Arena arena;
 };
 
 // The track initialization functions expect an array of this size.
@@ -54,8 +55,8 @@ struct Track {
 TrackNode* track_find(TrackNode* track, const char* name);
 TrackNode* track_pathfind(TrackNode* start, TrackNode* end);
 
-Track track_a_init(Arena* arena);
-Track track_b_init(Arena* arena);
+Track* track_a_init();
+Track* track_b_init();
 
 TrackNode* track_prev_node(TrackNode* track);
 TrackNode* track_prev_sensor(TrackNode* track);

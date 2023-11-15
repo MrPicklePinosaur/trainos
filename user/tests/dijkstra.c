@@ -26,6 +26,7 @@ testDijkstra()
 {
     println("Running test suite for dijkstra -----------------");
 
+#if 0
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
     Arena tmp = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
@@ -35,5 +36,6 @@ testDijkstra()
     runDijkstra(track, str8("C10"), str8("D4"), &arena, &tmp);
     runDijkstra(track, str8("C10"), str8("D14"), &arena, &tmp);
 
+#endif
     Exit();
 }

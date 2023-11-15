@@ -1,18 +1,18 @@
 #include <trainstd.h>
 #include "track_data.h"
 
-// Returns pointer to a given node given it's name
-TrackNode*
-track_find(TrackNode* track, const char* name)
-{
-     
-}
+Track* track_a = NULL;
+Track* track_b = NULL;
 
-Track track_a_init(Arena* arena) {
-    
+Track*
+track_a_init() {
+
+    if (track_a != NULL) return track_a;
+
     Track track = {0};
+    track.arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
+    track.nodes = arena_alloc(&track.arena, TrackNode, TRACK_MAX);
     track.map = NULL;
-    track.nodes = arena_alloc(arena, TrackNode, TRACK_MAX);
 
     track.nodes[0].name = "A1";
     track.nodes[0].type = NODE_SENSOR;
@@ -1196,7 +1196,7 @@ Track track_a_init(Arena* arena) {
     track.nodes[143].reverse = &track.nodes[142];
 
     for (usize i = 0; i < TRACK_A_SIZE; ++i) {
-        map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, arena);
+        map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, &track.arena);
     }
 
     // construct the edges between nodes of opposite direction
@@ -1209,14 +1209,21 @@ Track track_a_init(Arena* arena) {
         track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
-    return track;
+    track_a = alloc(sizeof(Arena));
+    *track_a = track;
+
+    return track_a;
 }
 
-Track track_b_init(Arena* arena) {
+Track*
+track_b_init() {
+
+    if (track_b != NULL) return track_b;
 
     Track track = {0};
+    track.arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
+    track.nodes = arena_alloc(&track.arena, TrackNode, TRACK_MAX);
     track.map = NULL;
-    track.nodes = arena_alloc(arena, TrackNode, TRACK_MAX);
 
     track.nodes[0].name = "A1";
     track.nodes[0].type = NODE_SENSOR;
@@ -2380,7 +2387,7 @@ Track track_b_init(Arena* arena) {
     track.nodes[139].reverse = &track.nodes[138];
 
     for (usize i = 0; i < TRACK_B_SIZE; ++i) {
-        map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, arena);
+        map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, &track.arena);
     }
 
     // construct the edges between nodes of opposite direction
@@ -2393,5 +2400,8 @@ Track track_b_init(Arena* arena) {
         track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
-    return track;
+    track_b = alloc(sizeof(Arena));
+    *track_b = track;
+
+    return track_b;
 }
