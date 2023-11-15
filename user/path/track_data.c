@@ -2382,5 +2382,14 @@ Track track_b_init(Arena* arena) {
         map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, arena);
     }
 
+    // construct the edges between nodes of opposite direction
+    for (usize i = 0; i < TRACK_B_SIZE; ++i) {
+        TrackNode* rev = track.nodes[i].reverse;
+        track.nodes[i].edge[DIR_REVERSE].reverse = &rev->edge[DIR_REVERSE];
+        track.nodes[i].edge[DIR_REVERSE].src = &track.nodes[i];
+        track.nodes[i].edge[DIR_REVERSE].dest = rev;
+        track.nodes[i].edge[DIR_REVERSE].dist = 0;
+    }
+
     return track;
 }
