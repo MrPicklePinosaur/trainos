@@ -6,6 +6,7 @@
 #define UNIT_COUNT 5
 #define BYTE_PER_UNIT 2
 #define BYTE_COUNT 10
+#define MAX_TRIGGERED 8
 
 typedef enum {
     SENSOR_TRIGGERED,
@@ -15,7 +16,7 @@ typedef enum {
 typedef struct {
     SensorMsgType type;
     union {
-        usize triggered[9]; // list of sensors that were triggered (-1 terminated array)
+        usize triggered[MAX_TRIGGERED+1]; // list of sensors that were triggered (-1 terminated array)
         usize wait;        // sensor id to wait for
     } data;
 } SensorMsg;
@@ -72,7 +73,7 @@ sensorNotifierTask() {
                 u8 triggered = ~(prev_sensor_state[i]) & sensor_state[i];
 
                 // send triggers in batches
-                usize triggered_list[9];
+                usize triggered_list[MAX_TRIGGERED+1];
                 usize triggered_list_len = 0;
                 for (usize j = 0; j < 8; ++j) {
                     if (((triggered >> j) & 0x1) == 1) {
