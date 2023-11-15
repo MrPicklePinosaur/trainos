@@ -83,6 +83,15 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
                 edges[curved] = edge_curved;
             }
         }
+
+        // also add in the reverse edge
+        uint32_t rev = nodes[curr].reverse - nodes;
+        if (dist[curr] < dist[rev]) {
+            dist[rev] = dist[curr];
+            prev[rev] = curr;
+            edges[rev] = &nodes[curr].edge[DIR_REVERSE];
+        }
+
     }
 
     // return edges the train will take
