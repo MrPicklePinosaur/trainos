@@ -91,7 +91,7 @@ w_putc_mv(Window* win, char ch, usize x, usize y)
 void
 w_puts(Window* win, char* s)
 {
-    win_queue(win, s, strlen(s));
+    win_queue(win, s, cstr_len(s));
 }
 
 void

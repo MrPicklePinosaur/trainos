@@ -177,3 +177,12 @@ cstr_to_u64(char* str)
 {
 
 }
+
+usize
+cstr_len(char* s)
+{
+    // TODO put some safety mechanism to prevent executing for very long if missing null terminator?
+    usize len = 0;
+    for (; *s != 0; ++s) ++len;
+    return len;
+}
