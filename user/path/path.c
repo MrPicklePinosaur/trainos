@@ -205,9 +205,9 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
         if (edge->dest->type == NODE_SENSOR) {
             // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
             // block until we hit desired sensor
-            ULOG_INFO("expecting sensor %s", edge->dest->name);
+            //ULOG_INFO("expecting sensor %s", edge->dest->name);
             WaitForSensor(sensor_server, edge->dest->num);
-            ULOG_INFO("got sensor %s", edge->dest->name);
+            //ULOG_INFO("got sensor %s", edge->dest->name);
             if (edge->dest->num == waiting_sensor->num) break;
         }
     }
