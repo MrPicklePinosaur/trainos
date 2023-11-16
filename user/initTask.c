@@ -70,6 +70,9 @@ initTask()
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
 
+    println("Initalizing track...");
+    track_init();
+
     println("Initializing sensors and switches...");
     Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");

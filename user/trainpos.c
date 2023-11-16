@@ -38,21 +38,16 @@ trainPosNotifierTask()
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Track* track = track_a_init();
+    Track* track = get_track_a();
 
     // can now wait for future sensor updates
-    Arena tmp_base = arena_new(256);
     for (;;) {
-        Arena tmp = tmp_base;
 
         int sensor_id = WaitForSensor(sensor_server, -1);
-        str8 sensor_name = sensor_id_to_name(sensor_id, &tmp);
-        ULOG_DEBUG("triggered sensor name %s", str8_to_cstr(sensor_name));
+        ULOG_DEBUG("sensor id %d", sensor_id);
 
         // compute the next sensor each train is expecting
-        usize node_index = (usize)map_get(&track->map, sensor_name);
-        ULOG_DEBUG("node index %d", node_index);
-        TrackNode* node = &track->nodes[node_index];
+        TrackNode* node = track_node_by_sensor_id(track, sensor_id);
         ULOG_DEBUG("node %x", node);
 
         // walk node graph until next sensor
@@ -92,7 +87,7 @@ trainPosTask()
 
     ULOG_DEBUG("train positions finished calibration");
 
-    Create(2, &trainPosNotifierTask, "train position notifier task");
+    //Create(2, &trainPosNotifierTask, "train position notifier task");
 
     TrainposMsg msg_buf;
     TrainposResp reply_buf;

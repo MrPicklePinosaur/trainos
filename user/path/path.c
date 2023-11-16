@@ -250,7 +250,7 @@ pathTask(void)
     Arena tmp_saved = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
     Arena tmp;
 
-    Track* track = track_a_init();
+    Track* track = get_track_a();
 
     PathMsg msg_buf;
     PathResp reply_buf;

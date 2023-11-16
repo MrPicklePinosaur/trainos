@@ -90,7 +90,7 @@ renderTrainStateWinTask()
 
     // TODO i dont like how we are loading the track twice (perhaps have some global accessable way of querying current track)
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Track* track = track_a_init();
+    Track* track = get_track_a();
 
     Window train_state_win = win_init(84, 2, 32, 17);
     win_draw(&train_state_win);

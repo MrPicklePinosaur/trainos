@@ -3,8 +3,11 @@
 #include "track_data.h"
 #include "user/switch.h"
 
-Track* track_a = NULL;
-Track* track_b = NULL;
+Track track_a = {0};
+Track track_b = {0};
+
+Track track_a_init();
+Track track_b_init();
 
 TrackNode*
 track_node_by_name(Track* track, str8 name) {
@@ -61,10 +64,27 @@ track_next_sensor(Tid switch_server, Track* track, TrackNode* node) {
     }
 }
 
-Track*
-track_a_init() {
+void
+track_init()
+{
+    track_a = track_a_init();
+    track_b = track_b_init();
+}
 
-    if (track_a != NULL) return track_a;
+Track*
+get_track_a()
+{
+    return &track_a;
+}
+
+Track*
+get_track_b()
+{
+    return &track_b;
+}
+
+Track
+track_a_init() {
 
     Track track = {0};
     track.arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
@@ -1266,16 +1286,11 @@ track_a_init() {
         track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
-    track_a = alloc(sizeof(Arena));
-    *track_a = track;
-
-    return track_a;
+    return track;
 }
 
-Track*
+Track
 track_b_init() {
-
-    if (track_b != NULL) return track_b;
 
     Track track = {0};
     track.arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
@@ -2457,8 +2472,5 @@ track_b_init() {
         track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
-    track_b = alloc(sizeof(Arena));
-    *track_b = track;
-
-    return track_b;
+    return track;
 }
