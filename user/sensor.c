@@ -186,3 +186,9 @@ sensorServerTask()
 
     Exit();
 }
+
+str8
+sensor_id_to_name(u8 id, Arena* arena)
+{
+    return str8_format(arena, "%c%d", id/16+'A', (id%16)+1);
+}

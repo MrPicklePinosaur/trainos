@@ -10,7 +10,7 @@ void
 testHarness()
 {
     TestFn tests[] = {
-        //&testSensor,
+        &testSensor,
         &testDijkstra,
         //&testString,
         &testCbuf,

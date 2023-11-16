@@ -3,6 +3,8 @@
 
 #include "sensor.h"
 #include "marklin.h"
+#include "user/path/track_data.h"
+
 #include "trainpos.h"
 
 #define TRAIN_COUNT 2
@@ -12,6 +14,7 @@ trainPosTask()
 {
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Track* track = track_a_init();
 
     // calibrate trains to determine their intial positions
     usize trains[TRAIN_COUNT] = {2, 77};
