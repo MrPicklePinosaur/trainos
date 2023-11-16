@@ -38,7 +38,7 @@ map_insert(Map** m, mapkey_t key, mapval_t value, Arena* arena)
 }
 
 mapval_t
-map_get(Map** m, mapkey_t key, Arena *arena)
+map_get(Map** m, mapkey_t key)
 {
     for (uint64_t h = hash(key); *m; h <<= 2) {
         if (equals(key, (*m)->key)) {
@@ -46,8 +46,6 @@ map_get(Map** m, mapkey_t key, Arena *arena)
         }
         m = &(*m)->child[h>>62];
     }
-    *m = arena_alloc(arena, Map);
-    (*m)->key = key;
     return NULL;
 }
 

@@ -8,7 +8,9 @@ Track* track_b = NULL;
 
 TrackNode*
 track_node_by_name(Track* track, str8 name) {
-    return (usize)map_get(&track->map, name, &track->arena);
+    // TODO map holds indicies, not the actual TrackNode*
+    //return (usize)map_get(&track->map, name);
+    UNIMPLEMENTED("track_node_by_name");
 }
 
 TrackNode*

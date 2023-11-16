@@ -280,8 +280,8 @@ pathTask(void)
         str8 dest_str = str8_from_cstr(msg_buf.dest);
         ULOG_INFO_M(LOG_MASK_PATH, "start node %s len = %d, dest node %s len = %d", str8_to_cstr(start_str), str8_len(start_str), str8_to_cstr(dest_str), str8_len(dest_str));
 
-        usize start = (usize)map_get(&track->map, start_str, &track->arena);
-        usize dest = (usize)map_get(&track->map, dest_str, &track->arena);
+        usize start = (usize)map_get(&track->map, start_str);
+        usize dest = (usize)map_get(&track->map, dest_str);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
 
         CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);

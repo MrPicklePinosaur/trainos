@@ -50,7 +50,7 @@ trainPosNotifierTask()
         ULOG_DEBUG("triggered sensor name %s", str8_to_cstr(sensor_name));
 
         // compute the next sensor each train is expecting
-        usize node_index = (usize)map_get(&track->map, sensor_name, &track->arena);
+        usize node_index = (usize)map_get(&track->map, sensor_name);
         ULOG_DEBUG("node index %d", node_index);
         TrackNode* node = &track->nodes[node_index];
         ULOG_DEBUG("node %x", node);

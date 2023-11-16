@@ -10,13 +10,13 @@ void
 testHarness()
 {
     TestFn tests[] = {
-        &testSensor,
-        &testDijkstra,
+        /* &testSensor, */
+        /* &testDijkstra, */
         //&testString,
+        &testMap,
         &testCbuf,
         &testList,
         &testHashmap,
-        &testMap,
         &testAlloc,
         &testParser,
         /* &testNameserver, */

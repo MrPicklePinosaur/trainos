@@ -126,7 +126,7 @@ renderTrainStateWinTask()
         w_attr_reset(&train_state_win);
 
         // predict what the next sensor will be using switch states to walk the graph
-        usize cur_node_ind = (usize)map_get(&track->map, sensor_str, &track->arena);
+        usize cur_node_ind = (usize)map_get(&track->map, sensor_str);
         if ((void*)cur_node_ind == NULL) {
             PANIC("invalid sensor query %s", sensor_str);
         }

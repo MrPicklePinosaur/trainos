@@ -135,13 +135,13 @@ testMap()
     TEST(map_contains(&map, str8("A11"), &arena) == true);
     TEST(map_contains(&map, str8("A12"), &arena) == true);
 
-    TEST(map_get(&map, str8("A10"), &arena) == (mapval_t)69);
-    TEST(map_get(&map, str8("A11"), &arena) == (mapval_t)6969);
-    TEST(map_get(&map, str8("A12"), &arena) == (mapval_t)696969);
+    TEST(map_get(&map, str8("A10")) == (mapval_t)69);
+    TEST(map_get(&map, str8("A11")) == (mapval_t)6969);
+    TEST(map_get(&map, str8("A12")) == (mapval_t)696969);
 
     map_insert(&map, str8("A10"), (mapval_t)21, &arena);
     TEST(map_contains(&map, str8("A10"), &arena) == true);
-    TEST(map_get(&map, str8("A10"), &arena) == (mapval_t)21);
+    TEST(map_get(&map, str8("A10")) == (mapval_t)21);
 
     Exit();
 }
