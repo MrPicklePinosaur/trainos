@@ -5,6 +5,7 @@
 typedef enum {
     SWITCH_CHANGE,
     SWITCH_QUERY,
+    SWITCH_QUERY_ALL,
     SWITCH_WAIT
 } SwitchMsgType;
 
@@ -15,6 +16,7 @@ typedef struct {
             usize switch_id;
             SwitchMode mode;
         } change;
+        isize query;
         isize wait;
     } data;
 } SwitchMsg;
@@ -22,7 +24,8 @@ typedef struct {
 typedef struct {
     SwitchMsgType type;
     union {
-        SwitchMode* query;
+        SwitchMode query;
+        SwitchMode* query_all;
         struct {
             isize switch_id;
             SwitchMode mode;
@@ -56,12 +59,15 @@ SwitchChange(Tid switch_server, isize switch_id, SwitchMode mode)
     return 0;
 }
 
-const SwitchMode*
-SwitchQuery(Tid switch_server)
+SwitchMode
+SwitchQuery(Tid switch_server, isize switch_id)
 {
     SwitchResp resp_buf;
     SwitchMsg send_buf = (SwitchMsg) {
         .type = SWITCH_QUERY,
+        .data = {
+            .query = switch_id
+        }
     };
     int ret = Send(switch_server, (const char*)&send_buf, sizeof(SwitchMsg), (char*)&resp_buf, sizeof(SwitchResp));
     if (ret < 0) {
@@ -69,6 +75,21 @@ SwitchQuery(Tid switch_server)
         return -1;
     }
     return resp_buf.data.query;
+}
+
+const SwitchMode*
+SwitchQueryAll(Tid switch_server)
+{
+    SwitchResp resp_buf;
+    SwitchMsg send_buf = (SwitchMsg) {
+        .type = SWITCH_QUERY_ALL,
+    };
+    int ret = Send(switch_server, (const char*)&send_buf, sizeof(SwitchMsg), (char*)&resp_buf, sizeof(SwitchResp));
+    if (ret < 0) {
+        ULOG_WARN("SwitchQueryAll errored");
+        return -1;
+    }
+    return resp_buf.data.query_all;
 }
 
 WaitForSwitchResult
@@ -192,7 +213,16 @@ switchServerTask()
             reply_buf = (SwitchResp) {
                 .type = SWITCH_QUERY,
                 .data = {
-                    .query = states
+                    .query = states[switch_index(msg_buf.data.query)]
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(SwitchResp));
+        }
+        else if (msg_buf.type == SWITCH_QUERY_ALL) {
+            reply_buf = (SwitchResp) {
+                .type = SWITCH_QUERY_ALL,
+                .data = {
+                    .query_all = states
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(SwitchResp));

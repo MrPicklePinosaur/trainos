@@ -48,7 +48,7 @@ trainPosTask()
         TrackNode* node = &track->nodes[node_index];
 
         // walk node graph until next sensor
-        const SwitchMode* all_switch_modes = SwitchQuery(switch_server);
+        const SwitchMode* all_switch_modes = SwitchQueryAll(switch_server);
 
         for (;;) {
             if (node->type == NODE_SENSOR) break;
