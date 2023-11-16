@@ -57,7 +57,9 @@ trainPosTask()
                 node = node->edge[DIR_AHEAD].dest;    
             } else if (node->type == NODE_BRANCH) {
                 // query switch state
-                SwitchMode switch_mode = all_switch_modes[node->num-1];
+                
+#if 0
+                SwitchMode switch_mode = all_switch_modes[node->num-1]; // TODO dont use this
                 if (switch_mode == SWITCH_MODE_UNKNOWN) {
                     PANIC("unknown switch state");
                 }
@@ -67,6 +69,7 @@ trainPosTask()
                 } else {
                     node = node->edge[DIR_CURVED].dest;
                 }
+#endif
 
             } else {
                 PANIC("unhandled case")
