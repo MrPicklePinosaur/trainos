@@ -275,16 +275,16 @@ pathTask(void)
         if (start_sensor < 0) {
             PANIC("failed to get starting sensor");
         }
-        // TODO convert to string (this is kinda dumb, but we need to be able to find the index in tracknode array given the sensor num)
-        str8 start_str = str8_format(&tmp, "%c%d", start_sensor/16+'A', (start_sensor%16)+1);
-        str8 dest_str = str8_from_cstr(msg_buf.dest);
-        ULOG_INFO_M(LOG_MASK_PATH, "start node %s len = %d, dest node %s len = %d", str8_to_cstr(start_str), str8_len(start_str), str8_to_cstr(dest_str), str8_len(dest_str));
 
-        usize start = (usize)map_get(&track->map, start_str);
-        usize dest = (usize)map_get(&track->map, dest_str);
-        ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
+        TrackNode* dest = track_node_by_name(track, str8_from_cstr(msg_buf.dest));
+        if (dest == NULL) {
+            // TODO send back error?
+            ULOG_WARN("invalid destination");
+            continue;
+        }
+        usize dest_sensor = dest - track->nodes;
 
-        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
+        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, track, start_sensor, dest_sensor, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 
 
     }

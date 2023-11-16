@@ -43,9 +43,7 @@ struct TrackNode {
 };
 
 struct Track {
-    Map* map; // name to node ref
     TrackNode* nodes;
-    Arena arena;
 };
 
 // The track initialization functions expect an array of this size.

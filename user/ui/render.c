@@ -126,13 +126,8 @@ renderTrainStateWinTask()
         w_attr_reset(&train_state_win);
 
         // predict what the next sensor will be using switch states to walk the graph
-        usize cur_node_ind = (usize)map_get(&track->map, sensor_str);
-        if ((void*)cur_node_ind == NULL) {
-            PANIC("invalid sensor query %s", sensor_str);
-        }
-        //ULOG_INFO("starting at index %d", cur_node_ind);
 
-        TrackNode cur_node = track->nodes[cur_node_ind];
+        TrackNode cur_node = *track_node_by_sensor_id(track, sensor_id);
         bool is_unknown = false;
         int dist_to_next = 0; // distance from current sensor to next sensor
         //ULOG_INFO("starting at %s", cur_node.name);

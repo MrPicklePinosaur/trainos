@@ -3,6 +3,8 @@
 #include "track_data.h"
 #include "user/switch.h"
 
+#define SENSORS_ON_TRACK 80
+
 Track track_a = {0};
 Track track_b = {0};
 
@@ -11,9 +13,15 @@ Track track_b_init();
 
 TrackNode*
 track_node_by_name(Track* track, str8 name) {
-    // TODO map holds indicies, not the actual TrackNode*
-    //return (usize)map_get(&track->map, name);
-    UNIMPLEMENTED("track_node_by_name");
+    // TODO just do lame linear search for the node
+    // map solution is too costly and buggy
+    for (usize i = 0; i < 80; ++i) {
+        if (str8_cmp(name, str8_from_cstr(track->nodes[i].name))) {
+            return &track->nodes[i];            
+        }
+    }
+    PANIC("node of name %s not found", name);
+    return NULL;
 }
 
 TrackNode*
@@ -87,9 +95,7 @@ Track
 track_a_init() {
 
     Track track = {0};
-    track.arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    track.nodes = arena_alloc(&track.arena, TrackNode, TRACK_MAX);
-    track.map = NULL;
+    track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
 
     track.nodes[0].name = "A1";
     track.nodes[0].type = NODE_SENSOR;
@@ -1272,10 +1278,6 @@ track_a_init() {
     track.nodes[143].type = NODE_EXIT;
     track.nodes[143].reverse = &track.nodes[142];
 
-    for (usize i = 0; i < TRACK_A_SIZE; ++i) {
-        map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, &track.arena);
-    }
-
     // construct the edges between nodes of opposite direction
     for (usize i = 0; i < TRACK_A_SIZE; ++i) {
         TrackNode* rev = track.nodes[i].reverse;
@@ -1293,9 +1295,7 @@ Track
 track_b_init() {
 
     Track track = {0};
-    track.arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    track.nodes = arena_alloc(&track.arena, TrackNode, TRACK_MAX);
-    track.map = NULL;
+    track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
 
     track.nodes[0].name = "A1";
     track.nodes[0].type = NODE_SENSOR;
@@ -2457,10 +2457,6 @@ track_b_init() {
     track.nodes[139].name = "EX10";
     track.nodes[139].type = NODE_EXIT;
     track.nodes[139].reverse = &track.nodes[138];
-
-    for (usize i = 0; i < TRACK_B_SIZE; ++i) {
-        map_insert(&track.map, str8_from_cstr(track.nodes[i].name), (mapval_t)i, &track.arena);
-    }
 
     // construct the edges between nodes of opposite direction
     for (usize i = 0; i < TRACK_B_SIZE; ++i) {

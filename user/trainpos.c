@@ -87,7 +87,7 @@ trainPosTask()
 
     ULOG_DEBUG("train positions finished calibration");
 
-    //Create(2, &trainPosNotifierTask, "train position notifier task");
+    Create(2, &trainPosNotifierTask, "train position notifier task");
 
     TrainposMsg msg_buf;
     TrainposResp reply_buf;
