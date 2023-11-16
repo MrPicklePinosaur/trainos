@@ -1,7 +1,7 @@
 #include <trainstd.h>
 #include <trainsys.h>
 #include "track_data.h"
-#include "switch.h"
+#include "user/switch.h"
 
 Track* track_a = NULL;
 Track* track_b = NULL;

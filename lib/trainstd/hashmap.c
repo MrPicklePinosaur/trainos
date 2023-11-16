@@ -18,7 +18,7 @@ hashfunction(HashMap* hm, key_t key)
 {
     // hash function is when we sum up ascii values of string and normalize to table size
     size_t res = 0;
-    for (unsigned int i = 0; i < strlen(key); ++i) {
+    for (unsigned int i = 0; i < cstr_len(key); ++i) {
         res += key[i]; 
     }
     res = res % hm->bucket_count;

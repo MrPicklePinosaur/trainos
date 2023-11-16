@@ -2,6 +2,7 @@
 #define __TRACK_DATA_H__
 
 #include <trainstd.h>
+#include <trainsys.h>
 
 typedef enum {
   NODE_NONE,

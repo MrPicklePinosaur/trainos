@@ -409,7 +409,7 @@ renderTask()
     Create(3, &renderSwitchWinTask, "Render Switch Window");
     Create(3, &renderSensorWinTask, "Render Sensor Window");
     Create(3, &renderDiagnosticWinTask, "Render Diagnostic Window");
-    Create(3, &renderTrainStateWinTask, "Render Train State Window");
+    //Create(3, &renderTrainStateWinTask, "Render Train State Window");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;

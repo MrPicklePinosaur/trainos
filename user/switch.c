@@ -287,9 +287,6 @@ switchServerTask()
 
             reply_buf = (SwitchResp) {
                 .type = SWITCH_INIT,
-                .data = {
-                    .query = states
-                }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(SwitchResp));
         }

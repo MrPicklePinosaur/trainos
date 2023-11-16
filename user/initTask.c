@@ -2,6 +2,7 @@
 #include "sensor.h"
 #include "switch.h"
 #include "trainstate.h"
+#include "trainpos.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
@@ -45,6 +46,11 @@ perfTask()
 void
 initTask()
 {
+
+    // dummy vars for synchronization using Send/Recv
+    char dummy;
+    Tid from_tid;
+
     TaskMenuEntry* task_menu[] = {
         // &(TaskMenuEntry){ "K1", &firstUserTask },
         // &(TaskMenuEntry){ "K2", &RPSTask },
@@ -58,24 +64,30 @@ initTask()
 
     // spawn init tasks
     initNameserverTask();
-    Create(1, &clockTask, "Clock Server");
-    //Create(5, &perfTask, "Idle Percentage Printer");
+    Tid clock_server = Create(1, &clockTask, "Clock Server");
 
+    println("Initializing IO servers...");
     Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
 
+    println("Initializing sensors and switches...");
     Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");
+    marklin_go(io_server_marklin); // marklin needs to be on to change switches
+    SwitchInit(switch_server);
 
+    println("Initializing trains...");
     Tid trainstate_server = Create(2, &trainStateServer, "Train State Server");
-    Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");
-
+    Tid train_pos = Create(2, &trainPosTask, "Train position task");
     Tid path_tid = Create(3, &pathTask, "Path Task");
 
-    // track init process
-    PRINT("Initalizing track...");
-    SwitchInit(switch_server);
-    PRINT("Done");
+    println("Initalizing UI...");
+    Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");
+
+    Delay(clock_server, 100);
+
+    Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL");
+    WaitTid(marklinctl_task);
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
@@ -92,7 +104,7 @@ initTask()
         }
 
         // If train term task was selected, switch to a special logging mode
-        if (ch == 4) {
+        if (ch == 0) {
             set_log_mode(LOG_MODE_TRAIN_TERM);
         }
 
@@ -102,8 +114,6 @@ initTask()
     }
 
 
-    char dummy;
-    Tid from_tid;
     Receive(&from_tid, &dummy, sizeof(char));
 
     println("attempting to exit init task");
