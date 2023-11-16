@@ -27,7 +27,7 @@
 }
 
 #show: project.with(
-  title: "CS452 Final Project Proposal: Train Fleets and Platoons",
+  title: "CS452 Final Project Proposal: Fleets",
   authors: (
     "Joey Zhou (j438zhou, 20894170)",
     "Daniel Liu (d278liu, 20892282)",
@@ -37,13 +37,27 @@
 
 = Overview
 
-Our goal for the final project is to enable the abilitiy for trains to travel in a 'fleet', where movement of the entire group is synchronized. This means that each train will travel behind and move as a group to the destination. At any point a time, a train is able to join the fleet or leave the fleet.
+Our goal for the final project is to allow trains to travel in a 'fleet'.
+A fleet is a group of trains travelling together in a single file line.
+At any point in time, a train may join the fleet from either end.
+As well, a train on either end of the fleet may leave the fleet.
+If time permits, we can also implement the ability for trains in the middle of the fleet to leave.
 
 = Technical Challenges
 
-The most obvious challenge comes with ensuring that the trains travel in sync. Experiements would need to be conducted to determine how much variance is in the acceleration, deceleration, and velocities of the each train, and if these deviations would cause issues when trains are travelling together.
+While it would be nice if all the trains could move at the same velocity, the reality is that their velocities vary wildly.
+Some trains would need to rhythmically speed up and slow down to simulate constant velocity.
+But we also need to ensure that this doesn't cause adjacent trains to bump into each other.
+Our calibrated train data can give us information on how to accomplish this speed adjustment.
+As well, some live calibration is likely crucial in ensuring the trains are spaced apart well enough.
 
-The next issue would be perform proper pathfinding with a chain of trains. This will be significantly complicated if the line of trains needs to reverse (would each train reverse at a time, or would we travel reverse the entire chain as a whole?).
+Another problem is getting the fleet to start, stop, and reverse together.
+Since the trains have different stopping times, we cannot just tell them all to stop at the same time.
+We might need to slow some trains down before stopping them, and tell them to stop at different times.
+Variance in the acceleration, deceleration, and velocities of each train may complicate this further.
 
-Finally, ideally collision safety and pathfinding should still work with other fleets and individual trains. For this to work out, we would need to take the length of the train into account and reserve larger chunks of the track.
+Pathfinding is a little more complicated with a chain of trains.
+If the fleet is long enough, it may deadlock itself if it travels in a loop.
 
+Finally, ideally collision safety should work between fleets and other fleets, and between fleets and single trains.
+This means that the length of a fleet is now a consideration when reserving track zones.
