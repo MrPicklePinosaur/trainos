@@ -322,6 +322,23 @@ handle_svc(void)
         // unblock tasks waiting for us to exit
         scheduler_unblock_event(EVENT_TASK_EXIT, current_tid);
 
+    }
+    else if (opcode == OPCODE_KILL) {
+        KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] Kill");
+
+        // NOTE: maybe don't allow task 1 to be deleted?
+        if (sf->x0 == 1) {
+            KLOG_WARN("Attempting to delete task 1");
+        }
+        scheduler_remove(sf->x0);
+        set_task_state(sf->x0, TASKSTATE_EXITED);
+        tasktable_delete_task(sf->x0);
+
+        // TODO reclaim the task's page
+
+        // unblock tasks waiting for that task to exit
+        scheduler_unblock_event(EVENT_TASK_EXIT, sf->x0);
+
     } else if (opcode == OPCODE_SEND) {
 
         KLOG_INFO_M(LOG_MASK_SYSCALL, "[SYSCALL] SEND");

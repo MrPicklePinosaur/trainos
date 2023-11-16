@@ -60,3 +60,9 @@ AwaitEvent:
 TaskName:
     svc 0x9
     br x30
+
+.global Kill
+.type Kill, %function
+Kill:
+    svc 0xA
+    br x30

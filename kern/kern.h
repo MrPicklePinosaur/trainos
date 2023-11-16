@@ -17,6 +17,7 @@ typedef enum {
     OPCODE_REPLY = 7,
     OPCODE_AWAITEVENT = 8,
     OPCODE_TASK_NAME = 9,
+    OPCODE_KILL = 10,
 } OpCode;
 
 // Initalize kernel data structurea

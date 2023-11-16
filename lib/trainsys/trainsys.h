@@ -27,5 +27,6 @@ extern int Reply(int tid, const char* reply, int rplen);
 extern int AwaitEvent(EventId eventid);
 extern char* TaskName(int tid);
 void WaitTid(Tid tid);
+extern void Kill(int tid);
 
 #endif // __TRAINSYS_H__
