@@ -90,7 +90,7 @@ renderTrainStateWinTask()
 
     // TODO i dont like how we are loading the track twice (perhaps have some global accessable way of querying current track)
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Track track = track_a_init(&arena);
+    Track* track = track_a_init();
 
     Window train_state_win = win_init(84, 2, 32, 17);
     win_draw(&train_state_win);
@@ -126,13 +126,13 @@ renderTrainStateWinTask()
         w_attr_reset(&train_state_win);
 
         // predict what the next sensor will be using switch states to walk the graph
-        usize cur_node_ind = (usize)map_get(&track.map, sensor_str, &arena);
+        usize cur_node_ind = (usize)map_get(&track->map, sensor_str, &track->arena);
         if ((void*)cur_node_ind == NULL) {
             PANIC("invalid sensor query %s", sensor_str);
         }
         //ULOG_INFO("starting at index %d", cur_node_ind);
 
-        TrackNode cur_node = track.nodes[cur_node_ind];
+        TrackNode cur_node = track->nodes[cur_node_ind];
         bool is_unknown = false;
         int dist_to_next = 0; // distance from current sensor to next sensor
         //ULOG_INFO("starting at %s", cur_node.name);

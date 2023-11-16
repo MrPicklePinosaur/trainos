@@ -30,5 +30,6 @@ u64 str8_to_u64(str8 s);
 // cstring functions that work with allocators
 char* cstr_copy(Arena* arena, char* s);
 char* cstr_format(Arena* arena, char *fmt, ...);
+usize cstr_len(char* s);
 
 #endif // __TRAINSTD_STRING_H__

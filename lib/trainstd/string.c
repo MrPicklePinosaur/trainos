@@ -16,7 +16,7 @@ str8_from_cstr(char* cstr)
 {
     return (str8) {
         .data = (u8*)cstr,
-        .length = strlen(cstr)
+        .length = cstr_len(cstr)
     };
 }
 
@@ -91,7 +91,7 @@ str8_to_u64(str8 s)
 char*
 cstr_copy(Arena* arena, char* s)
 {
-    usize len_str = strlen(s)+1;
+    usize len_str = cstr_len(s)+1;
     char* new_str = arena_alloc(arena, char, len_str);
     strncpy(new_str, s, len_str);
     return new_str;
@@ -112,7 +112,6 @@ _cstr_format_puts(Arena* arena, char* cur, char* buf)
 char*
 _cstr_format(Arena* arena, char *fmt, va_list va)
 {
-	char bf[12];
 	char ch;
 
     char* start = arena_alloc(arena, char);
@@ -130,6 +129,7 @@ _cstr_format(Arena* arena, char *fmt, va_list va)
             continue;
         }
         ch = *(fmt++);
+        char bf[12] = {0};
         switch( ch ) {
             case 'u':
                 ui2a( va_arg( va, unsigned int ), 10, bf );
@@ -147,7 +147,7 @@ _cstr_format(Arena* arena, char *fmt, va_list va)
                 cur = _cstr_format_puts(arena, cur, va_arg( va, char* ));
                 break;
             case 'c':
-                *cur = va_arg( va, int );
+                *cur = (char)va_arg( va, int );
                 cur = arena_alloc(arena, char);
                 break;
             case '%':
@@ -176,4 +176,13 @@ u64
 cstr_to_u64(char* str)
 {
 
+}
+
+usize
+cstr_len(char* s)
+{
+    // TODO put some safety mechanism to prevent executing for very long if missing null terminator?
+    usize len = 0;
+    for (; *s != 0; ++s) ++len;
+    return len;
 }

@@ -17,8 +17,8 @@ uint32_t prev[TRACK_MAX];
 TrackEdge* edges[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
-TrackEdge**
-dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
+CBuf*
+dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* arena)
 {
     TrackNode* nodes = track->nodes;
 
@@ -83,18 +83,29 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
                 edges[curved] = edge_curved;
             }
         }
+
+        // also add in the reverse edge
+        if (allow_reversal) {
+            uint32_t rev = nodes[curr].reverse - nodes;
+            if (dist[curr] < dist[rev]) {
+                dist[rev] = dist[curr];
+                prev[rev] = curr;
+                edges[rev] = &nodes[curr].edge[DIR_REVERSE];
+            }
+        }
+
     }
 
     // return edges the train will take
-    TrackEdge** path_start = arena_alloc(arena, TrackEdge*);
-    TrackEdge** path = path_start;
+    CBuf* path = cbuf_new(128);
 
     usize iters = 0;
 
     uint32_t src_rev = nodes[src].reverse - nodes;
     for (uint32_t back = dest; back != src && back != src_rev; back = prev[back]) {
-        *path = edges[back]; 
-        path = arena_alloc(arena, TrackEdge*);
+        TrackEdge** new_edge = arena_alloc(arena, TrackEdge*);
+        *new_edge = edges[back]; 
+        cbuf_push_back(path, new_edge);
 
         if (iters > 128) {
             ULOG_WARN("[dijkstra] unable to find src when constructing edge graph");
@@ -102,10 +113,8 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, Arena* arena)
         }
         ++iters;
     }
-    *path = NULL;
 
-
-    return path_start;
+    return path;
 }
 
 typedef enum {
@@ -118,8 +127,9 @@ int
 calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
 {
 
-    TrackEdge** path_start = dijkstra(track, src, dest, arena); // -1 terminated array
-    if (path_start == NULL) {
+    // path is in reverse
+    CBuf* path = dijkstra(track, src, dest, false, arena);
+    if (path == NULL) {
         ULOG_WARN("[PATH] dijkstra can't find path");
         return CALCULATE_PATH_NO_PATH;
     }
@@ -149,11 +159,11 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
-    TrackEdge** path = path_start;
-    for (; *path != NULL; ++path) {
-        stopping_distance -= (*path)->dist;
-        if (stopping_distance <= 0 && (*path)->src->type == NODE_SENSOR) {
-            waiting_sensor = (*path)->src; // sensor that we should wait to trip
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        stopping_distance -= edge->dist;
+        if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
+            waiting_sensor = edge->src; // sensor that we should wait to trip
             break;
         }
     }
@@ -165,19 +175,19 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
         ULOG_WARN("[PATH] Could not find usable sensor");
         return CALCULATE_PATH_NO_PATH;
     }
+
     // compute desired switch state
-
-    path = path_start;
-    for (; *path != NULL; ++path) {
-        if ((*path)->src->type == NODE_BRANCH) {
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        if (edge->src->type == NODE_BRANCH) {
             // compute id of the switch
-            u32 switch_num = (*path)->src->num;
+            u32 switch_num = edge->src->num;
 
-            if (&(*path)->src->edge[DIR_STRAIGHT] == *path) {
+            if (&edge->src->edge[DIR_STRAIGHT] == edge) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
                 SwitchChange(switch_server, switch_num, SWITCH_MODE_STRAIGHT);
             }
-            else if (&(*path)->src->edge[DIR_CURVED] == *path) {
+            else if (&edge->src->edge[DIR_CURVED] == edge) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
                 SwitchChange(switch_server, switch_num, SWITCH_MODE_CURVED);
             }
@@ -189,9 +199,18 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
-    // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
-    // block until we hit desired sensor
-    WaitForSensor(sensor_server, waiting_sensor->num);
+    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
+        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        // wait for sensor
+        if (edge->dest->type == NODE_SENSOR) {
+            // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
+            // block until we hit desired sensor
+            //ULOG_INFO("expecting sensor %s", edge->dest->name);
+            WaitForSensor(sensor_server, edge->dest->num);
+            //ULOG_INFO("got sensor %s", edge->dest->name);
+            if (edge->dest->num == waiting_sensor->num) break;
+        }
+    }
     
     ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 
@@ -231,7 +250,7 @@ pathTask(void)
     Arena tmp_saved = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
     Arena tmp;
 
-    Track track = track_a_init(&arena);
+    Track* track = track_a_init();
 
     PathMsg msg_buf;
     PathResp reply_buf;
@@ -261,11 +280,11 @@ pathTask(void)
         str8 dest_str = str8_from_cstr(msg_buf.dest);
         ULOG_INFO_M(LOG_MASK_PATH, "start node %s len = %d, dest node %s len = %d", str8_to_cstr(start_str), str8_len(start_str), str8_to_cstr(dest_str), str8_len(dest_str));
 
-        usize start = (usize)map_get(&track.map, start_str, &arena);
-        usize dest = (usize)map_get(&track.map, dest_str, &arena);
+        usize start = (usize)map_get(&track->map, start_str, &track->arena);
+        usize dest = (usize)map_get(&track->map, dest_str, &track->arena);
         ULOG_INFO_M(LOG_MASK_PATH, "map start node %d, map dest node %d", start, dest);
 
-        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, &track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
+        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, track, start, dest, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 
 
     }
