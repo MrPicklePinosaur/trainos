@@ -52,17 +52,18 @@ struct Track {
 #define TRACK_A_SIZE 144
 #define TRACK_B_SIZE 140
 
-TrackNode* track_find(TrackNode* track, const char* name);
+TrackNode* track_node_by_name(Track* track, str8 name);
+TrackNode* track_node_by_sensor_id(Track* track, uint32_t sensor_id);
 TrackNode* track_pathfind(TrackNode* start, TrackNode* end);
 
 Track* track_a_init();
 Track* track_b_init();
 
-TrackNode* track_prev_node(TrackNode* track);
-TrackNode* track_prev_sensor(TrackNode* track);
+TrackNode* track_prev_node(Tid switch_server, Track* track, TrackNode* node);
+TrackNode* track_prev_sensor(Tid switch_server, Track* track, TrackNode* node);
 
-TrackNode* track_next_node(TrackNode* track);
-TrackNode* track_next_sensor(TrackNode* track);
+TrackNode* track_next_node(Tid switch_server, Track* track, TrackNode* node);
+TrackNode* track_next_sensor(Tid switch_server, Track* track, TrackNode* node);
 
 
 #endif // __TRACK_DATA_H__

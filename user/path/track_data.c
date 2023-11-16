@@ -1,8 +1,63 @@
 #include <trainstd.h>
+#include <trainsys.h>
 #include "track_data.h"
+#include "switch.h"
 
 Track* track_a = NULL;
 Track* track_b = NULL;
+
+TrackNode*
+track_node_by_name(Track* track, str8 name) {
+    return (usize)map_get(&track->map, name, &track->arena);
+}
+
+TrackNode*
+track_node_by_sensor_id(Track* track, uint32_t sensor_id) {
+    return &track->nodes[sensor_id];  // Relies on the fact that the first 80 nodes are the sensors in order
+}
+
+TrackNode*
+track_prev_node(Tid switch_server, Track* track, TrackNode* node) {
+    return track_next_node(switch_server, track, node->reverse);
+}
+
+TrackNode*
+track_next_node(Tid switch_server, Track* track, TrackNode* node) {
+    if (node == NULL) {
+        return NULL;
+    }
+    if (node->type == NODE_SENSOR || node->type == NODE_MERGE || node->type == NODE_ENTER) {
+        return node->edge[DIR_AHEAD].dest;
+    }
+    else if (node->type == NODE_BRANCH) {
+        SwitchMode mode = SwitchQuery(switch_server, node->num);
+        if (mode == SWITCH_MODE_STRAIGHT) {
+            return node->edge[DIR_STRAIGHT].dest;
+        }
+        if (mode == SWITCH_MODE_CURVED) {
+            return node->edge[DIR_CURVED].dest;
+        }
+        return NULL;
+    }
+    return NULL;
+}
+
+TrackNode*
+track_prev_sensor(Tid switch_server, Track* track, TrackNode* node) {
+    return track_next_sensor(switch_server, track, node->reverse);
+}
+
+TrackNode*
+track_next_sensor(Tid switch_server, Track* track, TrackNode* node) {
+    for (TrackNode* current = track_next_node(switch_server, track, node);;current = track_next_node(switch_server, track, current)) {
+        if (current == NULL || current->type == NODE_EXIT) {
+            return NULL;
+        }
+        if (current->type == NODE_SENSOR) {
+            return current;
+        }
+    }
+}
 
 Track*
 track_a_init() {
