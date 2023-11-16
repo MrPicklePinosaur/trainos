@@ -12,6 +12,7 @@
 #include "kern/perf.h"
 #include "kern/dev/uart.h"
 
+
 typedef struct {
     char* name;
     void (*taskFn)(void);
@@ -44,15 +45,13 @@ perfTask()
 void
 initTask()
 {
-    // max 10 tasks for now
-    TaskMenuEntry* task_menu[11] = {
-        &(TaskMenuEntry){ "K1", &firstUserTask },
-        &(TaskMenuEntry){ "K2", &RPSTask },
-        &(TaskMenuEntry){ "K2Perf", &K2Perf },
-        &(TaskMenuEntry){ "K3", &K3 },
-        &(TaskMenuEntry){ "K4", &uiTask },
-        &(TaskMenuEntry){ "sendReceiveReplyTest", &sendReceiveReplyTestTask },
-        &(TaskMenuEntry){ "graphics", &graphicsTask },
+    TaskMenuEntry* task_menu[] = {
+        // &(TaskMenuEntry){ "K1", &firstUserTask },
+        // &(TaskMenuEntry){ "K2", &RPSTask },
+        // &(TaskMenuEntry){ "K2Perf", &K2Perf },
+        // &(TaskMenuEntry){ "K3", &K3 },
+        // &(TaskMenuEntry){ "K4", &uiTask },
+        &(TaskMenuEntry){ "MarklinCTL", &uiTask },
         &(TaskMenuEntry){ "test", &testHarness },
         0
     };
@@ -72,6 +71,11 @@ initTask()
     Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");
 
     Tid path_tid = Create(3, &pathTask, "Path Task");
+
+    // track init process
+    PRINT("Initalizing track...");
+    SwitchInit(switch_server);
+    PRINT("Done");
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");

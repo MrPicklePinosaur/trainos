@@ -5,7 +5,8 @@
 typedef enum {
     SWITCH_CHANGE,
     SWITCH_QUERY,
-    SWITCH_WAIT
+    SWITCH_WAIT,
+    SWITCH_INIT
 } SwitchMsgType;
 
 typedef struct {
@@ -34,6 +35,31 @@ typedef struct {
     Tid tid;
     isize switch_id;
 } SwitchRequest;
+
+const PAIR(u32, SwitchMode) track_a_init_switch_state[SWITCH_COUNT] = {
+    { 1, SWITCH_MODE_STRAIGHT },
+    { 2, SWITCH_MODE_STRAIGHT },
+    { 3, SWITCH_MODE_STRAIGHT },
+    { 4, SWITCH_MODE_STRAIGHT },
+    { 5, SWITCH_MODE_CURVED },
+    { 6, SWITCH_MODE_STRAIGHT },
+    { 7, SWITCH_MODE_STRAIGHT },
+    { 8, SWITCH_MODE_CURVED },
+    { 9, SWITCH_MODE_CURVED },
+    { 10, SWITCH_MODE_STRAIGHT },
+    { 11, SWITCH_MODE_CURVED },
+    { 12, SWITCH_MODE_CURVED },
+    { 13, SWITCH_MODE_STRAIGHT },
+    { 14, SWITCH_MODE_CURVED },
+    { 15, SWITCH_MODE_STRAIGHT },
+    { 16, SWITCH_MODE_STRAIGHT },
+    { 17, SWITCH_MODE_STRAIGHT },
+    { 18, SWITCH_MODE_CURVED },
+    { 0x99, SWITCH_MODE_STRAIGHT },
+    { 0x9A, SWITCH_MODE_CURVED },
+    { 0x9B, SWITCH_MODE_STRAIGHT },
+    { 0x9C, SWITCH_MODE_CURVED },
+};
 
 int
 SwitchChange(Tid switch_server, isize switch_id, SwitchMode mode)
@@ -69,6 +95,21 @@ SwitchQuery(Tid switch_server)
         return -1;
     }
     return resp_buf.data.query;
+}
+
+int
+SwitchInit(Tid switch_server)
+{
+    SwitchResp resp_buf;
+    SwitchMsg send_buf = (SwitchMsg) {
+        .type = SWITCH_INIT,
+    };
+    int ret = Send(switch_server, (const char*)&send_buf, sizeof(SwitchMsg), (char*)&resp_buf, sizeof(SwitchResp));
+    if (ret < 0) {
+        ULOG_WARN("SwitchInit errored");
+        return -1;
+    }
+    return 0;
 }
 
 WaitForSwitchResult
@@ -204,6 +245,23 @@ switchServerTask()
                 .switch_id = msg_buf.data.wait
             };
             list_push_back(switch_requests, request);
+        }
+        else if (msg_buf.type == SWITCH_INIT) {
+
+            for (usize i = 0; i < SWITCH_COUNT; ++i) {
+                u32 switch_id = track_a_init_switch_state[i].first;
+                SwitchMode mode = track_a_init_switch_state[i].second;
+                marklin_switch_ctl(marklin_server, switch_id, mode);
+                states[switch_index(switch_id)] = mode;
+            }
+
+            reply_buf = (SwitchResp) {
+                .type = SWITCH_INIT,
+                .data = {
+                    .query = states
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(SwitchResp));
         }
     }
 }

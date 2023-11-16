@@ -284,7 +284,7 @@ handle_svc(void)
 
     if (opcode == OPCODE_CREATE) {
         if (!scheduler_valid_priority(sf->x0)) {
-            KLOG_WARN("Invalid task priority %d", sf->x0);
+            KLOG_WARN("Invalid task priority %d when creating %s", sf->x0, sf->x2);
             sf->x0 = -1;
         }
         else {
