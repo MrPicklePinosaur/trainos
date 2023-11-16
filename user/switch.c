@@ -15,7 +15,6 @@ typedef struct {
             usize switch_id;
             SwitchMode mode;
         } change;
-        usize query;
         isize wait;
     } data;
 } SwitchMsg;
@@ -23,7 +22,7 @@ typedef struct {
 typedef struct {
     SwitchMsgType type;
     union {
-        SwitchMode query;
+        SwitchMode* query;
         struct {
             isize switch_id;
             SwitchMode mode;
@@ -57,15 +56,12 @@ SwitchChange(Tid switch_server, isize switch_id, SwitchMode mode)
     return 0;
 }
 
-int
-SwitchQuery(Tid switch_server, isize switch_id)
+const SwitchMode*
+SwitchQuery(Tid switch_server)
 {
     SwitchResp resp_buf;
     SwitchMsg send_buf = (SwitchMsg) {
         .type = SWITCH_QUERY,
-        .data = {
-            .query = switch_id
-        }
     };
     int ret = Send(switch_server, (const char*)&send_buf, sizeof(SwitchMsg), (char*)&resp_buf, sizeof(SwitchResp));
     if (ret < 0) {
@@ -196,7 +192,7 @@ switchServerTask()
             reply_buf = (SwitchResp) {
                 .type = SWITCH_QUERY,
                 .data = {
-                    .query = states[switch_index(msg_buf.data.query)]
+                    .query = states
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(SwitchResp));

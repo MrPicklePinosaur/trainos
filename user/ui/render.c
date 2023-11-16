@@ -146,7 +146,7 @@ renderTrainStateWinTask()
 
             if (cur_node.type == NODE_BRANCH) {
                 // query switch state to find next
-                SwitchMode switch_mode = SwitchQuery(switch_server, cur_node.num);
+                SwitchMode switch_mode = SwitchQuery(switch_server)[cur_node.num];
                 //ULOG_INFO("queried switch mode for switch %d: %d", cur_node.num, switch_mode);
                 if (switch_mode == SWITCH_MODE_UNKNOWN) {
                     //ULOG_INFO("hit switch with unknown state");
