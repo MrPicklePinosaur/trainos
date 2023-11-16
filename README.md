@@ -1,10 +1,19 @@
 <div align="center">
 
+<img width="20%" height="auto" src="docs/logo-colored.png" />
+  
 # TrainOS
 
-microkernel developed for cs452
+microkernel developed for playing with trains
 
 </div>
+
+## Features
+
+- Fully functional multitasking kernel with interprocess communication mechanisms
+- Custom standard library built from the ground up
+- Intelligent train control for the marklin train set
+- Stylish terminal user interface for monitoring and sending commands to trains
 
 ## Running the code
 
