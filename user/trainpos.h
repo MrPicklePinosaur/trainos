@@ -4,7 +4,13 @@
 #include <trainsys.h>
 #include <traindef.h>
 
-int trainPosWait(Tid trainpos_server, isize train);
+#define TRAINPOS_ADDRESS "trainpos"
+
+typedef struct {
+    usize train;
+    usize pos;
+} TrainPosWaitResult;
+TrainPosWaitResult trainPosWait(Tid trainpos_server, isize train);
 
 void trainPosTask();
 

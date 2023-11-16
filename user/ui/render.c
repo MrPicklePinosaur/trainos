@@ -11,6 +11,7 @@
 #include "user/switch.h"
 #include "user/switch.h"
 #include "user/trainstate.h"
+#include "user/trainpos.h"
 
 #include "kern/dev/uart.h"
 
@@ -79,6 +80,7 @@ renderTrainStateWinTask()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
+    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
     const int TRAIN_STATE_TABLE_Y = 3;
     const int TRAIN_STATE_TABLE_CURR_X = 8;
@@ -89,7 +91,6 @@ renderTrainStateWinTask()
     Delay(clock_server, 30);
 
     // TODO i dont like how we are loading the track twice (perhaps have some global accessable way of querying current track)
-    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
     Track* track = get_track_a();
 
     Window train_state_win = win_init(84, 2, 32, 17);
@@ -99,12 +100,23 @@ renderTrainStateWinTask()
     w_puts_mv(&train_state_win, "train  curr  next  terr  derr", 1, 2);
     w_puts_mv(&train_state_win, "2                            ", 1, 3);
     w_puts_mv(&train_state_win, "47                           ", 1, 4);
-    w_puts_mv(&train_state_win, "58                           ", 1, 4);
-    w_puts_mv(&train_state_win, "77                           ", 1, 4);
+    w_puts_mv(&train_state_win, "58                           ", 1, 5);
+    w_puts_mv(&train_state_win, "77                           ", 1, 6);
 
+    w_flush(&train_state_win);
 
+    Arena tmp_base = arena_new(256);
+    for (;;) {
+        Arena tmp = tmp_base;
+        TrainPosWaitResult res = trainPosWait(trainpos_server, -1);
+        str8 sensor_name = sensor_id_to_name(res.pos, &tmp);
+        w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(res.train));
+        w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(res.train));
+        w_flush(&train_state_win);
+    }
     // TODO a lot of this code is horrible and needs a rewrite
 #if 0
+    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
     Arena tmp_base = arena_new(256);
     Arena tmp;
 
