@@ -12,25 +12,48 @@
 #define TRAIN_COUNT 2
 
 typedef enum {
-    TRAINPOS_INIT,
+    TRAINPOS_TRIGGERED,
+    TRAINPOS_WAIT,
 } TrainposMsgType;
 
 typedef struct {
     TrainposMsgType type;
     union {
-
+        isize wait;
+        struct {
+            usize train;
+            usize pos;
+        } triggered;
     } data;
 } TrainposMsg;
 
 typedef struct {
     TrainposMsgType type;
     union {
-        
+        usize wait; // the location the train is currently at 
     } data;
 } TrainposResp;
 
 usize trains[TRAIN_COUNT] = {2, 47};
 usize train_pos[TRAIN_COUNT] = {0};
+
+int
+trainPosWait(Tid trainpos_server, isize train)
+{
+    TrainposResp resp_buf;
+    TrainposMsg send_buf = (TrainposMsg) {
+        .type = TRAINPOS_WAIT,
+        .data = {
+            .wait = train
+        }
+    };
+    int ret = Send(trainpos_server, (const char*)&send_buf, sizeof(TrainposMsg), (char*)&resp_buf, sizeof(TrainposResp));
+    if (ret < 0) {
+        ULOG_WARN("trainPosWait errored");
+        return -1;
+    }
+    return 0;
+}
 
 void
 trainPosNotifierTask()
@@ -38,34 +61,60 @@ trainPosNotifierTask()
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainpos_server = MyParentTid();
     Track* track = get_track_a();
 
     // can now wait for future sensor updates
     for (;;) {
 
         int sensor_id = WaitForSensor(sensor_server, -1);
-        ULOG_DEBUG("sensor id %d", sensor_id);
+        //ULOG_INFO("sensor id %d", sensor_id);
 
         // compute the next sensor each train is expecting
-        TrackNode* node = track_node_by_sensor_id(track, sensor_id);
-        ULOG_DEBUG("node %x", node);
+        for (usize i = 0; i < TRAIN_COUNT; ++i) {
+            
+            usize train = trains[i];
+            TrackNode* node = track_node_by_sensor_id(track, train_pos[i]);
 
-        // walk node graph until next sensor
-        TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
-        if (next_sensor == NULL) {
-            ULOG_WARN("couldn't find next sensor");
-            continue;
+            // walk node graph until next sensor
+            TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
+            if (next_sensor == NULL) {
+                ULOG_WARN("couldn't find next sensor");
+                continue;
+            }
+            //ULOG_INFO("next sensor for train %d is %s", train, next_sensor->name);
+
+            // see if there is a train that is expecting this sensor
+            if (sensor_id == next_sensor->num) {
+                ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
+                train_pos[train] = sensor_id;
+
+                // notify server that train position changed
+                TrainposMsg send_buf = (TrainposMsg) {
+                    .type = TRAINPOS_TRIGGERED,
+                    .data = {
+                        .triggered = {
+                            .train = train,
+                            .pos = train_pos[train]
+                        }
+                    }
+                };
+                TrainposResp resp_buf;
+                Send(trainpos_server, (const char*)&send_buf, sizeof(TrainposMsg), (char*)&resp_buf, sizeof(TrainposResp));
+            }
+
         }
-        ULOG_DEBUG("next sensor %s", next_sensor->name);
-
-        // decide which train is expecting this sensor
-
-        // update that trains state
 
     }
 
     Exit();
 }
+
+typedef struct {
+    Tid tid;
+    isize train;
+} TrainposRequest;
+
 void
 trainPosTask()
 {
@@ -89,6 +138,8 @@ trainPosTask()
 
     Create(2, &trainPosNotifierTask, "train position notifier task");
 
+    List* trainpos_requests = list_init();
+
     TrainposMsg msg_buf;
     TrainposResp reply_buf;
     int from_tid;
@@ -96,6 +147,44 @@ trainPosTask()
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(TrainposMsg));
         if (msg_len < 0) {
             ULOG_WARN("[TRAINPOS SERVER] Error when receiving");
+            continue;
+        }
+
+        if (msg_buf.type == TRAINPOS_TRIGGERED) {
+            
+            ListIter it = list_iter(trainpos_requests); 
+            TrainposRequest* request;
+            while (listiter_next(&it, (void**)&request)) {
+                if (request->train == msg_buf.data.triggered.train || request->train == -1) {
+                    TrainposResp reply_buf = (TrainposResp) {
+                        .type = TRAINPOS_WAIT,
+                        .data = {
+                            .wait = msg_buf.data.triggered.pos
+                        }
+                    };
+                    Reply(request->tid, (char*)&reply_buf, sizeof(TrainposResp));
+                    list_remove(trainpos_requests, request);
+                }
+            }
+
+            TrainposResp reply_buf = (TrainposResp) {
+                .type = TRAINPOS_TRIGGERED
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainposResp));
+
+        }
+        else if (msg_buf.type == TRAINPOS_WAIT) {
+            TrainposRequest* request = alloc(sizeof(TrainposRequest));
+            *request = (TrainposRequest) {
+                .tid = from_tid,
+                .train = msg_buf.data.wait
+            };
+            list_push_back(trainpos_requests, request);
+
+            // Don't reply just yet
+        }
+        else {
+            ULOG_WARN("[TRAINPOS SERVER] Invalid message type");
             continue;
         }
     }

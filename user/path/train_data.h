@@ -11,6 +11,8 @@
 #define TRAIN_SPEED_MED    11
 #define TRAIN_SPEED_HIGH   14
 
+uint32_t get_train_index(uint32_t train);
+
 static const uint32_t TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
 static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {5, 8, 11, 14};
 static const uint32_t TRAIN_DATA_VEL[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {

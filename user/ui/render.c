@@ -99,7 +99,12 @@ renderTrainStateWinTask()
     w_puts_mv(&train_state_win, "train  curr  next  terr  derr", 1, 2);
     w_puts_mv(&train_state_win, "2                            ", 1, 3);
     w_puts_mv(&train_state_win, "47                           ", 1, 4);
+    w_puts_mv(&train_state_win, "58                           ", 1, 4);
+    w_puts_mv(&train_state_win, "77                           ", 1, 4);
 
+
+    // TODO a lot of this code is horrible and needs a rewrite
+#if 0
     Arena tmp_base = arena_new(256);
     Arena tmp;
 
@@ -225,6 +230,7 @@ renderTrainStateWinTask()
         }
         predicted_sensor_time = (dist_to_next/train_vel)*100; // predicted is in ticks
     }
+#endif
     Exit();
 }
 
@@ -404,7 +410,7 @@ renderTask()
     Create(3, &renderSwitchWinTask, "Render Switch Window");
     Create(3, &renderSensorWinTask, "Render Sensor Window");
     Create(3, &renderDiagnosticWinTask, "Render Diagnostic Window");
-    //Create(3, &renderTrainStateWinTask, "Render Train State Window");
+    Create(3, &renderTrainStateWinTask, "Render Train State Window");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
