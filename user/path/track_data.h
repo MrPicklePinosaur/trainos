@@ -26,6 +26,7 @@ typedef enum {
 typedef struct TrackNode TrackNode;
 typedef struct TrackEdge TrackEdge;
 typedef struct Track Track;
+typedef usize ZoneId;
 
 struct TrackEdge {
     TrackEdge *reverse;
@@ -39,11 +40,21 @@ struct TrackNode {
     NodeType type;
     int num;              /* sensor or switch number */
     TrackNode *reverse;  /* same location, but opposite direction */
+    ZoneId zone;
     TrackEdge edge[3];
 };
 
+#define ZONE_MAX_SENSORS 8
+#define ZONE_MAX_SWITCHES 6
+typedef struct {
+    ZoneId zone;
+    TrackNode* sensors[ZONE_MAX_SENSORS];  
+    TrackNode* switches[ZONE_MAX_SWITCHES];
+} Zone;
+
 struct Track {
-    TrackNode* nodes;
+    TrackNode* nodes; // owned pointer to array of nodes
+    Zone* zones;
 };
 
 // The track initialization functions expect an array of this size.
@@ -55,7 +66,7 @@ void track_init();
 Track* get_track_a();
 Track* get_track_b();
 
-TrackNode* track_node_by_name(Track* track, str8 name);
+TrackNode* track_sensor_by_name(Track* track, str8 name);
 TrackNode* track_node_by_sensor_id(Track* track, u32 sensor_id);
 TrackNode* track_pathfind(TrackNode* start, TrackNode* end);
 

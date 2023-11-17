@@ -25,6 +25,14 @@ track_node_by_name(Track* track, str8 name) {
 }
 
 TrackNode*
+track_node_by_branch_id(Track* track, usize branch_id) {
+    if (!(0 < branch_id && branch_id <= 16)) {
+        PANIC("invalid branch id");
+    }
+    return &track->nodes[80+(branch_id-1)*2];
+}
+
+TrackNode*
 track_node_by_sensor_id(Track* track, uint32_t sensor_id) {
     return &track->nodes[sensor_id];  // Relies on the fact that the first 80 nodes are the sensors in order
 }
@@ -1288,8 +1296,44 @@ track_a_init() {
         track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
     }
 
+    struct ZoneBuilder {
+        char* sensors[ZONE_MAX_SENSORS];  
+        char* switches[ZONE_MAX_SWITCHES];
+    };
+
+    // construct zones
+    // each zone is specified as list of outgoing sensors
+    struct ZoneBuilder zones[] = {
+        {{"B8", "A10", 0}, {0}},
+        {{"B12", "A8", 0}, {0}},
+        {{"B10", "A5", 0}, {0}},
+        {{"A12", "A9", "A7", "A6", "C7", 0}, {"BR1", "BR2", "BR3", 0}},
+        {{"C8", "C6", "C15", "D11", "C3", "E11", 0}, {"BR6", "BR18", "BR5", "BR7", 0}},
+        {{"C5", "C10", "B15", 0}, {"BR15", 0}},
+        {{"C16", "D12", 0}, {0}},
+        {{"C9", "B1", "B3", 0}, {"BR16", 0}},
+        {{"B4", "C2", 0}, {0}},
+        {{"B16", "A3", 0}, {0}},
+        {{"A4", "C11", "C13", "A2", "A14", "A15", 0}, {"BR14", "BR11", "BR12", "BR4", 0}},
+        {{"C12", "B5", "E16", 0}, {"BR13", 0}},
+        {{"E15", "E1", 0}, {0}},
+        {{"E2", "D2", "C1", "B14", 0}, {"BR153", "BR154", "BR155", "BR156", 0}},
+        {{"C14", "E7", 0}, {0}},
+        {{"B6", "D3", 0}, {0}},
+        {{"D4", "E3", "E5", 0}, {"BR10", 0}},
+        {{"D1", "E4", 0}, {0}},
+        {{"E8", "D7", 0}, {0}},
+        {{"E6", "D6", 0}, {0}},
+        {{"D8", "D5", "E10", "D9", 0}, {"BR9", "BR8", 0}},
+        {{"E12", "D10", 0}, {0}},
+        {{"E13", "E9", 0}, {0}},
+        {{"D15", "D13", "E14", 0}, {"BR17", 0}},
+        {{"B13", "D16", 0}, {0}},
+    };
+
     return track;
 }
+
 
 Track
 track_b_init() {
