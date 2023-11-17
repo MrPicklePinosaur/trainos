@@ -1,3 +1,7 @@
+#include <trainstd.h>
+#include <trainsys.h>
+#include <traintasks.h>
+
 #include "log.h"
 #include "kern/dev/uart.h"
 
@@ -10,6 +14,9 @@ const uint32_t train_term_log_min_y = 2;
 const uint32_t train_term_log_max_y = 35;
 uint32_t train_term_log_y;
 
+Tid _log_server = 0;
+Arena arena_base;
+
 void
 log_init(void)
 {
@@ -18,6 +25,13 @@ log_init(void)
     log_mode = LOG_MODE_STANDARD;
 
     train_term_log_y = train_term_log_min_y;
+}
+
+void
+set_log_server(Tid log_server)
+{
+    _log_server = log_server; 
+    arena_base = arena_new(256);
 }
 
 void
@@ -62,21 +76,16 @@ _log(LogLevel level, LogMask mask, char* prefix, char* format, ...)
 
         // Special cursor positioning instructions for train term mode
         if (log_mode == LOG_MODE_TRAIN_TERM) {
-            // Clear next two lines
-            uart_printf(CONSOLE, "\033[%d;%dH\033[0K", train_term_log_y+1, train_term_log_x);
-            uart_printf(CONSOLE, "\033[%d;%dH\033[0K", train_term_log_y+2, train_term_log_x);
-
-            // Move cursor to correct line
-            uart_printf(CONSOLE, "\033[%d;%dH", train_term_log_y, train_term_log_x);
-            train_term_log_y++;
-            if (train_term_log_y > train_term_log_max_y) {
-                train_term_log_y = train_term_log_min_y;
-            }
+            Arena arena = arena_base; 
+            char* msg_buf = _cstr_format(&arena, format, args);
+            struct {} resp_buf;
+            Send(_log_server, (const char*)msg_buf, sizeof(char*), (char*)&resp_buf, 0);
+        } else {
+            // raw mode
+            uart_printf(CONSOLE, prefix);
+            uart_format_print(CONSOLE, format, args);
+            uart_printf(CONSOLE, "\033[0m\r\n");
         }
-
-        uart_printf(CONSOLE, prefix);
-        uart_format_print(CONSOLE, format, args);
-        uart_printf(CONSOLE, "\033[0m\r\n");
 
         va_end(args);
     }

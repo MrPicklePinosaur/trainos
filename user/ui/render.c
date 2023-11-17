@@ -392,6 +392,58 @@ renderDiagnosticWinTask()
 }
 
 void
+renderDebugConsoleTask()
+{
+    RegisterAs(DEBUG_ADDRESS);
+
+    const usize DEBUG_ANCHOR_X = 1;
+    const usize DEBUG_ANCHOR_Y = 1;
+    const usize DEBUG_MAX_LINES = 32;
+    const usize DEBUG_INNER_WIDTH = 58;
+    Arena debug_arena = arena_new(20*DEBUG_MAX_LINES*(DEBUG_INNER_WIDTH+1));
+    CBuf* debug_lines = cbuf_new(DEBUG_MAX_LINES);
+    Window debug_win = win_init(117, 2, 60, 34);
+    win_draw(&debug_win);
+    w_puts_mv(&debug_win, "[debug]", 2, 0);
+    w_flush(&debug_win);
+
+    char* msg_buf;
+    struct {} reply_buf; // dummy
+    int from_tid;
+    for (;;) {
+        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(char*));
+        if (msg_len < 0) {
+            ULOG_WARN("[DEBUG CONSOLE SERVER] Error when receiving");
+            continue;
+        }
+
+        // copy message
+        char* copied = cstr_copy(&debug_arena, msg_buf);
+        Reply(from_tid, (char*)&reply_buf, 0);
+
+        // scroll terminal if needed
+        if (cbuf_len(debug_lines) >= DEBUG_MAX_LINES) {
+            cbuf_pop_front(debug_lines);
+        }
+
+        cbuf_push_back(debug_lines, copied);
+
+        // rerender window
+        for (usize i = 0; i < DEBUG_MAX_LINES; ++i) {
+            w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
+            for (usize j = 0; j < DEBUG_INNER_WIDTH; ++j) w_putc(&debug_win, ' ');
+            
+            w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
+            w_puts(&debug_win, cbuf_get(debug_lines, i));
+        }
+        w_flush(&debug_win);
+
+    }
+
+    Exit();
+}
+
+void
 renderTask()
 {
     RegisterAs(RENDERER_ADDRESS);
@@ -419,10 +471,18 @@ renderTask()
     w_putc_mv(&prompt_win, '>', 1, 1);
     w_flush(&prompt_win);
 
+    Tid debug_console_server = Create(3, &renderDebugConsoleTask, "Render Debug Console Window");
+    set_log_server(debug_console_server);
+    set_log_mode(LOG_MODE_TRAIN_TERM);
+
     Create(3, &renderSwitchWinTask, "Render Switch Window");
     Create(3, &renderSensorWinTask, "Render Sensor Window");
     Create(3, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(3, &renderTrainStateWinTask, "Render Train State Window");
+
+    for (usize i = 0; i < 10; ++i) {
+        ULOG_DEBUG("render init complete, %d", i);
+    }
 
     RendererMsg msg_buf;
     RendererResp reply_buf;

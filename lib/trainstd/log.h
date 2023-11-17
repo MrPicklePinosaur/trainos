@@ -4,6 +4,7 @@
 /* Simple logger with a couple of logging levels */
 
 #include <traindef.h>
+#include <trainsys.h>
 #include <stdarg.h>
 
 typedef enum {
@@ -44,6 +45,7 @@ void log_init(void);
 void set_log_level(LogLevel level);
 LogLevel get_log_level(void);
 void set_log_mask(LogMask mask);
+void set_log_server(Tid log_server);
 LogMask get_log_mask(void);
 void set_log_mode(LogMode mode);
 void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);

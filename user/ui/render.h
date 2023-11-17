@@ -5,6 +5,7 @@
 #include "../marklin.h"
 
 #define RENDERER_ADDRESS "renderer"
+#define DEBUG_ADDRESS "debug_console"
 
 int renderer_append_console(Tid renderer_tid, char* line);
 int renderer_prompt(Tid renderer_tid, char ch);

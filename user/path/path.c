@@ -199,6 +199,8 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
+    /* CBuf* stops = cbuf_new(); */
+
     for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
         TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
         // wait for sensor
