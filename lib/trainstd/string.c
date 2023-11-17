@@ -180,11 +180,17 @@ cstr_to_u64(char* str)
 
 }
 
+#define CSTR_LEN_MAX_LENGTH 256
 usize
 cstr_len(char* s)
 {
     // TODO put some safety mechanism to prevent executing for very long if missing null terminator?
     usize len = 0;
-    for (; *s != 0; ++s) ++len;
+    for (; *s != 0; ++s) {
+        if (len > CSTR_LEN_MAX_LENGTH) {
+            PANIC("Potenitally missing null terminator in string");
+        }
+        ++len;
+    }
     return len;
 }

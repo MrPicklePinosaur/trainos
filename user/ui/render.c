@@ -419,28 +419,31 @@ renderDebugConsoleTask()
 
         // copy message
         // TODO cstr_copy is breaking things
-        /* uart_printf(CONSOLE, "recv from %d, %c%c%c", from_tid, msg_buf[0], msg_buf[1], msg_buf[2]); */
-        /* uart_printf(CONSOLE, "COPIED %s", msg_buf); */
-        /* char* copied = cstr_copy(&debug_arena, msg_buf); */
+        /* uart_printf(CONSOLE, "recv from %d", from_tid); */
+        /* uart_printf(CONSOLE, "recv len %d", cstr_len(msg_buf)); */
+        char* copied = cstr_copy(&debug_arena, msg_buf);
         Reply(from_tid, (char*)&reply_buf, 0);
 
+        /* uart_printf(CONSOLE, "after reply"); */
+
         // scroll terminal if needed
-#if 0
         if (cbuf_len(debug_lines) >= DEBUG_MAX_LINES) {
             cbuf_pop_front(debug_lines);
         }
 
         cbuf_push_back(debug_lines, copied);
+
         // rerender window
-        for (usize i = 0; i < DEBUG_MAX_LINES; ++i) {
+        for (usize i = 0; i < cbuf_len(debug_lines); ++i) {
             w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
             for (usize j = 0; j < DEBUG_INNER_WIDTH; ++j) w_putc(&debug_win, ' ');
+            w_flush(&debug_win);
             
             w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
             w_puts(&debug_win, cbuf_get(debug_lines, i));
+            w_flush(&debug_win);
         }
-        w_flush(&debug_win);
-#endif
+        /* uart_printf(CONSOLE, "after render"); */
 
     }
 
@@ -453,6 +456,10 @@ renderTask()
     RegisterAs(RENDERER_ADDRESS);
 
     term_init();
+
+    Tid debug_console_server = Create(3, &renderDebugConsoleTask, "Render Debug Console Window");
+    set_log_server(debug_console_server);
+    set_log_mode(LOG_MODE_TRAIN_TERM);
 
     // CONSOLE
     const usize CONSOLE_ANCHOR_X = 1;
@@ -475,18 +482,10 @@ renderTask()
     w_putc_mv(&prompt_win, '>', 1, 1);
     w_flush(&prompt_win);
 
-    Tid debug_console_server = Create(3, &renderDebugConsoleTask, "Render Debug Console Window");
-    set_log_server(debug_console_server);
-    set_log_mode(LOG_MODE_TRAIN_TERM);
-
     Create(3, &renderSwitchWinTask, "Render Switch Window");
     Create(3, &renderSensorWinTask, "Render Sensor Window");
     Create(3, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(3, &renderTrainStateWinTask, "Render Train State Window");
-
-    for (usize i = 0; i < 10; ++i) {
-        ULOG_DEBUG("render init complete, %d", i);
-    }
 
     RendererMsg msg_buf;
     RendererResp reply_buf;

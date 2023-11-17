@@ -71,23 +71,29 @@ void
 _log(LogLevel level, LogMask mask, char* prefix, char* format, ...)
 {
     if (level <= log_level && (log_mask & mask) == mask) {
+
         va_list args;
         va_start(args, format);
 
         // Special cursor positioning instructions for train term mode
-        if (log_mode == LOG_MODE_TRAIN_TERM) {
+        /* if (log_mode == LOG_MODE_TRAIN_TERM) { */
+        // TODO not sure why but this is not working
+        if (false) {
+
             Arena arena = arena_base; 
             char* msg_buf = _cstr_format(&arena, format, args);
             struct {} resp_buf;
             Send(_log_server, (const char*)msg_buf, sizeof(char*), (char*)&resp_buf, 0);
         } else {
+
             // raw mode
             uart_printf(CONSOLE, prefix);
             uart_format_print(CONSOLE, format, args);
             uart_printf(CONSOLE, "\033[0m\r\n");
-        }
 
+        }
         va_end(args);
+
     }
 }
 
