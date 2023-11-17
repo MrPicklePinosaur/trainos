@@ -278,7 +278,7 @@ pathTask(void)
             PANIC("failed to get starting sensor");
         }
 
-        TrackNode* dest = track_node_by_name(track, str8_from_cstr(msg_buf.dest));
+        TrackNode* dest = track_node_by_name(track, msg_buf.dest);
         if (dest == NULL) {
             // TODO send back error?
             ULOG_WARN("invalid destination");

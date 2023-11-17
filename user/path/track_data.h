@@ -46,10 +46,11 @@ struct TrackNode {
 
 #define ZONE_MAX_SENSORS 8
 #define ZONE_MAX_SWITCHES 6
+#define ZONE_MAX 25
 typedef struct {
     ZoneId zone;
-    TrackNode* sensors[ZONE_MAX_SENSORS];  
-    TrackNode* switches[ZONE_MAX_SWITCHES];
+    TrackNode* sensors[ZONE_MAX_SENSORS+1];  
+    TrackNode* switches[ZONE_MAX_SWITCHES+1];
 } Zone;
 
 struct Track {
@@ -66,7 +67,7 @@ void track_init();
 Track* get_track_a();
 Track* get_track_b();
 
-TrackNode* track_sensor_by_name(Track* track, str8 name);
+TrackNode* track_node_by_name(Track* track, char* name);
 TrackNode* track_node_by_sensor_id(Track* track, u32 sensor_id);
 TrackNode* track_pathfind(TrackNode* start, TrackNode* end);
 

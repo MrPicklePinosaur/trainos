@@ -12,11 +12,11 @@ Track track_a_init();
 Track track_b_init();
 
 TrackNode*
-track_node_by_name(Track* track, str8 name) {
+track_node_by_name(Track* track, char* name) {
     // TODO just do lame linear search for the node
     // map solution is too costly and buggy
     for (usize i = 0; i < 80; ++i) {
-        if (str8_cmp(name, str8_from_cstr(track->nodes[i].name))) {
+        if (strcmp(name, track->nodes[i].name) == 0) {
             return &track->nodes[i];            
         }
     }
@@ -26,10 +26,13 @@ track_node_by_name(Track* track, str8 name) {
 
 TrackNode*
 track_node_by_branch_id(Track* track, usize branch_id) {
-    if (!(0 < branch_id && branch_id <= 16)) {
-        PANIC("invalid branch id");
+    if (1 <= branch_id && branch_id <= 18) {
+        return &track->nodes[80+(branch_id-1)*2];
     }
-    return &track->nodes[80+(branch_id-1)*2];
+    else if (153 <= branch_id && branch_id <= 156) {
+        return &track->nodes[116+(branch_id-153)*2];
+    }
+    PANIC("invalid branch id");
 }
 
 TrackNode*
@@ -84,7 +87,7 @@ void
 track_init()
 {
     track_a = track_a_init();
-    track_b = track_b_init();
+    /* track_b = track_b_init(); */
 }
 
 Track*
@@ -96,6 +99,7 @@ get_track_a()
 Track*
 get_track_b()
 {
+    UNIMPLEMENTED("track b not completely implemented");
     return &track_b;
 }
 
@@ -1298,38 +1302,63 @@ track_a_init() {
 
     struct ZoneBuilder {
         char* sensors[ZONE_MAX_SENSORS];  
-        char* switches[ZONE_MAX_SWITCHES];
+        usize switches[ZONE_MAX_SWITCHES];
     };
 
     // construct zones
     // each zone is specified as list of outgoing sensors
-    struct ZoneBuilder zones[] = {
+    struct ZoneBuilder zone_builder[] = {
         {{"B8", "A10", 0}, {0}},
         {{"B12", "A8", 0}, {0}},
         {{"B10", "A5", 0}, {0}},
-        {{"A12", "A9", "A7", "A6", "C7", 0}, {"BR1", "BR2", "BR3", 0}},
-        {{"C8", "C6", "C15", "D11", "C3", "E11", 0}, {"BR6", "BR18", "BR5", "BR7", 0}},
-        {{"C5", "C10", "B15", 0}, {"BR15", 0}},
+        {{"A12", "A9", "A7", "A6", "C7", 0}, {1, 2, 3, 0}},
+        {{"C8", "C6", "C15", "D11", "C3", "E11", 0}, {6, 18, 5, 7, 0}},
+        {{"C5", "C10", "B15", 0}, {15, 0}},
         {{"C16", "D12", 0}, {0}},
-        {{"C9", "B1", "B3", 0}, {"BR16", 0}},
+        {{"C9", "B1", "B3", 0}, {16, 0}},
         {{"B4", "C2", 0}, {0}},
         {{"B16", "A3", 0}, {0}},
-        {{"A4", "C11", "C13", "A2", "A14", "A15", 0}, {"BR14", "BR11", "BR12", "BR4", 0}},
-        {{"C12", "B5", "E16", 0}, {"BR13", 0}},
+        {{"A4", "C11", "C13", "A2", "A14", "A15", 0}, {14, 11, 12, 4, 0}},
+        {{"C12", "B5", "E16", 0}, {13, 0}},
         {{"E15", "E1", 0}, {0}},
-        {{"E2", "D2", "C1", "B14", 0}, {"BR153", "BR154", "BR155", "BR156", 0}},
+        {{"E2", "D2", "C1", "B14", 0}, {153, 154, 155, 156, 0}},
         {{"C14", "E7", 0}, {0}},
         {{"B6", "D3", 0}, {0}},
-        {{"D4", "E3", "E5", 0}, {"BR10", 0}},
+        {{"D4", "E3", "E5", 0}, {10, 0}},
         {{"D1", "E4", 0}, {0}},
         {{"E8", "D7", 0}, {0}},
         {{"E6", "D6", 0}, {0}},
-        {{"D8", "D5", "E10", "D9", 0}, {"BR9", "BR8", 0}},
+        {{"D8", "D5", "E10", "D9", 0}, {9, 8, 0}},
         {{"E12", "D10", 0}, {0}},
         {{"E13", "E9", 0}, {0}},
-        {{"D15", "D13", "E14", 0}, {"BR17", 0}},
+        {{"D15", "D13", "E14", 0}, {17, 0}},
         {{"B13", "D16", 0}, {0}},
+        // TODO might be missing a zone?
     };
+
+    track.zones = alloc(sizeof(Zone)*ZONE_MAX);
+
+    // construct zones
+    for (usize i = 0; i < ZONE_MAX; ++i) {
+        track.zones[i] = (Zone){
+            .zone = i,
+            .sensors = {0},
+            .switches = {0}
+        };
+
+        for (usize j = 0; ; ++j) {
+            char* sensor_str = zone_builder[i].sensors[j];
+            if (sensor_str == 0) break;
+            track.zones[i].sensors[j] = track_node_by_name(&track, sensor_str);
+        }
+
+        for (usize j = 0; ; ++j) {
+            usize switch_id = zone_builder[i].switches[j];
+            if (switch_id == 0) break;
+            track.zones[i].switches[j] = track_node_by_branch_id(&track, switch_id);
+        }
+
+    }
 
     return track;
 }
@@ -1337,6 +1366,8 @@ track_a_init() {
 
 Track
 track_b_init() {
+
+    UNIMPLEMENTED("track b not completely implemented");
 
     Track track = {0};
     track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
