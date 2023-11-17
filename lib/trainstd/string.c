@@ -88,12 +88,14 @@ str8_to_u64(str8 s)
     return out;
 }
 
+// copy with the null terminator
 char*
 cstr_copy(Arena* arena, char* s)
 {
-    usize len_str = cstr_len(s)+1;
-    char* new_str = arena_alloc(arena, char, len_str);
-    strncpy(new_str, s, len_str);
+    usize len_str = cstr_len(s);
+    char* new_str = arena_alloc(arena, char, len_str+1);
+    memcpy(new_str, s, len_str);
+    new_str[len_str] = 0;
     return new_str;
 }
 

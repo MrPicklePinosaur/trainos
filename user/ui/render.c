@@ -418,16 +418,19 @@ renderDebugConsoleTask()
         }
 
         // copy message
-        char* copied = cstr_copy(&debug_arena, msg_buf);
+        // TODO cstr_copy is breaking things
+        /* uart_printf(CONSOLE, "recv from %d, %c%c%c", from_tid, msg_buf[0], msg_buf[1], msg_buf[2]); */
+        /* uart_printf(CONSOLE, "COPIED %s", msg_buf); */
+        /* char* copied = cstr_copy(&debug_arena, msg_buf); */
         Reply(from_tid, (char*)&reply_buf, 0);
 
         // scroll terminal if needed
+#if 0
         if (cbuf_len(debug_lines) >= DEBUG_MAX_LINES) {
             cbuf_pop_front(debug_lines);
         }
 
         cbuf_push_back(debug_lines, copied);
-
         // rerender window
         for (usize i = 0; i < DEBUG_MAX_LINES; ++i) {
             w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
@@ -437,6 +440,7 @@ renderDebugConsoleTask()
             w_puts(&debug_win, cbuf_get(debug_lines, i));
         }
         w_flush(&debug_win);
+#endif
 
     }
 
