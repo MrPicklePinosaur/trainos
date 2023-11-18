@@ -41,6 +41,7 @@ uint32_t query_sensor(size_t sensor_group) {
 
 void calibTrainSpeed();
 void calibTrainStop();
+void calibTrainShortMove();
 
 int kmain() {
 
@@ -54,6 +55,7 @@ int kmain() {
         uart_printf(CONSOLE, "SELECT CALIB TO RUN\r\n");
         uart_printf(CONSOLE, "1: calibTrainSpeed\r\n");
         uart_printf(CONSOLE, "2: calibTrainStop\r\n");
+        uart_printf(CONSOLE, "3: calibTrainShortMove\r\n");
         uart_printf(CONSOLE, "========================\r\n");
 
         int ch = uart_getc(CONSOLE) - '0';
@@ -65,6 +67,10 @@ int kmain() {
             case 2:
                 uart_printf(CONSOLE, "running train stop calib\r\n");
                 calibTrainStop();
+                break;
+            case 3:
+                uart_printf(CONSOLE, "running train short move calib\r\n");
+                calibTrainShortMove();
                 break;
             default:
                 uart_printf(CONSOLE, "invalid calib task");
@@ -233,4 +239,56 @@ calibTrainStop()
     }
     uart_printf(CONSOLE, "calibrated wait time %d\r\n", wait_time);
 
+}
+
+void
+calibTrainShortMove()
+{
+    const uint32_t time_increment = 250000;  // 250 milliseconds
+    const uint32_t start_wait = time_increment;
+    const uint32_t train_number = 2;
+    const uint32_t train_speed = 8;
+
+    const uint32_t SENSOR_GROUP = 2;
+    const uint32_t SENSOR_INDEX = 16;
+
+    marklin_switch_ctl(9, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(10, SWITCH_MODE_STRAIGHT);
+    marklin_switch_ctl(15, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
+    marklin_train_ctl(train_number, 0);
+    uart_printf(CONSOLE, "Running short move measurement for train %d speed %d\r\n", train_number, train_speed);
+
+    for (uint32_t wait = start_wait;;) {
+        for (;;) {
+            uart_printf(CONSOLE, "Current wait time %d, next wait time %d. Press 1 to measure current wait time, 2 to measure next wait time, 3 to send train around to B16.\r\n", wait, wait+time_increment);
+            unsigned char ch = uart_getc(CONSOLE);
+            if (ch == '1') {
+                break;
+            }
+            if (ch == '2') {
+                wait += time_increment;
+                break;
+            }
+            if (ch == '3') {
+                marklin_train_ctl(train_number, 11);
+                for (;;) {
+                    uint32_t triggered = query_sensor(SENSOR_GROUP);
+                    if (triggered == 0) continue;
+                    char sensor_group = (triggered / 16);
+                    uint8_t sensor_index = (triggered % 16)+1;
+                    if (sensor_group == SENSOR_GROUP && sensor_index == SENSOR_INDEX) {
+                        break;
+                    }
+                }
+                marklin_train_ctl(train_number, 0);
+            }
+        }
+        uart_printf(CONSOLE, "Measuring wait time of %d\r\n", wait);
+
+        marklin_train_ctl(train_number, train_speed);
+        uint32_t start_time = get_time();
+        while (get_time() - start_time <= wait) { }
+        marklin_train_ctl(train_number, 0);
+    }
 }
