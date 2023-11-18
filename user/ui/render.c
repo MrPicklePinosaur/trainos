@@ -407,11 +407,11 @@ renderDebugConsoleTask()
     w_puts_mv(&debug_win, "[debug]", 2, 0);
     w_flush(&debug_win);
 
-    char* msg_buf;
+    char msg_buf[DEBUG_MAX_LOG_LENGTH];
     struct {} reply_buf; // dummy
     int from_tid;
     for (;;) {
-        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(char*));
+        int msg_len = Receive(&from_tid, msg_buf, DEBUG_MAX_LOG_LENGTH);
         if (msg_len < 0) {
             ULOG_WARN("[DEBUG CONSOLE SERVER] Error when receiving");
             continue;

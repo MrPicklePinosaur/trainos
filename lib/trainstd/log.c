@@ -76,14 +76,20 @@ _log(LogLevel level, LogMask mask, char* prefix, char* format, ...)
         va_start(args, format);
 
         // Special cursor positioning instructions for train term mode
-        /* if (log_mode == LOG_MODE_TRAIN_TERM) { */
-        // TODO not sure why but this is not working
-        if (false) {
-
+        if (log_mode == LOG_MODE_TRAIN_TERM) {
             Arena arena = arena_base; 
             char* msg_buf = _cstr_format(&arena, format, args);
             struct {} resp_buf;
-            Send(_log_server, (const char*)msg_buf, sizeof(char*), (char*)&resp_buf, 0);
+
+            // Forcibly null terminate messages that are too long
+            if (cstr_len(msg_buf) >= DEBUG_MAX_LOG_LENGTH) {
+                msg_buf[DEBUG_MAX_LOG_LENGTH-1] = 0;
+            }
+
+            // If the message is shorter than DEBUG_MAX_LENGTH, Send() will copy characters past the end
+            // of the message, but the debug log server doesn't use characters past the null terminator
+            // so this shouldn't be an issue
+            Send(_log_server, (const char*)msg_buf, DEBUG_MAX_LOG_LENGTH, (char*)&resp_buf, 0);
         } else {
 
             // raw mode
@@ -92,6 +98,24 @@ _log(LogLevel level, LogMask mask, char* prefix, char* format, ...)
             uart_printf(CONSOLE, "\033[0m\r\n");
 
         }
+        va_end(args);
+
+    }
+}
+
+
+void
+_klog(LogLevel level, LogMask mask, char* prefix, char* format, ...)
+{
+    if (level <= log_level && (log_mask & mask) == mask) {
+
+        va_list args;
+        va_start(args, format);
+
+        uart_printf(CONSOLE, prefix);
+        uart_format_print(CONSOLE, format, args);
+        uart_printf(CONSOLE, "\033[0m\r\n");
+
         va_end(args);
 
     }

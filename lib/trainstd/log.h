@@ -7,6 +7,8 @@
 #include <trainsys.h>
 #include <stdarg.h>
 
+#define DEBUG_MAX_LOG_LENGTH 59
+
 typedef enum {
     LOG_LEVEL_ALWAYS = 0,
     LOG_LEVEL_ERROR = 1,
@@ -49,6 +51,7 @@ void set_log_server(Tid log_server);
 LogMask get_log_mask(void);
 void set_log_mode(LogMode mode);
 void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);
+void _klog(LogLevel level, LogMask mask, char* prefix, char* format, ...);
 
 #define ULOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_USER, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
 #define ULOG_WARN(str, ...) _log(LOG_LEVEL_WARN, LOG_MASK_USER, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
@@ -58,21 +61,21 @@ void _log(LogLevel level, LogMask mask, char* prefix, char* format, ...);
 #define ULOG_INFO_M(mask, str, ...) _log(LOG_LEVEL_INFO, mask|LOG_MASK_USER, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
 #define ULOG_DEBUG_M(mask, str, ...) _log(LOG_LEVEL_DEBUG, mask|LOG_MASK_USER, "[DEBUG] ", (str), ##__VA_ARGS__)
 
-#define KLOG_ERROR(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_KERN, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
-#define KLOG_WARN(str, ...) _log(LOG_LEVEL_WARN, LOG_MASK_KERN, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
-#define KLOG_INFO(str, ...) _log(LOG_LEVEL_INFO, LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
-#define KLOG_DEBUG(str, ...) _log(LOG_LEVEL_DEBUG, LOG_MASK_KERN, "[DEBUG] ", (str), ##__VA_ARGS__)
+#define KLOG_ERROR(str, ...) _klog(LOG_LEVEL_ERROR, LOG_MASK_KERN, "\033[31m[ERROR] ", (str), ##__VA_ARGS__)
+#define KLOG_WARN(str, ...) _klog(LOG_LEVEL_WARN, LOG_MASK_KERN, "\033[33m[WARN] ", (str), ##__VA_ARGS__)
+#define KLOG_INFO(str, ...) _klog(LOG_LEVEL_INFO, LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
+#define KLOG_DEBUG(str, ...) _klog(LOG_LEVEL_DEBUG, LOG_MASK_KERN, "[DEBUG] ", (str), ##__VA_ARGS__)
 
-#define KLOG_INFO_M(mask, str, ...) _log(LOG_LEVEL_INFO, mask|LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
-#define KLOG_DEBUG_M(mask, str, ...) _log(LOG_LEVEL_DEBUG, mask|LOG_MASK_KERN, "[DEBUG] ", (str), ##__VA_ARGS__)
+#define KLOG_INFO_M(mask, str, ...) _klog(LOG_LEVEL_INFO, mask|LOG_MASK_KERN, "\033[36m[INFO] ", (str), ##__VA_ARGS__)
+#define KLOG_DEBUG_M(mask, str, ...) _klog(LOG_LEVEL_DEBUG, mask|LOG_MASK_KERN, "[DEBUG] ", (str), ##__VA_ARGS__)
 
-#define PRINT(str, ...) _log(LOG_LEVEL_ALWAYS, LOG_MASK_ALL, "", (str), ##__VA_ARGS__)
+#define PRINT(str, ...) _klog(LOG_LEVEL_ALWAYS, LOG_MASK_ALL, "", (str), ##__VA_ARGS__)
 
-#define PANIC(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[PANIC] ", (str), ##__VA_ARGS__); _panic();
+#define PANIC(str, ...) _klog(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[PANIC] ", (str), ##__VA_ARGS__); _panic();
 // Used to mark places where code is unimplemented and is a work in progress
-#define UNIMPLEMENTED(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[UNIMPLEMENTED] ", (str), ##__VA_ARGS__); _panic();
+#define UNIMPLEMENTED(str, ...) _klog(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[UNIMPLEMENTED] ", (str), ##__VA_ARGS__); _panic();
 // Assert that the code indicated should not be reachable via standard execution
-#define UNREACHABLE(str, ...) _log(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[UNREACHABLE] ", (str), ##__VA_ARGS__); _panic();
+#define UNREACHABLE(str, ...) _klog(LOG_LEVEL_ERROR, LOG_MASK_ALL, "\033[30m\033[41m[UNREACHABLE] ", (str), ##__VA_ARGS__); _panic();
 
 void _panic(void);
 
