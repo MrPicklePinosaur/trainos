@@ -200,6 +200,7 @@ switchServerTask()
     RegisterAs(SWITCH_ADDRESS);
 
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
     List* switch_requests = list_init();
 
@@ -283,6 +284,7 @@ switchServerTask()
                 SwitchMode mode = track_a_init_switch_state[i].second;
                 marklin_switch_ctl(marklin_server, switch_id, mode);
                 states[switch_index(switch_id)] = mode;
+                Delay(clock_server, 10);
             }
 
             reply_buf = (SwitchResp) {

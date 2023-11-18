@@ -135,6 +135,7 @@ trainPosTask()
         int sensor = WaitForSensor(sensor_server, -1);
 
         train_pos[i] = sensor;
+        //ULOG_INFO("train %d starting at %d", train, sensor);
 
         // stop train for now
         marklin_train_ctl(io_server, train, 0);

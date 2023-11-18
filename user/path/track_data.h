@@ -69,6 +69,7 @@ Track* get_track_b();
 
 TrackNode* track_node_by_name(Track* track, char* name);
 TrackNode* track_node_by_sensor_id(Track* track, u32 sensor_id);
+TrackNode* track_node_by_branch_id(Track* track, usize branch_id);
 TrackNode* track_pathfind(TrackNode* start, TrackNode* end);
 
 TrackNode* track_prev_node(Tid switch_server, Track* track, TrackNode* node);

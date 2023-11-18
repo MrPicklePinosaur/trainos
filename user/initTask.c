@@ -91,6 +91,8 @@ initTask()
 
     Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL");
     WaitTid(marklinctl_task);
+    /* Tid tester = Create(5, &testHarness, "test harness"); */
+    /* WaitTid(tester); */
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");

@@ -1338,10 +1338,15 @@ track_a_init() {
 
     track.zones = alloc(sizeof(Zone)*ZONE_MAX);
 
+    for (usize i = 0; i < TRACK_MAX; ++i) {
+        track.nodes[i].zone = -1;
+    }
+
     // construct zones
     for (usize i = 0; i < ZONE_MAX; ++i) {
+        ZoneId zone_id = i;
         track.zones[i] = (Zone){
-            .zone = i,
+            .zone = zone_id,
             .sensors = {0},
             .switches = {0}
         };
@@ -1349,13 +1354,17 @@ track_a_init() {
         for (usize j = 0; ; ++j) {
             char* sensor_str = zone_builder[i].sensors[j];
             if (sensor_str == 0) break;
-            track.zones[i].sensors[j] = track_node_by_name(&track, sensor_str);
+            TrackNode* node = track_node_by_name(&track, sensor_str);
+            node->zone = zone_id;
+            track.zones[i].sensors[j] = node;
         }
 
         for (usize j = 0; ; ++j) {
             usize switch_id = zone_builder[i].switches[j];
             if (switch_id == 0) break;
-            track.zones[i].switches[j] = track_node_by_branch_id(&track, switch_id);
+            TrackNode* node = track_node_by_branch_id(&track, switch_id);
+            node->zone = zone_id;
+            track.zones[i].switches[j] = node;
         }
 
     }

@@ -13,6 +13,7 @@ testHarness()
         /* &testSensor, */
         /* &testDijkstra, */
         //&testString,
+        &testTraindata,
         &testMap,
         &testCbuf,
         &testList,

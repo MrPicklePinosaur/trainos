@@ -7,6 +7,7 @@
 #include "user/marklin.h"
 #include "user/sensor.h"
 #include "user/switch.h"
+#include "user/trainpos.h"
 
 #define INF 2147483647
 #define NONE 2147483647
@@ -123,11 +124,13 @@ typedef enum {
     CALCULATE_PATH_INVALID_OFFSET,
 } CalculatePathRet;
 
-int
-calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
-{
+typedef PAIR(u32, SwitchMode) Pair_u32_SwitchMode;
 
+int
+calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Tid trainpos_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
+{
     // path is in reverse
+    /* ULOG_INFO("computing path..."); */
     CBuf* path = dijkstra(track, src, dest, false, arena);
     if (path == NULL) {
         ULOG_WARN("[PATH] dijkstra can't find path");
@@ -177,6 +180,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     }
 
     // compute desired switch state
+    CBuf* desired_switch_modes = cbuf_new(24);
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
         if (edge->src->type == NODE_BRANCH) {
@@ -185,36 +189,66 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
             if (&edge->src->edge[DIR_STRAIGHT] == edge) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
-                SwitchChange(switch_server, switch_num, SWITCH_MODE_STRAIGHT);
+                Pair_u32_SwitchMode* pair = arena_alloc(arena, Pair_u32_SwitchMode);
+                pair->first = switch_num;
+                pair->second = SWITCH_MODE_STRAIGHT;
+                cbuf_push_back(desired_switch_modes, pair);
             }
             else if (&edge->src->edge[DIR_CURVED] == edge) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
-                SwitchChange(switch_server, switch_num, SWITCH_MODE_CURVED);
+                Pair_u32_SwitchMode* pair = arena_alloc(arena, Pair_u32_SwitchMode);
+                pair->first = switch_num;
+                pair->second = SWITCH_MODE_CURVED;
+                cbuf_push_back(desired_switch_modes, pair);
             }
             else {
                 PANIC("invalid branch");
             }
         }
     }
+    /* ULOG_INFO("switching switches..."); */
 
-    ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
+    //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
     /* CBuf* stops = cbuf_new(); */
 
+    /* ULOG_INFO("routing train..."); */
     for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
         TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
         // wait for sensor
         if (edge->dest->type == NODE_SENSOR) {
             // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
             // block until we hit desired sensor
-            //ULOG_INFO("expecting sensor %s", edge->dest->name);
-            WaitForSensor(sensor_server, edge->dest->num);
-            //ULOG_INFO("got sensor %s", edge->dest->name);
+            // ULOG_INFO("expecting sensor %s", edge->dest->name);
+            /* WaitForSensor(sensor_server, edge->dest->num); */
+            TrainPosWaitResult res = trainPosWait(trainpos_server, train);
+            if (res.pos != edge->dest->num) {
+                ULOG_WARN("expect sensor %d, got sensor %d", edge->dest->num, res.pos);
+            }
+
+            // check if we entered a new zone, if so, flip the switches that we need
+            TrackNode* node = track_node_by_sensor_id(track, res.pos);
+            if (node->zone != -1) {
+                ULOG_INFO("in zone %d", node->zone);
+                TrackNode** zone_sensors = (TrackNode**)track->zones[node->zone].sensors;
+                for (; *zone_sensors != 0; ++zone_sensors) {
+                    for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
+                        Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
+                        if ((*zone_sensors)->num == pair->first) {
+                            ULOG_INFO("setting switch %d to state %d", pair->first, pair->second);
+                            SwitchChange(switch_server, pair->first, pair->second);
+                            Delay(clock_server, 5);
+                        }
+                    }
+                }
+            }
+
             if (edge->dest->num == waiting_sensor->num) break;
+            
         }
     }
     
-    ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
+    // ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 
     // now wait before sending stop command
     u64 delay_ticks = distance_from_sensor*100/train_vel;
@@ -222,7 +256,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     marklin_train_ctl(io_server, train, 0);
 
-    ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
+    // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
     return CALCULATE_PATH_OK;
 }
@@ -247,6 +281,7 @@ pathTask(void)
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
     Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
     Arena tmp_saved = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
@@ -286,7 +321,7 @@ pathTask(void)
         }
         usize dest_sensor = dest - track->nodes;
 
-        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, track, start_sensor, dest_sensor, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
+        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, trainpos_server, track, start_sensor, dest_sensor, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 
 
     }

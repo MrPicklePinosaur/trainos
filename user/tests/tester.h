@@ -22,4 +22,5 @@ void testDijkstra();
 void testNameserver();
 void testSensor();
 
+void testTraindata();
 #endif // __USER_TESTER_H__
