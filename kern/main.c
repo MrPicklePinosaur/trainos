@@ -1,5 +1,6 @@
 #include <trainstd.h>
 #include "kern/dev/uart.h"
+#include "kern/dev/timer.h"
 #include "kern.h"
 #include "task.h"
 #include "switchframe.h"

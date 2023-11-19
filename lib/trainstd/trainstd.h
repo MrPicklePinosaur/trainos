@@ -13,7 +13,7 @@
 #include "hashmap.h"
 #include "map.h"
 #include "conv.h"
-#include "timer.h"
+#include "stopwatch.h"
 #include "log.h"
 #include "util.h"
 

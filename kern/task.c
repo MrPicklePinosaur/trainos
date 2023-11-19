@@ -1,8 +1,9 @@
 #include <trainstd.h>
-#include "./dev/uart.h"
 #include "task.h"
 #include "addrspace.h"
 #include "alloc.h"
+#include "kern/dev/uart.h"
+#include "kern/dev/timer.h"
 
 #define RECEIVE_QUEUE_MAX_LEN 32
 
