@@ -172,6 +172,7 @@ patherTask()
     CBuf* path = dijkstra(track, src, dest, false, &arena);
     if (path == NULL) {
         ULOG_WARN("[PATHER] dijkstra can't find path");
+        arena_release(&arena);
         Exit();
     }
 
@@ -181,16 +182,19 @@ patherTask()
     // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
     if (offset != 0 && dest_node.type != NODE_SENSOR) {
         ULOG_WARN("[PATHER] can't use offset from node other than sensor");
+        arena_release(&arena);
         Exit();
     }
     i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
     if (offset > 0 && offset > max_fwd_dist) {
         ULOG_WARN("[PATHER] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
+        arena_release(&arena);
         Exit();
     }
     i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
     if (offset < 0 && -offset > max_bck_dist) {
         ULOG_WARN("[PATHER] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
+        arena_release(&arena);
         Exit();
     }
 
@@ -235,6 +239,7 @@ patherTask()
         marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
         marklin_train_ctl(io_server, train, 0);
+        arena_release(&arena);
         Exit();
     }
 
@@ -338,7 +343,6 @@ patherTask()
     // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
     arena_release(&arena);
-
     Exit();
 }
 
