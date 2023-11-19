@@ -4,21 +4,21 @@
 #include "user/path/path.h"
 
 void
-runDijkstra(Track track, str8 start_str, str8 dest_str, Arena* arena, Arena* tmp)
+runDijkstra(Track* track, char* start_str, char* dest_str, Arena tmp)
 {
-    println("running dijkstra from %s to %s", str8_to_cstr(start_str), str8_to_cstr(dest_str));
-#if 0
-    usize start = (usize)map_get(&track.map, start_str, arena);
-    usize dest = (usize)map_get(&track.map, dest_str, arena);
-    TrackEdge** path = dijkstra(&track, start, dest, true, tmp);
+    println("running dijkstra from %s to %s", start_str, dest_str);
+    usize start = track_node_by_name(track, start_str) - track->nodes;
+    usize dest = track_node_by_name(track, dest_str) - track->nodes;
+
+    CBuf* path = dijkstra(track, start, dest, false, &tmp);
     if (path == NULL) {
         return;
     }
-    for (; *path != NULL; ++path) {
-        print("%s,", (*path)->dest->name);
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+        print("%s->%s,", edge->src->name, edge->dest->name);
     }
     print("\r\n");
-#endif
 }
 
 void
@@ -26,16 +26,12 @@ testDijkstra()
 {
     println("Running test suite for dijkstra -----------------");
 
-#if 0
-    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Arena tmp = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
+    Arena tmp = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
+    Track* track = get_track_a();
 
-    Track track = track_a_init(&arena);
+    runDijkstra(track, "C10", "A1", tmp);
+    runDijkstra(track, "C10", "D4", tmp);
+    runDijkstra(track, "C10", "D14", tmp);
 
-    runDijkstra(track, str8("C10"), str8("A1"), &arena, &tmp);
-    runDijkstra(track, str8("C10"), str8("D4"), &arena, &tmp);
-    runDijkstra(track, str8("C10"), str8("D14"), &arena, &tmp);
-
-#endif
     Exit();
 }

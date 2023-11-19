@@ -104,9 +104,9 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
 
     uint32_t src_rev = nodes[src].reverse - nodes;
     for (uint32_t back = dest; back != src && back != src_rev; back = prev[back]) {
-        TrackEdge** new_edge = arena_alloc(arena, TrackEdge*);
-        *new_edge = edges[back]; 
-        cbuf_push_back(path, new_edge);
+        TrackEdge* new_edge = arena_alloc(arena, TrackEdge);
+        *new_edge = *edges[back]; 
+        cbuf_push_front(path, new_edge);
 
         if (iters > 128) {
             ULOG_WARN("[dijkstra] unable to find src when constructing edge graph");
@@ -163,7 +163,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
     for (usize i = 0; i < cbuf_len(path); ++i) {
-        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         stopping_distance -= edge->dist;
         if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
             waiting_sensor = edge->src; // sensor that we should wait to trip
@@ -182,7 +182,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     // compute desired switch state
     CBuf* desired_switch_modes = cbuf_new(24);
     for (usize i = 0; i < cbuf_len(path); ++i) {
-        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         if (edge->src->type == NODE_BRANCH) {
             // compute id of the switch
             u32 switch_num = edge->src->num;
@@ -214,7 +214,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     /* ULOG_INFO("routing train..."); */
     for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
-        TrackEdge* edge = *(TrackEdge**)cbuf_get(path, i);
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         // wait for sensor
         if (edge->dest->type == NODE_SENSOR) {
             // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)

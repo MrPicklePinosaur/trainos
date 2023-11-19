@@ -11,7 +11,7 @@ testHarness()
 {
     TestFn tests[] = {
         /* &testSensor, */
-        /* &testDijkstra, */
+        &testDijkstra,
         //&testString,
         &testTraindata,
         &testMap,
