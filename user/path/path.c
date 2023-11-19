@@ -229,23 +229,37 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
                 ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, res.pos);
             }
 
-            // check if we entered a new zone, if so, flip the switches that we need
+            // check if we entered a new zone, if so, flip the switches that we need in the next zone
+            TrackNode* node = track_node_by_sensor_id(track, res.pos);
             // NOTE: need reverse since zones are denoted by sensors that are leaving zone
-            TrackNode* node = track_node_by_sensor_id(track, res.pos)->reverse;
-            if (node->zone != -1) {
-                ULOG_INFO("in zone %d", node->zone);
-                TrackNode** zone_switches = (TrackNode**)track->zones[node->zone].switches;
-                for (; *zone_switches != 0; ++zone_switches) {
-                    for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
-                        Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
-                        if ((*zone_switches)->num == pair->first) {
-                            ULOG_INFO("setting switch %d to state %d", pair->first, pair->second);
-                            SwitchChange(switch_server, pair->first, pair->second);
-                            Delay(clock_server, 5);
+            ULOG_INFO("in zone %d", node->reverse->zone);
+
+            // find next sensor
+            TrackNode* next_sensor_node = NULL;
+            for (usize offset = i+1; offset < cbuf_len(path); ++offset) {
+                TrackEdge* offset_edge = (TrackEdge*)cbuf_get(path, offset);
+                if (offset_edge->src->type == NODE_SENSOR) {
+                    next_sensor_node = offset_edge->src;
+                    break;
+                }
+            }
+            if (next_sensor_node != NULL) {
+                ZoneId next_zone = next_sensor_node->reverse->zone;
+                if (next_zone != -1) {
+                    ULOG_INFO("next in zone %d", next_zone);
+                    TrackNode** zone_switches = (TrackNode**)track->zones[next_zone].switches;
+                    for (; *zone_switches != 0; ++zone_switches) {
+                        for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
+                            Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
+                            if ((*zone_switches)->num == pair->first) {
+                                ULOG_INFO("setting switch %d to state %d", pair->first, pair->second);
+                                SwitchChange(switch_server, pair->first, pair->second);
+                            }
                         }
                     }
                 }
             }
+
 
             if (edge->src->num == waiting_sensor->num) break;
             
