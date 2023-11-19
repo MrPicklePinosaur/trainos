@@ -153,6 +153,8 @@ patherTask()
         ULOG_WARN("[PATHER] Error when receiving");
         Exit();
     }
+    reply_buf = (PatherResp){};
+    Reply(from_tid, (char*)&reply_buf, sizeof(PatherResp));
 
     usize src = msg_buf.src;
     usize dest = msg_buf.dest;
