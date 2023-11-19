@@ -26,7 +26,7 @@ typedef enum {
 typedef struct TrackNode TrackNode;
 typedef struct TrackEdge TrackEdge;
 typedef struct Track Track;
-typedef usize ZoneId;
+typedef isize ZoneId;
 
 struct TrackEdge {
     TrackEdge *reverse;
@@ -46,7 +46,7 @@ struct TrackNode {
 
 #define ZONE_MAX_SENSORS 8
 #define ZONE_MAX_SWITCHES 6
-#define ZONE_MAX 25
+#define ZONE_MAX 26
 typedef struct {
     ZoneId zone;
     TrackNode* sensors[ZONE_MAX_SENSORS+1];  

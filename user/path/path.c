@@ -8,6 +8,7 @@
 #include "user/sensor.h"
 #include "user/switch.h"
 #include "user/trainpos.h"
+#include "user/path/reserve.h"
 
 #define INF 2147483647
 #define NONE 2147483647
@@ -19,7 +20,7 @@ TrackEdge* edges[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
 CBuf*
-dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* arena)
+dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Arena* arena)
 {
     TrackNode* nodes = track->nodes;
 
@@ -49,6 +50,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
 
         visited[curr] = 1;
 
+        // TODO what happens if the destination is reserved?
         if (curr == dest) break;
 
         // we don't care which direction we arrive at a sensor from
@@ -56,6 +58,15 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
         if (curr == dest_rev) {
             dest = dest_rev;
             break;
+        }
+
+        // don't use this path if already reserved
+        ZoneId curr_zone = nodes[curr].reverse->zone;
+        if (curr_zone != -1) {
+            if (zone_is_reserved(curr_zone)) {
+
+                continue;
+            }
         }
 
         if (nodes[curr].type == NODE_SENSOR || nodes[curr].type == NODE_MERGE) {
@@ -108,12 +119,26 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
         *new_edge = *edges[back]; 
         cbuf_push_front(path, new_edge);
 
+        // reserve the path that we found
+        // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
+        ZoneId zone = nodes[back].reverse->zone;
+        if (zone != -1) {
+            ULOG_INFO("train %d reserved zone %d", train, zone);
+            if (!zone_reserve(train, zone)) {
+                ULOG_WARN("failed reservation");
+                zone_unreserve_all(train);
+                return NULL;
+            }
+        }
+        
         if (iters > 128) {
             ULOG_WARN("[dijkstra] unable to find src when constructing edge graph");
             return NULL;
         }
         ++iters;
     }
+
+    // TODO should reserve src zone too?
 
     return path;
 }
@@ -169,12 +194,13 @@ patherTask()
 
     // path is in reverse
     /* ULOG_INFO("computing path..."); */
-    CBuf* path = dijkstra(track, src, dest, false, &arena);
+    CBuf* path = dijkstra(track, train, src, dest, false, &arena);
     if (path == NULL) {
         ULOG_WARN("[PATHER] dijkstra can't find path");
         arena_release(&arena);
         Exit();
     }
+
 
     // check if offset is valid
     TrackNode dest_node = track->nodes[dest];
