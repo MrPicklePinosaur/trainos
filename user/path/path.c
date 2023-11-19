@@ -164,7 +164,7 @@ patherTask()
     /* ULOG_INFO("computing path..."); */
     CBuf* path = dijkstra(track, src, dest, false, &arena);
     if (path == NULL) {
-        ULOG_WARN("[PATH] dijkstra can't find path");
+        ULOG_WARN("[PATHER] dijkstra can't find path");
         Exit();
     }
 
@@ -173,17 +173,17 @@ patherTask()
 
     // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
     if (offset != 0 && dest_node.type != NODE_SENSOR) {
-        ULOG_WARN("[PATH] can't use offset from node other than sensor");
+        ULOG_WARN("[PATHER] can't use offset from node other than sensor");
         Exit();
     }
     i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
     if (offset > 0 && offset > max_fwd_dist) {
-        ULOG_WARN("[PATH] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
+        ULOG_WARN("[PATHER] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
         Exit();
     }
     i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
     if (offset < 0 && -offset > max_bck_dist) {
-        ULOG_WARN("[PATH] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
+        ULOG_WARN("[PATHER] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
         Exit();
     }
 
@@ -207,7 +207,7 @@ patherTask()
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
     if (waiting_sensor == 0) {
-        ULOG_WARN("[PATH] Short move");
+        ULOG_INFO("[PATHER] Short move");
         for (usize i = 0; i < cbuf_len(path); ++i) {
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
             if (edge->src->type == NODE_BRANCH) {
