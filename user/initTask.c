@@ -67,10 +67,11 @@ initTask()
     Tid clock_server = Create(1, &clockTask, "Clock Server");
 
     println("Initializing IO servers...");
-    Tid io_server_marklin = Create(5, &marklinIO, "Marklin IO Server");
-    Tid io_server_console = Create(5, &consoleIO, "Console IO Server");
+    Tid io_server_marklin = Create(2, &marklinIO, "Marklin IO Server");
+    Tid io_server_console = Create(2, &consoleIO, "Console IO Server");
 
     println("Initalizing track...");
+    marklin_init(io_server_marklin);
     track_init();
 
     println("Initializing sensors and switches...");
@@ -80,8 +81,8 @@ initTask()
     SwitchInit(switch_server);
 
     println("Initializing trains...");
-    Tid trainstate_server = Create(2, &trainStateServer, "Train State Server");
-    Tid train_pos = Create(2, &trainPosTask, "Train position task");
+    Tid trainstate_server = Create(5, &trainStateServer, "Train State Server");
+    Tid train_pos = Create(5, &trainPosTask, "Train position task");
     Tid path_tid = Create(3, &pathTask, "Path Task");
 
     println("Initalizing UI...");

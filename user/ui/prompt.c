@@ -35,8 +35,6 @@ promptTask()
     // TODO: by using a temp arena, we need to ensure that the console server reads the line we send it and copy the data before we write the next line. Otherwise we will end up with duplicate lines.
     Arena tmp_arena = arena_new(256);
 
-    marklin_init(marklin_server);
-
     for (;;) {
         int c = Getc(io_server);
 

@@ -384,7 +384,7 @@ void
 consoleIO(void)
 {
     RegisterAs(IO_ADDRESS_CONSOLE);
-    Create(5, &rxNotifierConsole, "Console IO Server RX Notifier");
+    Create(2, &rxNotifierConsole, "Console IO Server RX Notifier");
     ioServer(CONSOLE);
 }
 
@@ -392,7 +392,7 @@ void
 marklinIO(void)
 {
     RegisterAs(IO_ADDRESS_MARKLIN);
-    Create(5, &ctsNotifierMarklin, "Marklin IO Server CTS Notifier");
-    Create(5, &rxNotifierMarklin, "Marklin IO Server RX Notifier");
+    Create(2, &ctsNotifierMarklin, "Marklin IO Server CTS Notifier");
+    Create(2, &rxNotifierMarklin, "Marklin IO Server RX Notifier");
     ioServer(MARKLIN);
 }

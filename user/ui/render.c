@@ -457,7 +457,7 @@ renderTask()
 
     term_init();
 
-    Tid debug_console_server = Create(3, &renderDebugConsoleTask, "Render Debug Console Window");
+    Tid debug_console_server = Create(5, &renderDebugConsoleTask, "Render Debug Console Window");
     set_log_server(debug_console_server);
     set_log_mode(LOG_MODE_TRAIN_TERM);
 
@@ -482,10 +482,10 @@ renderTask()
     w_putc_mv(&prompt_win, '>', 1, 1);
     w_flush(&prompt_win);
 
-    Create(3, &renderSwitchWinTask, "Render Switch Window");
-    Create(3, &renderSensorWinTask, "Render Sensor Window");
-    Create(3, &renderDiagnosticWinTask, "Render Diagnostic Window");
-    Create(3, &renderTrainStateWinTask, "Render Train State Window");
+    Create(5, &renderSwitchWinTask, "Render Switch Window");
+    Create(5, &renderSensorWinTask, "Render Sensor Window");
+    Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
+    Create(5, &renderTrainStateWinTask, "Render Train State Window");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
@@ -550,8 +550,8 @@ void
 uiTask()
 {
 
-    Tid render_tid = Create(3, &renderTask, "Render Task");
-    Tid prompt_tid = Create(2, &promptTask, "Prompt Task");
+    Tid render_tid = Create(5, &renderTask, "Render Task");
+    Tid prompt_tid = Create(5, &promptTask, "Prompt Task");
 
     WaitTid(prompt_tid);
 
