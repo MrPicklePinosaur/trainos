@@ -333,7 +333,7 @@ pathTask(void)
             continue;
         }
         usize dest_sensor = dest - track->nodes;
-        ULOG_INFO("routing train %d from %d to %d", start_sensor, dest_sensor);
+        ULOG_INFO("routing train %d from %d to %d", msg_buf.train, start_sensor, dest_sensor);
 
         CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, trainpos_server, track, start_sensor, dest_sensor, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 
