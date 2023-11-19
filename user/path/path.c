@@ -357,10 +357,6 @@ pathTask(void)
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
-    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Arena tmp_saved = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
-    Arena tmp;
-
     Track* track = get_track_a();
 
     PathMsg msg_buf;
@@ -376,8 +372,6 @@ pathTask(void)
 
         reply_buf = (PathResp){};
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
-
-        tmp = tmp_saved; // reset arena
 
         isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train);
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
