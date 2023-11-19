@@ -410,7 +410,7 @@ pathTask(void)
         reply_buf = (PathResp){};
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
 
-        isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train);
+        isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train).pos;
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
         if (dest == NULL) {
             // TODO send back error?

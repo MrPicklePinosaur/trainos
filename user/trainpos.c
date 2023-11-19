@@ -25,7 +25,7 @@ typedef struct {
         isize query;
         struct {
             usize train;
-            usize pos;
+            TrainPos pos;
         } triggered;
     } data;
 } TrainposMsg;
@@ -35,14 +35,14 @@ typedef struct {
     union {
         struct {
             usize train;
-            usize pos; // the location the train is currently at 
+            TrainPos pos; // the location the train is currently at 
         } wait;
-        usize query;
+        TrainPos query;
     } data;
 } TrainposResp;
 
 usize trains[TRAIN_COUNT] = {2, 47};
-usize train_pos[TRAIN_COUNT] = {0};
+TrainPos train_pos[TRAIN_COUNT] = {(TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}, (TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}};
 
 TrainPosWaitResult
 trainPosWait(Tid trainpos_server, isize train)
@@ -59,10 +59,10 @@ trainPosWait(Tid trainpos_server, isize train)
         ULOG_WARN("trainPosWait errored");
         return (TrainPosWaitResult){0};
     }
-    return (TrainPosWaitResult){ resp_buf.data.wait.train, resp_buf.data.wait.pos };
+    return (TrainPosWaitResult){ resp_buf.data.wait.train, resp_buf.data.wait.pos.pos, resp_buf.data.wait.pos.dir };
 }
 
-isize
+TrainPos
 trainPosQuery(Tid trainpos_server, isize train)
 {
     TrainposResp resp_buf;
@@ -75,7 +75,7 @@ trainPosQuery(Tid trainpos_server, isize train)
     int ret = Send(trainpos_server, (const char*)&send_buf, sizeof(TrainposMsg), (char*)&resp_buf, sizeof(TrainposResp));
     if (ret < 0) {
         ULOG_WARN("trainPosQuery errored");
-        return -1;
+        return (TrainPos){0};
     }
     return resp_buf.data.query;
 }
@@ -99,7 +99,7 @@ trainPosNotifierTask()
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
             
             usize train = trains[i];
-            TrackNode* node = track_node_by_sensor_id(track, train_pos[i]);
+            TrackNode* node = track_node_by_sensor_id(track, train_pos[i].pos);
 
             // walk node graph until next sensor
             TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
@@ -112,7 +112,7 @@ trainPosNotifierTask()
             // see if there is a train that is expecting this sensor
             if (sensor_id == next_sensor->num) {
                 //ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
-                train_pos[i] = sensor_id;
+                train_pos[i].pos = sensor_id;
 
                 // notify server that train position changed
                 TrainposMsg send_buf = (TrainposMsg) {
@@ -156,7 +156,7 @@ trainPosTask()
         marklin_train_ctl(io_server, train, 3); // some decently slow speed
         int sensor = WaitForSensor(sensor_server, -1);
 
-        train_pos[i] = sensor;
+        train_pos[i].pos = sensor;
         //ULOG_INFO("train %d starting at %d", train, sensor);
 
         // stop train for now
