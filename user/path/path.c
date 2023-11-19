@@ -141,11 +141,9 @@ patherTask()
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
-    Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
     Track* track = get_track_a();
 
     int from_tid;
-
     PatherMsg msg_buf;
     PatherResp reply_buf;
     int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PatherMsg));
@@ -166,6 +164,8 @@ patherTask()
         ULOG_INFO("[PATHER] Source equals destination");
         Exit();
     }
+
+    Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
     // path is in reverse
     /* ULOG_INFO("computing path..."); */
