@@ -63,14 +63,14 @@ send_perf_test(u32 msglen)
     char* msg = alloc(sizeof(char)*msglen);
     char* reply_buf = alloc(sizeof(char)*msglen);
 
-    Timer* timer = timer_new();
+    Stopwatch* stopwatch = stopwatch_new();
 
     for (u32 i = 0; i < PERF_TEST_REPITITIONS; i++) {
-        timer_start(timer);
+        stopwatch_start(stopwatch);
         Send((Tid)receive_tid, msg, msglen, reply_buf, msglen);
-        timer_end(timer);
+        stopwatch_end(stopwatch);
     }
-    println("Samples: %u, Mean: %u, Variance: %u, Worst: %d", timer->samples, timer_get_mean(timer), timer_get_variance(timer), timer->worst);
+    println("Samples: %u, Mean: %u, Variance: %u, Worst: %d", stopwatch->samples, stopwatch_get_mean(stopwatch), stopwatch_get_variance(stopwatch), stopwatch->worst);
     Exit();
 }
 
