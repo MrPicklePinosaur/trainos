@@ -218,6 +218,8 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     /* CBuf* stops = cbuf_new(); */
 
+    marklin_train_ctl(io_server, train, train_speed);
+
     /* ULOG_INFO("routing train..."); */
     // start at index one since we skip the starting node (assume no short move)
     for (usize i = 1; i < cbuf_len(path); ++i) {
@@ -326,8 +328,6 @@ pathTask(void)
         Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
 
         tmp = tmp_saved; // reset arena
-
-        marklin_train_ctl(io_server, msg_buf.train, msg_buf.speed);
 
         isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train);
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
