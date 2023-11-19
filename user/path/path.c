@@ -162,11 +162,15 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
-    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
+    for (usize i = usize_sub(cbuf_len(path), 1);; --i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         stopping_distance -= edge->dist;
         if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
             waiting_sensor = edge->src; // sensor that we should wait to trip
+            break;
+        }
+        // Can't put i >= 0 in the for loop because i is unsigned
+        if (i == 0) {
             break;
         }
     }
