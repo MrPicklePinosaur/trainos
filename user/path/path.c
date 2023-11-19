@@ -194,16 +194,12 @@ patherTask()
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
     u32 distance_to_dest = 0;
-    for (usize i = usize_sub(cbuf_len(path), 1);; --i) {
+    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; usize_sub(i, 1)) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         stopping_distance -= edge->dist;
         distance_to_dest += edge->dist;
         if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
             waiting_sensor = edge->src; // sensor that we should wait to trip
-            break;
-        }
-        // Can't put i >= 0 in the for loop because i is unsigned
-        if (i == 0) {
             break;
         }
     }

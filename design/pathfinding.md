@@ -48,6 +48,18 @@ IDEAL solution
 - we release the previous zone the instant we enter the next zone
 - at same time we lock the next zone, we also release previous zone, the reservation system should guarentee that we can lock the next zone
 
+## Rservation table
+
+How granular should the time slice be?
+- constant time slices? (t, zone)
+- Should instead a time period be inserted of arbirtrary granulatity? (t_start, t_end, zone)
+
+CA* basic impl
+- use true distance as heuristic (easy to compute all shortest distance between pair of nodes in graph)
+- graph is technically small enough that we can even get away with space-time dijkstra?
+
+Every time train enters new zone it will use its current velocity to predict when it will need zones and reserve it when some buffer time
+
 ## Other considerations
 
 What to do about terminals? terminals may end up blocking the switches that are close to it for a long time
@@ -55,6 +67,8 @@ What to do about terminals? terminals may end up blocking the switches that are 
 
 How to handle reservations for reversing?
 - might need to enter a zone, exit, switch the switch, and renter the zone, which will take quite a while
+
+Use higher velocities if we have a longer path that is reserved?
 
 
 ## RESOURCES
