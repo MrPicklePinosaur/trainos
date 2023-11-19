@@ -131,7 +131,8 @@ tasktable_set_current_task(Tid tid)
     current->total_time += timer_get() - current->enter_time;
 
     if (timer_get() - last_time > 1000000) {
-        tasktable_print_running_time();
+        // TODO suppressing print, make this configurable
+        /* tasktable_print_running_time(); */
         last_time = timer_get();
     }
 

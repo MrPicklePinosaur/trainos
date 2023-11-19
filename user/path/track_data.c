@@ -83,6 +83,17 @@ track_next_sensor(Tid switch_server, Track* track, TrackNode* node) {
     }
 }
 
+bool
+track_edge_cmp(TrackEdge a, TrackEdge b)
+{
+    if (a.type != b.type) return false;
+    if (a.src != b.src) return false;
+    if (a.dest != b.dest) return false;
+    if (a.dist != b.dist) return false;
+    if (a.reverse != b.reverse) return false;
+    return true;
+}
+
 void
 track_init()
 {

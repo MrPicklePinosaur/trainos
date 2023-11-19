@@ -67,6 +67,8 @@ void track_init();
 Track* get_track_a();
 Track* get_track_b();
 
+bool track_edge_cmp(TrackEdge a, TrackEdge b);
+
 TrackNode* track_node_by_name(Track* track, char* name);
 TrackNode* track_node_by_sensor_id(Track* track, u32 sensor_id);
 TrackNode* track_node_by_branch_id(Track* track, usize branch_id);
