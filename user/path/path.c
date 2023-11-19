@@ -118,24 +118,54 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
     return path;
 }
 
-typedef enum {
-    CALCULATE_PATH_OK = 0,
-    CALCULATE_PATH_SHORT_MOVE,
-    CALCULATE_PATH_NO_PATH,
-    CALCULATE_PATH_INVALID_OFFSET,
-} CalculatePathRet;
-
 typedef PAIR(u32, SwitchMode) Pair_u32_SwitchMode;
 
-int
-calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_server, Tid trainpos_server, Track* track, usize src, usize dest, usize train, usize train_speed, i32 offset, Arena* arena)
+typedef struct {
+    usize src;
+    usize dest;
+    usize train;
+    usize train_speed;
+    i32 offset;
+} PatherMsg;
+
+typedef struct {
+
+} PatherResp;
+
+void
+patherTask()
 {
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
+
+    Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
+    Track* track = get_track_a();
+
+    int from_tid;
+
+    PatherMsg msg_buf;
+    PatherResp reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PatherMsg));
+    if (msg_len < 0) {
+        ULOG_WARN("[PATHER] Error when receiving");
+        Exit();
+    }
+
+    usize src = msg_buf.src;
+    usize dest = msg_buf.dest;
+    usize train = msg_buf.train;
+    usize train_speed = msg_buf.train_speed;
+    i32 offset = msg_buf.offset;
+
     // path is in reverse
     /* ULOG_INFO("computing path..."); */
-    CBuf* path = dijkstra(track, src, dest, false, arena);
+    CBuf* path = dijkstra(track, src, dest, false, &arena);
     if (path == NULL) {
         ULOG_WARN("[PATH] dijkstra can't find path");
-        return CALCULATE_PATH_NO_PATH;
+        Exit();
     }
 
     // check if offset is valid
@@ -144,17 +174,17 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
     if (offset != 0 && dest_node.type != NODE_SENSOR) {
         ULOG_WARN("[PATH] can't use offset from node other than sensor");
-        return CALCULATE_PATH_INVALID_OFFSET;
+        Exit();
     }
     i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
     if (offset > 0 && offset > max_fwd_dist) {
         ULOG_WARN("[PATH] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
-        return CALCULATE_PATH_INVALID_OFFSET;
+        Exit();
     }
     i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
     if (offset < 0 && -offset > max_bck_dist) {
         ULOG_WARN("[PATH] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
-        return CALCULATE_PATH_INVALID_OFFSET;
+        Exit();
     }
 
     // compute which sensor to issue stop command from
@@ -202,7 +232,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
         marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
         marklin_train_ctl(io_server, train, 0);
-        return CALCULATE_PATH_SHORT_MOVE;
+        Exit();
     }
 
     // compute desired switch state
@@ -215,7 +245,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
             if (track_edge_cmp(edge->src->edge[DIR_STRAIGHT], *edge)) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
-                Pair_u32_SwitchMode* pair = arena_alloc(arena, Pair_u32_SwitchMode);
+                Pair_u32_SwitchMode* pair = arena_alloc(&arena, Pair_u32_SwitchMode);
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_STRAIGHT;
                 cbuf_push_back(desired_switch_modes, pair);
@@ -223,7 +253,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
             }
             else if (track_edge_cmp(edge->src->edge[DIR_CURVED], *edge)) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
-                Pair_u32_SwitchMode* pair = arena_alloc(arena, Pair_u32_SwitchMode);
+                Pair_u32_SwitchMode* pair = arena_alloc(&arena, Pair_u32_SwitchMode);
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_CURVED;
                 cbuf_push_back(desired_switch_modes, pair);
@@ -304,7 +334,9 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
-    return CALCULATE_PATH_OK;
+    arena_release(&arena);
+
+    Exit();
 }
 
 typedef struct {
@@ -361,9 +393,16 @@ pathTask(void)
         usize dest_sensor = dest - track->nodes;
         ULOG_INFO("routing train %d from %d to %d", msg_buf.train, start_sensor, dest_sensor);
 
-        CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, trainpos_server, track, start_sensor, dest_sensor, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
-
-
+        PatherResp resp_buf;
+        PatherMsg send_buf = (PatherMsg) {
+            .src = start_sensor,
+            .dest = dest_sensor,
+            .train = msg_buf.train,
+            .train_speed = msg_buf.speed,
+            .offset = msg_buf.offset
+        };
+        int pather_task = Create(2, &patherTask, "Pather Task");
+        Send(pather_task, (const char*)&send_buf, sizeof(PatherMsg), (char*)&resp_buf, sizeof(PatherResp));
     }
 
     Exit();
