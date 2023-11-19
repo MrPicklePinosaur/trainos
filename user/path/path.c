@@ -162,7 +162,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
-    for (usize i = 0; i < cbuf_len(path); ++i) {
+    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         stopping_distance -= edge->dist;
         if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
@@ -180,6 +180,7 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     }
 
     // compute desired switch state
+#if 0
     CBuf* desired_switch_modes = cbuf_new(24);
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
@@ -206,27 +207,30 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
             }
         }
     }
+#endif
     /* ULOG_INFO("switching switches..."); */
 
-    //ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
+    ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
     /* CBuf* stops = cbuf_new(); */
 
     /* ULOG_INFO("routing train..."); */
-    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; --i) {
+    // start at index one since we skip the starting node (assume no short move)
+    for (usize i = 1; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         // wait for sensor
-        if (edge->dest->type == NODE_SENSOR) {
+        if (edge->src->type == NODE_SENSOR) {
             // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
             // block until we hit desired sensor
             // ULOG_INFO("expecting sensor %s", edge->dest->name);
             /* WaitForSensor(sensor_server, edge->dest->num); */
             TrainPosWaitResult res = trainPosWait(trainpos_server, train);
-            if (res.pos != edge->dest->num) {
-                ULOG_WARN("expect sensor %d, got sensor %d", edge->dest->num, res.pos);
+            if (res.pos != edge->src->num) {
+                ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, res.pos);
             }
 
             // check if we entered a new zone, if so, flip the switches that we need
+#if 0
             TrackNode* node = track_node_by_sensor_id(track, res.pos);
             if (node->zone != -1) {
                 ULOG_INFO("in zone %d", node->zone);
@@ -242,8 +246,9 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
                     }
                 }
             }
+#endif
 
-            if (edge->dest->num == waiting_sensor->num) break;
+            if (edge->src->num == waiting_sensor->num) break;
             
         }
     }
