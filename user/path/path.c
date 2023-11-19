@@ -162,6 +162,11 @@ patherTask()
     usize train_speed = msg_buf.train_speed;
     i32 offset = msg_buf.offset;
 
+    if (src == dest || src == track->nodes[dest].reverse - track->nodes) {
+        ULOG_INFO("[PATHER] Source equals destination");
+        Exit();
+    }
+
     // path is in reverse
     /* ULOG_INFO("computing path..."); */
     CBuf* path = dijkstra(track, src, dest, false, &arena);
