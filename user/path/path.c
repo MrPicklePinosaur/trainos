@@ -120,6 +120,7 @@ dijkstra(Track* track, uint32_t src, uint32_t dest, bool allow_reversal, Arena* 
 
 typedef enum {
     CALCULATE_PATH_OK = 0,
+    CALCULATE_PATH_SHORT_MOVE,
     CALCULATE_PATH_NO_PATH,
     CALCULATE_PATH_INVALID_OFFSET,
 } CalculatePathRet;
@@ -162,9 +163,11 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
 
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
+    u32 distance_to_dest = 0;
     for (usize i = usize_sub(cbuf_len(path), 1);; --i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         stopping_distance -= edge->dist;
+        distance_to_dest += edge->dist;
         if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
             waiting_sensor = edge->src; // sensor that we should wait to trip
             break;
@@ -178,9 +181,28 @@ calculatePath(Tid io_server, Tid sensor_server, Tid switch_server, Tid clock_ser
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
     if (waiting_sensor == 0) {
-        // TODO there are some cases that the src and dest are too close
-        ULOG_WARN("[PATH] Could not find usable sensor");
-        return CALCULATE_PATH_NO_PATH;
+        ULOG_WARN("[PATH] Short move");
+        for (usize i = 0; i < cbuf_len(path); ++i) {
+            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+            if (edge->src->type == NODE_BRANCH) {
+                // compute id of the switch
+                u32 switch_num = edge->src->num;
+
+                if (track_edge_cmp(edge->src->edge[DIR_STRAIGHT], *edge)) {
+                    SwitchChange(switch_server, switch_num, SWITCH_MODE_STRAIGHT);
+                }
+                else if (track_edge_cmp(edge->src->edge[DIR_CURVED], *edge)) {
+                    SwitchChange(switch_server, switch_num, SWITCH_MODE_CURVED);
+                }
+                else {
+                    PANIC("invalid branch");
+                }
+            }
+        }
+        marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
+        Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
+        marklin_train_ctl(io_server, train, 0);
+        return CALCULATE_PATH_SHORT_MOVE;
     }
 
     // compute desired switch state
