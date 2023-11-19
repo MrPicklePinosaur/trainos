@@ -231,23 +231,30 @@ switchServerTask()
             // Switch requested switch
             uint32_t switch_id = msg_buf.data.change.switch_id;
             SwitchMode mode = msg_buf.data.change.mode;
-            marklin_switch_ctl(marklin_server, switch_id, mode);
-            states[switch_index(switch_id)] = mode;
+            if (states[switch_index(switch_id)] != mode) {
+                // only send marklin the command if the mode changed
+                marklin_switch_ctl(marklin_server, switch_id, mode);
+                states[switch_index(switch_id)] = mode;
+            }
             try_unblock(states, switch_requests, switch_id);
 
             // Switch special center switches
             if (switch_id == 153 || switch_id == 154) {
                 u32 second_switch = switch_id == 153 ? 154 : 153;
                 SwitchMode second_mode = mode == SWITCH_MODE_STRAIGHT ? SWITCH_MODE_CURVED : SWITCH_MODE_STRAIGHT;
-                marklin_switch_ctl(marklin_server, second_switch, second_mode);
-                states[switch_index(second_switch)] = second_mode;
+                if (states[switch_index(second_switch)] != second_mode) {
+                    marklin_switch_ctl(marklin_server, second_switch, second_mode);
+                    states[switch_index(second_switch)] = second_mode;
+                }
                 try_unblock(states, switch_requests, second_switch);
             }
             else if (switch_id == 155 || switch_id == 156) {
                 u32 second_switch = switch_id == 155 ? 156 : 155;
                 SwitchMode second_mode = mode == SWITCH_MODE_STRAIGHT ? SWITCH_MODE_CURVED : SWITCH_MODE_STRAIGHT;
-                marklin_switch_ctl(marklin_server, second_switch, second_mode);
-                states[switch_index(second_switch)] = second_mode;
+                if (states[switch_index(second_switch)] != mode) {
+                    marklin_switch_ctl(marklin_server, second_switch, second_mode);
+                    states[switch_index(second_switch)] = second_mode;
+                }
                 try_unblock(states, switch_requests, second_switch);
             }
         }
