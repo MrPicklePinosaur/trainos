@@ -112,7 +112,7 @@ tasktable_get_task(Tid tid)
 void
 tasktable_print_task_info(void)
 {
-    uart_printf(CONSOLE, "\033[36;1H\033[0J");
+    uart_printf(CONSOLE, "\033[36;1H");
     for (u32 i = 0; i < TASK_TABLE_SIZE; i++) {
         if (tasktable.task_nodes[i]) {
             for (TaskNode* current = tasktable.task_nodes[i]; current != nullptr; current = current->next) {
@@ -138,7 +138,7 @@ tasktable_print_task_info(void)
                 else if (current->task->state == TASKSTATE_AWAIT_EVENT_WAIT) {
                     uart_printf(CONSOLE, "AWAIT EVENT WAIT");
                 }
-                uart_printf(CONSOLE, " | %d %s\r\n", current->task->tid, current->task->name);
+                uart_printf(CONSOLE, " | %d %s\033[0K\r\n", current->task->tid, current->task->name);
             }
         }
     }
