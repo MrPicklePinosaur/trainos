@@ -6,6 +6,7 @@
 #include "marklin.h"
 #include "switch.h"
 #include "user/path/track_data.h"
+#include "user/path/train_data.h"
 
 #include "trainpos.h"
 
@@ -14,12 +15,14 @@
 typedef enum {
     TRAINPOS_TRIGGERED,
     TRAINPOS_WAIT,
+    TRAINPOS_QUERY,
 } TrainposMsgType;
 
 typedef struct {
     TrainposMsgType type;
     union {
         isize wait;
+        isize query;
         struct {
             usize train;
             usize pos;
@@ -34,6 +37,7 @@ typedef struct {
             usize train;
             usize pos; // the location the train is currently at 
         } wait;
+        usize query;
     } data;
 } TrainposResp;
 
@@ -56,6 +60,24 @@ trainPosWait(Tid trainpos_server, isize train)
         return (TrainPosWaitResult){0};
     }
     return (TrainPosWaitResult){ resp_buf.data.wait.train, resp_buf.data.wait.pos };
+}
+
+isize
+trainPosQuery(Tid trainpos_server, isize train)
+{
+    TrainposResp resp_buf;
+    TrainposMsg send_buf = (TrainposMsg) {
+        .type = TRAINPOS_QUERY,
+        .data = {
+            .query = train
+        }
+    };
+    int ret = Send(trainpos_server, (const char*)&send_buf, sizeof(TrainposMsg), (char*)&resp_buf, sizeof(TrainposResp));
+    if (ret < 0) {
+        ULOG_WARN("trainPosQuery errored");
+        return -1;
+    }
+    return resp_buf.data.query;
 }
 
 void
@@ -199,6 +221,15 @@ trainPosTask()
             list_push_back(trainpos_requests, request);
 
             // Don't reply just yet
+        }
+        else if (msg_buf.type == TRAINPOS_QUERY) {
+            TrainposResp reply_buf = (TrainposResp) {
+                .type = TRAINPOS_QUERY,
+                .data = {
+                    .query = train_pos[get_train_index(msg_buf.data.query)]
+                }
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainposResp));
         }
         else {
             ULOG_WARN("[TRAINPOS SERVER] Invalid message type");

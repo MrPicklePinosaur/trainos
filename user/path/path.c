@@ -325,12 +325,7 @@ pathTask(void)
 
         marklin_train_ctl(io_server, msg_buf.train, msg_buf.speed);
 
-        // wait for any sensor trigger, that will be our start node
-        int start_sensor = WaitForSensor(sensor_server, -1);
-        if (start_sensor < 0) {
-            PANIC("failed to get starting sensor");
-        }
-
+        isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train);
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
         if (dest == NULL) {
             // TODO send back error?
@@ -338,6 +333,7 @@ pathTask(void)
             continue;
         }
         usize dest_sensor = dest - track->nodes;
+        ULOG_INFO("routing train %d from %d to %d", start_sensor, dest_sensor);
 
         CalculatePathRet ret = calculatePath(io_server, sensor_server, switch_server, clock_server, trainpos_server, track, start_sensor, dest_sensor, msg_buf.train, msg_buf.speed, msg_buf.offset, &tmp);
 

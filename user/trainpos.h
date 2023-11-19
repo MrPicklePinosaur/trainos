@@ -11,6 +11,7 @@ typedef struct {
     usize pos;
 } TrainPosWaitResult;
 TrainPosWaitResult trainPosWait(Tid trainpos_server, isize train);
+isize trainPosQuery(Tid trainpos_server, isize train); // same as trainPosWait but doesn't wait for a sensor to trigger
 
 void trainPosTask();
 
