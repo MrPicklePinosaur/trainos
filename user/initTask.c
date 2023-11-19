@@ -12,6 +12,7 @@
 
 #include "kern/perf.h"
 #include "kern/dev/uart.h"
+#include "user/path/train_data.h"
 
 
 typedef struct {
@@ -77,7 +78,13 @@ initTask()
     println("Initializing sensors and switches...");
     Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");
-    marklin_go(io_server_marklin); // marklin needs to be on to change switches
+
+    marklin_stop(io_server_marklin);
+    for (usize i = 0; i < TRAIN_DATA_TRAIN_COUNT; ++i) {
+        marklin_train_ctl(io_server_marklin, TRAIN_DATA_TRAINS[i], 0);
+    }
+    marklin_go(io_server_marklin);
+
     SwitchInit(switch_server);
 
     println("Initializing trains...");

@@ -149,12 +149,6 @@ trainPosTask()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
-    marklin_stop(io_server);
-    for (usize i = 0; i < TRAIN_COUNT; ++i) {
-        marklin_train_ctl(io_server, trains[i], 0);
-    }
-    marklin_go(io_server);
-
     // calibrate trains to determine their intial positions
     for (usize i = 0; i < TRAIN_COUNT; ++i) {
         usize train = trains[i];
