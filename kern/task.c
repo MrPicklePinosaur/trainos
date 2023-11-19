@@ -110,13 +110,35 @@ tasktable_get_task(Tid tid)
 }
 
 void
-tasktable_print_running_time(void)
+tasktable_print_task_info(void)
 {
-    uart_printf(CONSOLE, "\033[36;1H");
+    uart_printf(CONSOLE, "\033[36;1H\033[0J");
     for (u32 i = 0; i < TASK_TABLE_SIZE; i++) {
         if (tasktable.task_nodes[i]) {
             for (TaskNode* current = tasktable.task_nodes[i]; current != nullptr; current = current->next) {
-                uart_printf(CONSOLE, "%d %d | %d %s\r\n", current->task->total_time*100/(timer_get()-start_time), current->task->total_time, current->task->tid, current->task->name);
+                uart_printf(CONSOLE, "%d %d | ", current->task->total_time*100/(timer_get()-start_time), current->task->total_time);
+                if (current->task->state == TASKSTATE_ACTIVE) {
+                    uart_printf(CONSOLE, "ACTIVE");
+                }
+                else if (current->task->state == TASKSTATE_READY) {
+                    uart_printf(CONSOLE, "READY");
+                }
+                else if (current->task->state == TASKSTATE_EXITED) {
+                    uart_printf(CONSOLE, "EXITED");
+                }
+                else if (current->task->state == TASKSTATE_SEND_WAIT) {
+                    uart_printf(CONSOLE, "SEND WAIT");
+                }
+                else if (current->task->state == TASKSTATE_RECEIVE_WAIT) {
+                    uart_printf(CONSOLE, "RECEIVE WAIT");
+                }
+                else if (current->task->state == TASKSTATE_REPLY_WAIT) {
+                    uart_printf(CONSOLE, "REPLY WAIT");
+                }
+                else if (current->task->state == TASKSTATE_AWAIT_EVENT_WAIT) {
+                    uart_printf(CONSOLE, "AWAIT EVENT WAIT");
+                }
+                uart_printf(CONSOLE, " | %d %s\r\n", current->task->tid, current->task->name);
             }
         }
     }
@@ -133,7 +155,7 @@ tasktable_set_current_task(Tid tid)
 
     if (timer_get() - last_time > 1000000) {
         // TODO suppressing print, make this configurable
-        /* tasktable_print_running_time(); */
+        /* tasktable_print_task_info(); */
         last_time = timer_get();
     }
 
