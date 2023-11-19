@@ -62,6 +62,9 @@ typedef struct {
     ReceiveBuf* receive_buf;
 
     EventId blocking_event;
+
+    u64 enter_time;
+    u64 total_time;
 } Task;
 
 // Nodes for a linked list

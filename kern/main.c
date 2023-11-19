@@ -39,6 +39,7 @@ int kmain() {
 
     /* Tid init_tid = handle_svc_create(4, &K2, "K2"); */
     Task* init_task = tasktable_get_task(init_tid);
+    init_task->enter_time = timer_get();
     asm_enter_usermode(init_task->sf);
 
     return 0;

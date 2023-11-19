@@ -1,4 +1,5 @@
 #include <trainstd.h>
+#include "./dev/uart.h"
 #include "task.h"
 #include "addrspace.h"
 #include "alloc.h"
@@ -15,9 +16,15 @@ struct TaskTable {
     TaskNode* task_nodes[TASK_TABLE_SIZE];
 };
 
+static u64 last_time;
+static u64 start_time;
+
 void
 tasktable_init(void)
 {
+    last_time = 0;
+    start_time = timer_get();
+
     current_task = 1; // uninitalized
     tasktable = (TaskTable) {
         .next_tid = 1
@@ -60,7 +67,9 @@ tasktable_create_task(u32 priority, void (*entrypoint)(), const char* name)
         .receive_queue = cbuf_new(RECEIVE_QUEUE_MAX_LEN),
         .send_buf = send_buf,
         .receive_buf = receive_buf,
-        .blocking_event = EVENT_NONE
+        .blocking_event = EVENT_NONE,
+        .enter_time = 0,
+        .total_time = 0
     };
 
     TaskNode* new_task_node = kalloc(sizeof(TaskNode));
@@ -100,12 +109,35 @@ tasktable_get_task(Tid tid)
 }
 
 void
+tasktable_print_running_time(void)
+{
+    uart_printf(CONSOLE, "\033[36;1H");
+    for (u32 i = 0; i < TASK_TABLE_SIZE; i++) {
+        if (tasktable.task_nodes[i]) {
+            for (TaskNode* current = tasktable.task_nodes[i]; current != nullptr; current = current->next) {
+                uart_printf(CONSOLE, "%d %d | %d %s\r\n", current->task->total_time*100/(timer_get()-start_time), current->task->total_time, current->task->tid, current->task->name);
+            }
+        }
+    }
+}
+
+void
 tasktable_set_current_task(Tid tid)
 {
     // make old current task ready
     /* tasktable_get_task(current_task)->state = TASKSTATE_READY; */
 
-    tasktable_get_task(tid)->state = TASKSTATE_ACTIVE;
+    Task* current = tasktable_get_task(current_task);
+    current->total_time += timer_get() - current->enter_time;
+
+    if (timer_get() - last_time > 1000000) {
+        tasktable_print_running_time();
+        last_time = timer_get();
+    }
+
+    Task* next = tasktable_get_task(tid);
+    next->state = TASKSTATE_ACTIVE;
+    next->enter_time = timer_get();
     current_task = tid;
 }
 
