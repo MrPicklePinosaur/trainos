@@ -491,7 +491,7 @@ pathTask(void)
             continue;
         }
 
-        isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train).pos;
+        isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train);
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
         if (dest == NULL) {
             // TODO send back error?
