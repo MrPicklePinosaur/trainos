@@ -88,7 +88,6 @@ renderTrainStateWinTask()
 
     Delay(clock_server, 30);
 
-    // TODO i dont like how we are loading the track twice (perhaps have some global accessable way of querying current track)
     Track* track = get_track_a();
 
     Window train_state_win = win_init(84, 2, 32, 17);
@@ -116,135 +115,6 @@ renderTrainStateWinTask()
         w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_flush(&train_state_win);
     }
-    // TODO a lot of this code is horrible and needs a rewrite
-#if 0
-    Arena arena = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Arena tmp_base = arena_new(256);
-    Arena tmp;
-
-    const usize TRAIN = 2;
-    usize next_sensor_id = 0;
-    usize last_sensor_time = 0;
-    usize predicted_sensor_time = 0;
-
-    for (;;) {
-        tmp = tmp_base; 
-        w_flush(&train_state_win);
-
-        // TODO this currently only supports one train
-        usize sensor_id = WaitForSensor(sensor_server, -1);
-        Delay(clock_server, 5);
-
-        // TODO this is bad duplicated code (should use cstr_format instead)
-        usize sensor_group = sensor_id / 16;
-        usize sensor_index = (sensor_id % 16) + 1;
-        w_attr(&train_state_win, SENSOR_COLORS[sensor_group]);
-        str8 sensor_str = str8_format(&tmp, "%c%d", sensor_group+'A', sensor_index);
-        w_puts_mv(&train_state_win, "    ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
-        w_puts_mv(&train_state_win, str8_to_cstr(sensor_str), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y);
-        w_attr_reset(&train_state_win);
-
-        // predict what the next sensor will be using switch states to walk the graph
-
-        TrackNode cur_node = *track_node_by_sensor_id(track, sensor_id);
-        bool is_unknown = false;
-        int dist_to_next = 0; // distance from current sensor to next sensor
-        //ULOG_INFO("starting at %s", cur_node.name);
-        do {
-
-            if (cur_node.type == NODE_EXIT || cur_node.type == NODE_NONE) {
-                //ULOG_INFO("hit exit or none node");
-                is_unknown = true;
-                break;
-            }
-
-            if (cur_node.type == NODE_BRANCH) {
-                // query switch state to find next
-                SwitchMode switch_mode = SwitchQuery(switch_server, cur_node.num);
-                //ULOG_INFO("queried switch mode for switch %d: %d", cur_node.num, switch_mode);
-                if (switch_mode == SWITCH_MODE_UNKNOWN) {
-                    //ULOG_INFO("hit switch with unknown state");
-                    is_unknown = true;
-                    break;
-                }
-                else if (switch_mode == SWITCH_MODE_STRAIGHT) {
-                    cur_node = *(cur_node.edge[DIR_STRAIGHT].dest);
-                    dist_to_next += cur_node.edge[DIR_STRAIGHT].dist;
-                }
-                else if (switch_mode == SWITCH_MODE_CURVED) {
-                    cur_node = *(cur_node.edge[DIR_CURVED].dest);
-                    dist_to_next += cur_node.edge[DIR_CURVED].dist;
-                } else {
-                    UNREACHABLE("unexpected switch mode");
-                }
-            } else {
-                cur_node = *(cur_node.edge[DIR_AHEAD].dest);
-                dist_to_next += cur_node.edge[DIR_AHEAD].dist;
-            }
-
-            //ULOG_INFO("walking to %s", cur_node.name);
-
-        } while (cur_node.type != NODE_SENSOR);
-
-        if (is_unknown) {
-            w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-            continue;
-        }
-
-        // print next sensor
-        usize color_index = cur_node.name[0]-'A';
-        if (!(0 <= color_index && color_index <= 5)) {
-            PANIC("INVALID COLOR INDEX %d", color_index);
-        }
-        w_attr(&train_state_win, SENSOR_COLORS[color_index]);
-        w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-        w_puts_mv(&train_state_win, cur_node.name, TRAIN_STATE_TABLE_NEXT_X, TRAIN_STATE_TABLE_Y);
-        w_attr_reset(&train_state_win);
-
-        usize train_speed = TrainstateGet(trainstate_server, TRAIN) & TRAIN_SPEED_MASK;
-        if (!(train_speed == TRAIN_SPEED_SNAIL || train_speed == TRAIN_SPEED_LOW || train_speed == TRAIN_SPEED_MED || train_speed == TRAIN_SPEED_HIGH)) {
-            continue;
-        }
-
-        // TODO we only support prediction for speed 5, 8, 11, 14
-        // get train speed
-        usize train_vel = train_data_vel(TRAIN, train_speed);
-
-        isize elapsed = Time(clock_server) - last_sensor_time; // elapsed is in ticks
-        last_sensor_time = Time(clock_server);
-
-        // Compare elapsed time with our predicted
-        if (predicted_sensor_time != 0) {
-            isize t_err = elapsed-predicted_sensor_time;
-            w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
-            //w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", t_err), TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
-            w_mv(&train_state_win, TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
-            uart_printf(CONSOLE, "%d", t_err);
-            isize d_err = (t_err)*train_vel/100;
-            // TODO there is some really weird memory bug somewhere here, should run some extensives tests on cstr_format
-            //char* d_err_str = cstr_format(&tmp, "%d", d_err);
-            // TODO don't print if too long :P
-            //if (strlen(d_err_str) <= 5) {
-            //    w_puts_mv(&train_state_win, d_err_str, TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
-            //}
-            w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
-            if (-9999 <= d_err && d_err <= 9999) {
-                w_mv(&train_state_win, TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
-                uart_printf(CONSOLE, "%d", d_err);
-            }
-        } else {
-            w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_TERR_X, TRAIN_STATE_TABLE_Y);
-            w_puts_mv(&train_state_win, "XXXXX", TRAIN_STATE_TABLE_DERR_X, TRAIN_STATE_TABLE_Y);
-        }
-
-        // predict sensor time
-        // TODO careful for division by zero
-        if (train_vel == 0) {
-            PANIC("division by zero");
-        }
-        predicted_sensor_time = (dist_to_next/train_vel)*100; // predicted is in ticks
-    }
-#endif
     Exit();
 }
 
@@ -496,8 +366,6 @@ uiTask()
     Tid prompt_tid = Create(5, &promptTask, "Prompt Task");
 
     WaitTid(prompt_tid);
-
-    //  TODO impleement Kill() syscall
 
     Exit();
 }
