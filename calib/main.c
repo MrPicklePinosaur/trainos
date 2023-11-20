@@ -80,6 +80,10 @@ int kmain() {
 }
 
 void calibTrainSpeed() {
+    marklin_switch_ctl(9, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(10, SWITCH_MODE_STRAIGHT);
+    marklin_switch_ctl(15, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
 
     const uint32_t train_number = 2;
     const uint32_t train_speed = 14;
@@ -154,6 +158,11 @@ void calibTrainSpeed() {
 void
 calibTrainStop()
 {
+    marklin_switch_ctl(9, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(10, SWITCH_MODE_STRAIGHT);
+    marklin_switch_ctl(15, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
+
     const uint32_t granularity = 20; // how many binary search cycles to perform
     const uint32_t timeout = 6000000; // timeout before we asssume that train did not make it to second sensor
     const uint32_t train_number = 2;
@@ -244,6 +253,11 @@ calibTrainStop()
 void
 calibTrainShortMove()
 {
+    marklin_switch_ctl(9, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(10, SWITCH_MODE_STRAIGHT);
+    marklin_switch_ctl(15, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
+
     const uint32_t time_increment = 250000;  // 250 milliseconds
     const uint32_t start_wait = time_increment;
     const uint32_t train_number = 2;
@@ -252,10 +266,6 @@ calibTrainShortMove()
     const uint32_t SENSOR_GROUP = 2;
     const uint32_t SENSOR_INDEX = 16;
 
-    marklin_switch_ctl(9, SWITCH_MODE_CURVED);
-    marklin_switch_ctl(10, SWITCH_MODE_STRAIGHT);
-    marklin_switch_ctl(15, SWITCH_MODE_CURVED);
-    marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
     marklin_train_ctl(train_number, 0);
     uart_printf(CONSOLE, "Running short move measurement for train %d speed %d\r\n", train_number, train_speed);
 
