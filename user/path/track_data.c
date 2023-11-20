@@ -164,6 +164,7 @@ track_post_init(Track* track, ZoneBuilder* zone_builder, usize zone_count)
             if (switch_id == 0) break;
             TrackNode* node = track_node_by_branch_id(track, switch_id);
             node->zone = zone_id;
+            node->reverse->zone = zone_id;
             track->zones[i].switches[j] = node;
         }
     }

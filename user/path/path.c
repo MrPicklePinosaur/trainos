@@ -187,7 +187,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     ULOG_INFO_M(LOG_MASK_PATH, "Getting train state");
     TrainState state = TrainstateGet(trainstate_server, train);
     ULOG_INFO_M(LOG_MASK_PATH, "train starts with offset %d", state.offset);
-    i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset+state.offset;
+    i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
     i32 train_vel = train_data_vel(train, train_speed);
 
     // TODO it is possible to run out of path
@@ -341,7 +341,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Delay(clock_server, delay_ticks);
 
     TrainstateSetSpeed(trainstate_server, train, 0);
-    TrainstateSetOffset(trainstate_server, train, offset);
+    /* TrainstateSetOffset(trainstate_server, train, offset); */
 
     // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
