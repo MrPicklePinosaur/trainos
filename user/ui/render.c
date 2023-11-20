@@ -110,6 +110,7 @@ renderTrainStateWinTask()
         Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, -1);
         usize train = res.first;
         usize new_pos = res.second;
+        ULOG_INFO("train %d, new_pos %d", train, new_pos);
         str8 sensor_name = sensor_id_to_name(new_pos, &tmp);
         w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));

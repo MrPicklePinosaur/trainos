@@ -188,7 +188,7 @@ TrainstateGet(Tid trainstate_server, usize train)
 Pair_usize_usize
 TrainstateWaitForSensor(Tid trainstate_server, isize train)
 {
-    if (!(1 <= train && train <= 100)) {
+    if (!(1 <= train && train <= 100 || train == -1)) {
         ULOG_WARN("invalid train number %d", train);
         return (Pair_usize_usize){0};
     }
@@ -328,6 +328,7 @@ trainStateServer()
         Delay(clock_server, 500);
     }
 
+    ULOG_INFO("completed train calibration");
 
     Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
     List* trainpos_requests = list_init(); // list of tasks waiting for train position to update
@@ -463,6 +464,8 @@ trainStateServer()
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
         } else if (msg_buf.type == TRAINSTATE_POSITION_UPDATE) {
+
+            train_state[msg_buf.data.position_update.train].pos = msg_buf.data.position_update.new_pos;
 
             ListIter it = list_iter(trainpos_requests); 
             Pair_Tid_isize* request;
