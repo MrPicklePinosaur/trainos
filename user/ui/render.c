@@ -13,6 +13,7 @@
 #include "user/trainstate.h"
 
 #include "kern/dev/uart.h"
+#include "kern/perf.h"
 
 typedef enum {
     RENDERER_APPEND_CONSOLE,
@@ -140,11 +141,11 @@ renderSensorWinTask()
         if (cbuf_len(triggered_sensors) >= MAX_SENSORS) {
             cbuf_pop_back(triggered_sensors);
         }
-        cbuf_push_front(triggered_sensors, next_sensor_id);
+        cbuf_push_front(triggered_sensors, (void*)next_sensor_id);
 
         for (usize i = 0; i < min(MAX_SENSORS, cbuf_len(triggered_sensors)); ++i) {
             // build string from raw sensor id
-            usize sensor_id = cbuf_get(triggered_sensors, i);
+            usize sensor_id = (usize)cbuf_get(triggered_sensors, i);
 
             usize sensor_group = sensor_id / 16;
             usize sensor_index = (sensor_id % 16) + 1;
@@ -237,26 +238,32 @@ renderDiagnosticWinTask()
     win_draw(&diagnostic_win);
     w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
 
+    Arena tmp_base = arena_new(64);
     usize ticks = Time(clock_server);
     for (;;) {
+        Arena tmp = tmp_base;
 
         w_flush(&diagnostic_win);
 
-        ticks += 100; // update every second
+        ticks += 10; // update every 1/10 second
         DelayUntil(clock_server, ticks); 
 
-        char ticks_str[20] = {0};
         char idle_str[20] = {0};
 
-        ui2a(ticks, 10, ticks_str);
         ui2a(get_idle_time(), 10, idle_str);
 
+        u32 f_min = (ticks / 100) / 60;
+        u32 f_secs = (ticks / 100) % 60;
+        u32 f_tenths = (ticks % 100);
+
+        char* time_fmt = cstr_format(&tmp, "%d:%d:%d", f_min, f_secs, f_tenths);
+
         // TODO don't need to keep reredendering this
-        w_puts_mv(&diagnostic_win, "Tick:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y);
-        w_puts_mv(&diagnostic_win, "Idle:     ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y+1);
-        w_puts_mv(&diagnostic_win, ticks_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y);
+        w_puts_mv(&diagnostic_win, "Time:            ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y);
+        w_puts_mv(&diagnostic_win, "Idle:            ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y+1);
+        w_puts_mv(&diagnostic_win, time_fmt, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y);
         w_puts_mv(&diagnostic_win, idle_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y+1);
-        w_putc(&diagnostic_win, '%');
+        w_puts(&diagnostic_win, "%%");
         
     }
 

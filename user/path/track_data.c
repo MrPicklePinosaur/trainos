@@ -1416,9 +1416,10 @@ track_a_init()
 
 
 Track
-track_b_init() {
+track_b_init()
+{
 
-    UNIMPLEMENTED("track b not completely implemented");
+    //UNIMPLEMENTED("track b not completely implemented");
 
     Track track = {0};
     track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
