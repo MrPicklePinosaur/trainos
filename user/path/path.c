@@ -196,7 +196,9 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     if (waiting_sensor == 0) {
         ULOG_INFO("[PATHER] Short move");
         for (usize i = 0; i < cbuf_len(path); ++i) {
+            // set the state of switches for all zones (short move claims all nodes)
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+            // TODO it is not possible for the train to start at a branch,
             if (edge->src->type == NODE_BRANCH) {
                 // compute id of the switch
                 u32 switch_num = edge->src->num;
@@ -393,10 +395,20 @@ patherTask()
         // check for reversal
         if (cur_edge->type == EDGE_REVERSE) {
             ULOG_INFO("found reversal");
+            // insert an extra edge to give some buffer if there are switches
+            TrackEdge* extra_edge = arena_alloc(&arena, TrackEdge);
+            *extra_edge = *track_next_edge(switch_server, track, cur_edge->src);
+            cbuf_push_back(simple_path, extra_edge);
+
+            ULOG_INFO("inserting extra edge %s->%s", extra_edge->src->name, extra_edge->dest->name);
             patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
-            cbuf_clear(simple_path);
-            ULOG_INFO("sending reverse to train");
+
+            Delay(clock_server, 100); // TODO arbritatary and questionably necessary delay
             marklin_train_ctl(io_server, train, SPEED_REVERSE);
+            cbuf_clear(simple_path);
+
+            cbuf_push_back(simple_path, extra_edge->reverse); // also need to add the extra edge in next path
+            ULOG_INFO("sending reverse to train");
         }
     }
     if (cbuf_len(simple_path) > 0) {

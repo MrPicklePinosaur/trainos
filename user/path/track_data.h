@@ -78,6 +78,7 @@ TrackNode* track_prev_node(Tid switch_server, Track* track, TrackNode* node);
 TrackNode* track_prev_sensor(Tid switch_server, Track* track, TrackNode* node);
 
 TrackNode* track_next_node(Tid switch_server, Track* track, TrackNode* node);
+TrackEdge* track_next_edge(Tid switch_server, Track* track, TrackNode* node);
 TrackNode* track_next_sensor(Tid switch_server, Track* track, TrackNode* node);
 
 

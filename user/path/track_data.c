@@ -46,20 +46,29 @@ track_prev_node(Tid switch_server, Track* track, TrackNode* node) {
 }
 
 TrackNode*
-track_next_node(Tid switch_server, Track* track, TrackNode* node) {
+track_next_node(Tid switch_server, Track* track, TrackNode* node)
+{
+    TrackEdge* next_edge = track_next_edge(switch_server, track, node);
+    if (next_edge == NULL) return NULL;
+    return next_edge->dest;
+}
+
+TrackEdge*
+track_next_edge(Tid switch_server, Track* track, TrackNode* node)
+{
     if (node == NULL) {
         return NULL;
     }
     if (node->type == NODE_SENSOR || node->type == NODE_MERGE || node->type == NODE_ENTER) {
-        return node->edge[DIR_AHEAD].dest;
+        return &node->edge[DIR_AHEAD];
     }
     else if (node->type == NODE_BRANCH) {
         SwitchMode mode = SwitchQuery(switch_server, node->num);
         if (mode == SWITCH_MODE_STRAIGHT) {
-            return node->edge[DIR_STRAIGHT].dest;
+            return &node->edge[DIR_STRAIGHT];
         }
         if (mode == SWITCH_MODE_CURVED) {
-            return node->edge[DIR_CURVED].dest;
+            return &node->edge[DIR_CURVED];
         }
         return NULL;
     }
