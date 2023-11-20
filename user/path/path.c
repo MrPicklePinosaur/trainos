@@ -223,16 +223,18 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
-    if (waiting_sensor == 0) {
+    if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
         ULOG_INFO("[PATHER] Short move");
         for (usize i = 0; i < cbuf_len(path); ++i) {
             // set the state of switches for all zones (short move claims all nodes)
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
 
-            if (edge->src->type == NODE_SENSOR && edge->src->zone != -1) {
+            ZoneId zone = edge->src->reverse->zone;
+            if (edge->src->type == NODE_SENSOR && zone != -1) {
+                ULOG_INFO("short move starts in zone %d", zone);
 
                 // TODO duplicated code, would like some sort of 'set switch in zone' function
-                TrackNode** zone_switches = (TrackNode**)track->zones[edge->src->zone].switches;
+                TrackNode** zone_switches = (TrackNode**)track->zones[zone].switches;
                 for (; *zone_switches != 0; ++zone_switches) {
                     for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
                         Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
