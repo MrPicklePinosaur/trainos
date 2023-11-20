@@ -184,7 +184,10 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     // compute which sensor to issue stop command from
-    i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
+    ULOG_INFO_M(LOG_MASK_PATH, "Getting train state");
+    TrainState state = TrainstateGet(trainstate_server, train);
+    ULOG_INFO_M(LOG_MASK_PATH, "train starts with offset %d", state.offset);
+    i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset+state.offset;
     i32 train_vel = train_data_vel(train, train_speed);
 
     // TODO it is possible to run out of path
@@ -338,6 +341,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Delay(clock_server, delay_ticks);
 
     TrainstateSetSpeed(trainstate_server, train, 0);
+    TrainstateSetOffset(trainstate_server, train, offset);
 
     // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
@@ -426,7 +430,9 @@ patherTask()
 
             // no need to move if we are only running a reversal
             if (cbuf_len(simple_path) > 1) {
-                patherSimplePath(track, simple_path, train, train_speed, offset+TRAIN_LENGTH, &arena);
+                TrainState state = TrainstateGet(trainstate_server, train);
+                usize reverse_offset = (state.reversed) ? 0 : TRAIN_LENGTH ;
+                patherSimplePath(track, simple_path, train, train_speed, reverse_offset, &arena);
             }
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
