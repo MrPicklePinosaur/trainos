@@ -22,7 +22,7 @@ uint32_t visited[TRACK_MAX];
 CBuf*
 dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Arena* arena)
 {
-    ULOG_INFO("RUNNING dijkstra from %s to %s", track->nodes[src].name, track->nodes[dest].name);
+    ULOG_INFO_M(LOG_MASK_PATH, "RUNNING dijkstra from %s to %s", track->nodes[src].name, track->nodes[dest].name);
     TrackNode* nodes = track->nodes;
 
     for (uint32_t i = 0; i < TRACK_MAX; i++) {
@@ -48,7 +48,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
             }
         }
         if (curr == NONE) {
-            ULOG_INFO("Dijkstra could not find path");
+            ULOG_INFO_M(LOG_MASK_PATH, "Dijkstra could not find path");
             return NULL;
         }
 
@@ -127,7 +127,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
         // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
         ZoneId zone = nodes[back].reverse->zone;
         if (zone != -1) {
-            ULOG_INFO("train %d reserved zone %d", train, zone);
+            ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
             if (!zone_reserve(train, zone)) {
                 ULOG_WARN("failed reservation");
                 zone_unreserve_all(track, train);
@@ -170,7 +170,7 @@ typedef struct {
 void
 patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
-    ULOG_INFO("executing simple path");
+    ULOG_INFO_M(LOG_MASK_PATH, "executing simple path");
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         print("%s->%s,", edge->src->name, edge->dest->name);
@@ -236,7 +236,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     TrackEdge* first_edge = ((TrackEdge*)cbuf_front(path));
     ZoneId cur_zone = first_edge->src->reverse->zone;
     ZoneId next_zone = track_next_sensor(switch_server, track, first_edge->src)->reverse->zone;
-    ULOG_INFO("start zone %d, next zone %d", cur_zone, next_zone);
+    ULOG_INFO_M(LOG_MASK_PATH, "start zone %d, next zone %d", cur_zone, next_zone);
     ZoneId immediate_zones[2] = {cur_zone, next_zone};
     // switch switches in current zone and next zone
     for (usize i = 0; i < 2; ++i) {
@@ -253,7 +253,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
                 Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
                 if ((*zone_switches)->num == pair->first) {
-                    ULOG_INFO("setting switch %d to state %d on init", pair->first, pair->second);
+                    ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d on init", pair->first, pair->second);
                     SwitchChange(switch_server, pair->first, pair->second);
                 }
             }
@@ -263,7 +263,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
 
     if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
-        ULOG_INFO("[PATHER] Short move");
+        ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] Short move");
         TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
         TrainstateSetSpeed(trainstate_server, train, 0);
@@ -297,7 +297,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             // check if we entered a new zone, if so, flip the switches that we need in the next zone
             TrackNode* node = track_node_by_sensor_id(track, new_pos);
             // NOTE: need reverse since zones are denoted by sensors that are leaving zone
-            ULOG_INFO("in zone %d", node->reverse->zone);
+            ULOG_INFO_M(LOG_MASK_PATH, "in zone %d", node->reverse->zone);
 
             // find next sensor
             TrackNode* next_sensor_node = NULL;
@@ -311,13 +311,13 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             if (next_sensor_node != NULL) {
                 ZoneId next_zone = next_sensor_node->reverse->zone;
                 if (next_zone != -1) {
-                    ULOG_INFO("next in zone %d", next_zone);
+                    ULOG_INFO_M(LOG_MASK_PATH, "next in zone %d", next_zone);
                     TrackNode** zone_switches = (TrackNode**)track->zones[next_zone].switches;
                     for (; *zone_switches != 0; ++zone_switches) {
                         for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
                             Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
                             if ((*zone_switches)->num == pair->first) {
-                                ULOG_INFO("setting switch %d to state %d", pair->first, pair->second);
+                                ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d", pair->first, pair->second);
                                 SwitchChange(switch_server, pair->first, pair->second);
                             }
                         }
@@ -372,16 +372,16 @@ patherTask()
     i32 offset = msg_buf.offset; // TODO ignored for now
 
     if (src == dest || src == track->nodes[dest].reverse - track->nodes) {
-        ULOG_INFO("[PATHER] Source equals destination");
+        ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] Source equals destination");
         Exit();
     }
 
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
-    ULOG_INFO("computing path...");
+    ULOG_INFO_M(LOG_MASK_PATH, "computing path...");
     CBuf* path = dijkstra(track, train, src, dest, true, &arena);
     if (path == NULL) {
-        ULOG_WARN("[PATHER] dijkstra can't find path");
+        ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] dijkstra can't find path");
         arena_release(&arena);
         Exit();
     }
@@ -415,13 +415,13 @@ patherTask()
         cbuf_push_back(simple_path, cur_edge);
         // check for reversal
         if (cur_edge->type == EDGE_REVERSE) {
-            ULOG_INFO("found reversal");
+            ULOG_INFO_M(LOG_MASK_PATH, "found reversal");
             // insert an extra edge to give some buffer if there are switches
 #if 0
             TrackEdge* extra_edge = arena_alloc(&arena, TrackEdge);
             *extra_edge = *track_next_edge(switch_server, track, cur_edge->src);
             cbuf_push_back(simple_path, extra_edge);
-            ULOG_INFO("inserting extra edge %s->%s", extra_edge->src->name, extra_edge->dest->name);
+            ULOG_INFO_M(LOG_MASK_PATH, "inserting extra edge %s->%s", extra_edge->src->name, extra_edge->dest->name);
 #endif
 
             // no need to move if we are only running a reversal
@@ -430,7 +430,7 @@ patherTask()
             }
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
-            ULOG_INFO("sending reverse to train");
+            ULOG_INFO_M(LOG_MASK_PATH, "sending reverse to train");
             TrainstateReverseStatic(trainstate_server, train);
             cbuf_clear(simple_path);
 
@@ -527,7 +527,7 @@ pathTask(void)
             continue;
         }
         usize dest_sensor = dest - track->nodes;
-        ULOG_INFO("routing train %d from %d to %d", msg_buf.train, start_sensor, dest_sensor);
+        ULOG_INFO_M(LOG_MASK_PATH, "routing train %d from %d to %d", msg_buf.train, start_sensor, dest_sensor);
 
         PatherResp resp_buf;
         PatherMsg send_buf = (PatherMsg) {
