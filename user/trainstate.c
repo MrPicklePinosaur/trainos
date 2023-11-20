@@ -419,6 +419,7 @@ trainStateServer()
             marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
 
             // set the train state to reversed
+            train_state[train].reversed = !train_state[train].reversed;
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE_REVERSE,

@@ -22,6 +22,7 @@ uint32_t visited[TRACK_MAX];
 CBuf*
 dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Arena* arena)
 {
+    ULOG_INFO("RUNNING dijkstra from %s to %s", track->nodes[src].name, track->nodes[dest].name);
     TrackNode* nodes = track->nodes;
 
     for (uint32_t i = 0; i < TRACK_MAX; i++) {
@@ -113,7 +114,8 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
     usize iters = 0;
 
     uint32_t src_rev = nodes[src].reverse - nodes;
-    for (uint32_t back = dest; back != src && back != src_rev; back = prev[back]) {
+    uint32_t back = dest;
+    for (; back != src && back != src_rev; back = prev[back]) {
         TrackEdge* new_edge = arena_alloc(arena, TrackEdge);
         *new_edge = *edges[back]; 
         cbuf_push_front(path, new_edge);
@@ -135,6 +137,11 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
             return NULL;
         }
         ++iters;
+    }
+
+    // add an extra reverse to beginning if needed
+    if (back == src_rev) {
+        cbuf_push_front(path, &nodes[src].edge[DIR_REVERSE]);
     }
 
     // TODO should reserve src zone too?
@@ -400,19 +407,26 @@ patherTask()
         if (cur_edge->type == EDGE_REVERSE) {
             ULOG_INFO("found reversal");
             // insert an extra edge to give some buffer if there are switches
+#if 0
             TrackEdge* extra_edge = arena_alloc(&arena, TrackEdge);
             *extra_edge = *track_next_edge(switch_server, track, cur_edge->src);
             cbuf_push_back(simple_path, extra_edge);
-
             ULOG_INFO("inserting extra edge %s->%s", extra_edge->src->name, extra_edge->dest->name);
-            patherSimplePath(track, simple_path, train, train_speed, offset+TRAIN_LENGTH, &arena);
+#endif
+
+            // no need to move if we are only running a reversal
+            if (cbuf_len(simple_path) > 1) {
+                patherSimplePath(track, simple_path, train, train_speed, offset+TRAIN_LENGTH, &arena);
+            }
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
+            ULOG_INFO("sending reverse to train");
             marklin_train_ctl(io_server, train, SPEED_REVERSE);
             cbuf_clear(simple_path);
 
+#if 0
             cbuf_push_back(simple_path, extra_edge->reverse); // also need to add the extra edge in next path
-            ULOG_INFO("sending reverse to train");
+#endif
         }
     }
     if (cbuf_len(simple_path) > 0) {
