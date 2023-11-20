@@ -36,7 +36,6 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
     for (;;) {
         // Find the unvisited node with the least distance to it
         // O(n), can be improved to O(log(n)) if we use a priority queue
-        // We assume that any part of the track can be reached from any other part of the track
         uint32_t curr = NONE;
         for (uint32_t i = 0; i < TRACK_MAX; i++) {
             if (dist[i] != INF && visited[i] == 0) {
@@ -47,6 +46,10 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
                     curr = dist[curr] < dist[i] ? curr : i;
                 }
             }
+        }
+        if (curr == NONE) {
+            ULOG_INFO("Dijkstra could not find path");
+            return NULL;
         }
 
         visited[curr] = 1;

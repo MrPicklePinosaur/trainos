@@ -13,6 +13,7 @@ runDijkstra(Track* track, usize train, char* start_str, char* dest_str, bool all
 
     CBuf* path = dijkstra(track, train, start, dest, allow_reversal, &tmp);
     if (path == NULL) {
+        print("couldn't find path");
         return;
     }
     for (usize i = 0; i < cbuf_len(path); ++i) {
@@ -50,6 +51,14 @@ testDijkstra()
     runDijkstra(track, 3, "B16", "E9", true, tmp);
     zone_unreserve_all(track, 2);
     zone_unreserve_all(track, 3);
+
+    // test an impossible path
+    runDijkstra(track, 2, "B1", "A3", true, tmp);
+    runDijkstra(track, 3, "D9", "D5", true, tmp);
+    runDijkstra(track, 4, "C15", "B5", true, tmp);
+    zone_unreserve_all(track, 2);
+    zone_unreserve_all(track, 3);
+    zone_unreserve_all(track, 4);
 
     Exit();
 }
