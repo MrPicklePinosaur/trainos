@@ -84,8 +84,8 @@ renderTrainStateWinTask()
     const int TRAIN_STATE_TABLE_Y = 3;
     const int TRAIN_STATE_TABLE_CURR_X = 8;
     const int TRAIN_STATE_TABLE_NEXT_X = 14;
-    const int TRAIN_STATE_TABLE_TERR_X = 20;
-    const int TRAIN_STATE_TABLE_DERR_X = 26;
+    const int TRAIN_STATE_TABLE_ZONE_X = 20;
+    const int TRAIN_STATE_TABLE_SPD_X = 26;
 
     Delay(clock_server, 30);
 
@@ -95,7 +95,7 @@ renderTrainStateWinTask()
     win_draw(&train_state_win);
     w_puts_mv(&train_state_win, "[train state]", 2, 0);
 
-    w_puts_mv(&train_state_win, "train  curr  next  terr  derr", 1, 2);
+    w_puts_mv(&train_state_win, "train  curr  next  zone  spd ", 1, 2);
     w_puts_mv(&train_state_win, "2                            ", 1, 3);
     w_puts_mv(&train_state_win, "47                           ", 1, 4);
     w_puts_mv(&train_state_win, "58                           ", 1, 5);
@@ -299,6 +299,12 @@ renderTask()
     Window prompt_win = win_init(2, 33, 60, 3);
     win_draw(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
+
+    // draw the cursor first
+    w_attr(&prompt_win, ATTR_BLINK);
+    w_puts_mv(&prompt_win, "█", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+    w_attr_reset(&prompt_win);
+
     w_flush(&prompt_win);
 
     Create(5, &renderSwitchWinTask, "Render Switch Window");
@@ -342,20 +348,23 @@ renderTask()
             char ch = msg_buf.data.prompt.ch;
             if (ch == CH_BACKSPACE) {
                 prompt_length = usize_sub(prompt_length, PROMPT_ANCHOR_Y);
-                w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
-                w_flush(&prompt_win);
+                w_puts_mv(&prompt_win, "  ", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
             }
             else if (ch == CH_ENTER) {
                 for (usize i = 0; i < prompt_length; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
-                w_flush(&prompt_win);
                 prompt_length = 0;
             }
             else if ((isalnum(ch) || isblank(ch) || isprint(ch)) && prompt_length < PROMPT_MAX_LEN) {
                 // normal character
                 w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
-                w_flush(&prompt_win);
                 prompt_length += 1;
             }
+            
+            // draw the cursor
+            w_attr(&prompt_win, ATTR_BLINK);
+            w_puts_mv(&prompt_win, "█", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+            w_attr_reset(&prompt_win);
+            w_flush(&prompt_win);
 
             Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
         }

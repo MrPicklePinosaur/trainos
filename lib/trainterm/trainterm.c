@@ -49,6 +49,9 @@ w_attr(Window* win, Attr attr)
         case ATTR_RESET:
             attr_str = ANSI_RESET;
             break;
+        case ATTR_BLINK:
+            attr_str = ANSI_BLINK;
+            break;
     }
     win_queue(win, attr_str, strlen(attr_str));
 }

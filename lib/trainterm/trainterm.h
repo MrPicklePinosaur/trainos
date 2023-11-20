@@ -20,6 +20,7 @@
 #define ANSI_MAGENTA "\033[35m"
 #define ANSI_CYAN "\033[36m"
 #define ANSI_WHITE "\033[37m"
+#define ANSI_BLINK "\033[5m"
 
 #define ANSI_RESET "\033[0m"
 
@@ -45,6 +46,7 @@ typedef enum {
     ATTR_CYAN,
     ATTR_WHITE,
     ATTR_RESET,
+    ATTR_BLINK,
 } Attr;
 
 void traintermTask();
