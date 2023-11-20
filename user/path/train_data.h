@@ -4,12 +4,13 @@
 #include <stdint.h>
 
 #define TRAIN_DATA_TRAIN_COUNT 4
-#define TRAIN_DATA_SPEED_COUNT 4
+#define TRAIN_DATA_SPEED_COUNT 5
 
 #define TRAIN_DATA_SHORT_MOVE_DIST_COUNT 17
 #define TRAIN_DATA_SHORT_MOVE_TIME_INCREMENT 250
 #define TRAIN_DATA_SHORT_MOVE_SPEED 8
 
+#define TRAIN_SPEED_ROCK   2
 #define TRAIN_SPEED_SNAIL  5
 #define TRAIN_SPEED_LOW    8
 #define TRAIN_SPEED_MED    11
@@ -18,18 +19,18 @@
 uint32_t get_train_index(uint32_t train);
 
 static const uint32_t TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
-static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {5, 8, 11, 14};
+static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {2, 5, 8, 11, 14};
 static const uint32_t TRAIN_DATA_VEL[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
-    {224, 387, 554, 650},  // 2
-    {239, 390, 537, 578},  // 47
-    {66, 190, 371, 579},  // 58
-    {99, 232, 408, 612},  // 77
+    {73, 224, 387, 554, 650},  // 2
+    {75, 239, 390, 537, 578},  // 47
+    {1, 66, 190, 371, 579},  // 58 (slowest speed is placeholder)
+    {1, 99, 232, 408, 612},  // 77 (slowest speed is placeholder)
 };
 static const uint32_t TRAIN_DATA_STOP_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
-    {275, 525, 770, 971},  // 2
-    {284, 521, 709, 828},  // 47
-    {115, 348, 716, 1254},  // 58
-    {173, 447, 929, 1588},  // 77
+    {60, 275, 525, 770, 971},  // 2
+    {1, 284, 521, 709, 828},  // 47 (slowest speed is placeholder)
+    {1, 115, 348, 716, 1254},  // 58 (slowest speed is placeholder)
+    {1, 173, 447, 929, 1588},  // 77 (slowest speed is placeholder)
 };
 static const uint32_t TRAIN_DATA_SHORT_MOVE_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SHORT_MOVE_DIST_COUNT] = {
     {0, 10, 17, 33, 66, 97, 132, 186, 235, 305, 376, 475, 601, 725, 890, 992, 1118},  // 2

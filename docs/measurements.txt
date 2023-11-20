@@ -6,7 +6,7 @@ Train 2 velocities (millimeters/second)
 14: 650
 
 Train 2 stopping times (microseconds before issuing stop command, C10 to E14)
- 2: sensors didn't work for some reason, maybe integer overflow?
+ 2: 4091719 (total distance 359 instead of 1045, from C10 to B1)
  5: 3437504
  8: 1344469, 1335055
 11:  497003
@@ -57,6 +57,7 @@ If v is the measured velocity in mm/s and t is the stopping time in microseconds
 1045 - (v*10^(-6)*t)
 
 Train 2 stopping distances (millimeters):
+ 2:  60
  5: 275
  8: 525, 528
 11: 770
