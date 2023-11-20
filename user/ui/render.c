@@ -287,6 +287,7 @@ renderTask()
     // PROMPT
     const usize PROMPT_ANCHOR_X = 3;
     const usize PROMPT_ANCHOR_Y = 1;
+    const usize PROMPT_MAX_LEN = 56;
     usize prompt_length = 0;
     Window prompt_win = win_init(2, 33, 60, 3);
     win_draw(&prompt_win);
@@ -342,9 +343,8 @@ renderTask()
                 w_flush(&prompt_win);
                 prompt_length = 0;
             }
-            else if (isalnum(ch) || isblank(ch) || isprint(ch)) {
+            else if ((isalnum(ch) || isblank(ch) || isprint(ch)) && prompt_length < PROMPT_MAX_LEN) {
                 // normal character
-                // TODO max length for prompt
                 w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
                 w_flush(&prompt_win);
                 prompt_length += 1;
