@@ -39,6 +39,11 @@ typedef struct {
         struct {
             usize train;
         } reverse;
+        struct {
+            usize train;
+            usize new_pos;
+        } position_update;
+        isize position_wait; // the id of the train to wait for (or -1 for any train)
     } data;
 } TrainstateMsg;
 
@@ -51,10 +56,15 @@ typedef struct {
         struct {
             bool was_already_reversing;
         } reverse;
+        struct {
+            usize train;
+            usize pos; // the location the train is currently at 
+        } position_wait;
     } data;
 } TrainstateResp;
 
-//usize trains[TRAIN_COUNT] = {2};
+usize trains[TRAIN_COUNT] = {2};
+TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
 // serialize trainstate o binary form for marklin
 u8
@@ -174,6 +184,30 @@ TrainstateGet(Tid trainstate_server, usize train)
     return resp_buf.data.get.state;
 }
 
+
+Pair_usize_usize
+TrainstateWaitForSensor(Tid trainstate_server, isize train)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return (Pair_usize_usize){0};
+    }
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_POSITION_WAIT,
+        .data = {
+            .position_wait = train,
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (ret < 0) {
+        ULOG_WARN("TrainstateGet errored");
+        return (Pair_usize_usize){0};
+    }
+    return (Pair_usize_usize){resp_buf.data.position_wait.train, resp_buf.data.position_wait.pos};
+}
+
+
 void
 reverseTask()
 {
@@ -204,14 +238,13 @@ trainstateCallibration()
 
 }
 
-#if 0
 void
 trainPosNotifierTask()
 {
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Tid trainpos_server = MyParentTid();
+    Tid trainstate_server = MyParentTid();
     Track* track = get_track_a();
 
     // can now wait for future sensor updates
@@ -224,7 +257,7 @@ trainPosNotifierTask()
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
             
             usize train = trains[i];
-            TrackNode* node = track_node_by_sensor_id(track, train_pos[i]);
+            TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
 
             // walk node graph until next sensor
             TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
@@ -237,20 +270,19 @@ trainPosNotifierTask()
             // see if there is a train that is expecting this sensor
             if (sensor_id == next_sensor->num) {
                 //ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
-                train_pos[i] = sensor_id;
 
                 // notify server that train position changed
-                TrainposMsg send_buf = (TrainposMsg) {
-                    .type = TRAINPOS_TRIGGERED,
+                TrainstateMsg send_buf = (TrainstateMsg) {
+                    .type = TRAINSTATE_POSITION_UPDATE,
                     .data = {
-                        .triggered = {
+                        .position_update = {
                             .train = train,
-                            .pos = train_pos[i]
+                            .new_pos = sensor_id
                         }
                     }
                 };
-                TrainposResp resp_buf;
-                Send(trainpos_server, (const char*)&send_buf, sizeof(TrainposMsg), (char*)&resp_buf, sizeof(TrainposResp));
+                TrainstateResp resp_buf;
+                Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
             }
 
         }
@@ -259,8 +291,8 @@ trainPosNotifierTask()
 
     Exit();
 }
-#endif
 
+typedef PAIR(Tid, isize) Pair_Tid_isize;
 
 void
 trainStateServer()
@@ -268,8 +300,10 @@ trainStateServer()
     RegisterAs(TRAINSTATE_ADDRESS); 
 
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
-    TrainState train_state[NUMBER_OF_TRAINS] = {0};
     for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
         train_state[i] = (TrainState) {
             .speed = 0,
@@ -279,7 +313,26 @@ trainStateServer()
         };
     }
 
+    // calibrate trains to determine their intial positions
+    for (usize i = 0; i < TRAIN_COUNT; ++i) {
+        usize train = trains[i];
+        // start the train and wait for it to hit the first sensor
+        marklin_train_ctl(io_server, train, 3); // some decently slow speed
+        int sensor = WaitForSensor(sensor_server, -1);
+
+        train_state[train].pos = sensor;
+        //ULOG_INFO("train %d starting at %d", train, sensor);
+
+        // stop train for now
+        marklin_train_ctl(io_server, train, 0);
+        Delay(clock_server, 500);
+    }
+
+
     Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
+    List* trainpos_requests = list_init(); // list of tasks waiting for train position to update
+
+    Create(2, &trainPosNotifierTask, "train position notifier task");
 
     TrainstateMsg msg_buf;
     TrainstateResp reply_buf;
@@ -408,6 +461,43 @@ trainStateServer()
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_POSITION_UPDATE) {
+
+            ListIter it = list_iter(trainpos_requests); 
+            Pair_Tid_isize* request;
+            // pair is (Tid of sending task , train that updated)
+            while (listiter_next(&it, (void**)&request)) {
+                if (request->second == msg_buf.data.position_update.train || request->second == -1) {
+                    // reply to task that was blocking
+                    TrainstateResp reply_buf = (TrainstateResp) {
+                        .type = TRAINSTATE_POSITION_WAIT,
+                        .data = {
+                            .position_wait = {
+                                .train = msg_buf.data.position_update.train,
+                                .pos =  msg_buf.data.position_update.new_pos
+                            }
+                        }
+                    };
+                    Reply(request->first, (char*)&reply_buf, sizeof(TrainstateResp));
+                    list_remove(trainpos_requests, request);
+                }
+            }
+
+            TrainstateResp reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_POSITION_UPDATE
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_POSITION_WAIT) {
+
+            Pair_Tid_isize* request = alloc(sizeof(Pair_Tid_isize));
+            *request = (Pair_Tid_isize) {
+                from_tid,
+                msg_buf.data.position_wait
+            };
+            list_push_back(trainpos_requests, request);
+            // dont reply 
 
         } else {
             ULOG_WARN("[TRAINSTATE SERVER] Invalid message type");

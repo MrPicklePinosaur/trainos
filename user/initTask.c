@@ -2,7 +2,6 @@
 #include "sensor.h"
 #include "switch.h"
 #include "trainstate.h"
-#include "trainpos.h"
 
 #include <trainstd.h>
 #include <trainsys.h>
@@ -89,7 +88,6 @@ initTask()
 
     println("Initializing trains...");
     Tid trainstate_server = Create(5, &trainStateServer, "Train State Server");
-    Tid train_pos = Create(5, &trainPosTask, "Train position task");
     Tid path_tid = Create(3, &pathTask, "Path Task");
 
     println("Initalizing UI...");

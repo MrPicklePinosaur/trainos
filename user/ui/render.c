@@ -11,7 +11,6 @@
 #include "user/switch.h"
 #include "user/switch.h"
 #include "user/trainstate.h"
-#include "user/trainpos.h"
 
 #include "kern/dev/uart.h"
 
@@ -80,7 +79,6 @@ renderTrainStateWinTask()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
-    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
     const int TRAIN_STATE_TABLE_Y = 3;
     const int TRAIN_STATE_TABLE_CURR_X = 8;
@@ -108,10 +106,13 @@ renderTrainStateWinTask()
     Arena tmp_base = arena_new(256);
     for (;;) {
         Arena tmp = tmp_base;
-        TrainPosWaitResult res = trainPosWait(trainpos_server, -1);
-        str8 sensor_name = sensor_id_to_name(res.pos, &tmp);
-        w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(res.train));
-        w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(res.train));
+        
+        Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, -1);
+        usize train = res.first;
+        usize new_pos = res.second;
+        str8 sensor_name = sensor_id_to_name(new_pos, &tmp);
+        w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_flush(&train_state_win);
     }
     // TODO a lot of this code is horrible and needs a rewrite

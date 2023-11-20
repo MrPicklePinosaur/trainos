@@ -7,7 +7,7 @@
 #include "user/marklin.h"
 #include "user/sensor.h"
 #include "user/switch.h"
-#include "user/trainpos.h"
+#include "user/trainstate.h"
 #include "user/path/reserve.h"
 
 #define INF 2147483647
@@ -171,7 +171,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     // compute which sensor to issue stop command from
     i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
@@ -270,13 +270,15 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             // block until we hit desired sensor
             // ULOG_INFO("expecting sensor %s", edge->dest->name);
             /* WaitForSensor(sensor_server, edge->dest->num); */
-            TrainPosWaitResult res = trainPosWait(trainpos_server, train);
-            if (res.pos != edge->src->num) {
-                ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, res.pos);
+            // first is train, second is pos
+            Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, train);
+            usize new_pos = res.second;
+            if (new_pos != edge->src->num) {
+                ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, new_pos);
             }
 
             // check if we entered a new zone, if so, flip the switches that we need in the next zone
-            TrackNode* node = track_node_by_sensor_id(track, res.pos);
+            TrackNode* node = track_node_by_sensor_id(track, new_pos);
             // NOTE: need reverse since zones are denoted by sensors that are leaving zone
             ULOG_INFO("in zone %d", node->reverse->zone);
 
@@ -331,7 +333,6 @@ patherTask()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
     Track* track = get_track_a();
 
@@ -476,7 +477,7 @@ pathTask(void)
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     Track* track = get_track_a();
 
@@ -491,7 +492,8 @@ pathTask(void)
             continue;
         }
 
-        isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train);
+        TrainState trainstate = TrainstateGet(trainstate_server, msg_buf.train);
+        usize start_sensor = trainstate.pos;
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
         if (dest == NULL) {
             // TODO send back error?
