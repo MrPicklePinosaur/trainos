@@ -1,7 +1,11 @@
 #include <trainstd.h>
 #include <trainsys.h>
 #include <traintasks.h>
+#include "user/sensor.h"
+#include "user/switch.h"
 #include "user/marklin.h"
+#include "user/path/track_data.h"
+#include "user/path/train_data.h"
 #include "trainstate.h"
 
 #define TRAIN_SPEED_MASK     0b001111
@@ -14,6 +18,8 @@ typedef enum {
     TRAINSTATE_REVERSE,
     TRAINSTATE_REVERSE_REVERSE,
     TRAINSTATE_REVERSE_RESTART,
+    TRAINSTATE_POSITION_WAIT,   // used to wait for position changes
+    TRAINSTATE_POSITION_UPDATE, // used by notifier to update current position
 } TrainstateMsgType;
 
 typedef struct {
@@ -48,11 +54,13 @@ typedef struct {
     } data;
 } TrainstateResp;
 
+//usize trains[TRAIN_COUNT] = {2};
+
 // serialize trainstate o binary form for marklin
 u8
 trainstate_serialize(TrainState train_state)
 {
-    return ((train_state.reversed << 5) & TRAIN_LIGHTS_MASK) | (train_state.speed & TRAIN_SPEED_MASK);
+    return ((train_state.lights << 4) & TRAIN_LIGHTS_MASK) | (train_state.speed & TRAIN_SPEED_MASK);
 }
 
 int
@@ -191,6 +199,70 @@ reverseTask()
 }
 
 void
+trainstateCallibration()
+{
+
+}
+
+#if 0
+void
+trainPosNotifierTask()
+{
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainpos_server = MyParentTid();
+    Track* track = get_track_a();
+
+    // can now wait for future sensor updates
+    for (;;) {
+
+        int sensor_id = WaitForSensor(sensor_server, -1);
+        //ULOG_INFO("sensor id %d", sensor_id);
+
+        // compute the next sensor each train is expecting
+        for (usize i = 0; i < TRAIN_COUNT; ++i) {
+            
+            usize train = trains[i];
+            TrackNode* node = track_node_by_sensor_id(track, train_pos[i]);
+
+            // walk node graph until next sensor
+            TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
+            if (next_sensor == NULL) {
+                ULOG_WARN("couldn't find next sensor");
+                continue;
+            }
+            //ULOG_INFO("next sensor for train %d is %s", train, next_sensor->name);
+
+            // see if there is a train that is expecting this sensor
+            if (sensor_id == next_sensor->num) {
+                //ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
+                train_pos[i] = sensor_id;
+
+                // notify server that train position changed
+                TrainposMsg send_buf = (TrainposMsg) {
+                    .type = TRAINPOS_TRIGGERED,
+                    .data = {
+                        .triggered = {
+                            .train = train,
+                            .pos = train_pos[i]
+                        }
+                    }
+                };
+                TrainposResp resp_buf;
+                Send(trainpos_server, (const char*)&send_buf, sizeof(TrainposMsg), (char*)&resp_buf, sizeof(TrainposResp));
+            }
+
+        }
+
+    }
+
+    Exit();
+}
+#endif
+
+
+void
 trainStateServer()
 {
     RegisterAs(TRAINSTATE_ADDRESS); 
@@ -198,6 +270,15 @@ trainStateServer()
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
 
     TrainState train_state[NUMBER_OF_TRAINS] = {0};
+    for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
+        train_state[i] = (TrainState) {
+            .speed = 0,
+            .lights = 0,
+            .reversed = false,
+            .pos = 0,
+        };
+    }
+
     Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
     TrainstateMsg msg_buf;
