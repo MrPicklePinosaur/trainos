@@ -164,6 +164,7 @@ reverseTask()
     TrainstateResp resp_buf;
     TrainstateMsg send_buf;
 
+    // TODO potential optimization: adjust this delay time depending on the current speed of the train
     Delay(clock_server, 400); // TODO arbitrary delay
     send_buf = (TrainstateMsg) {
         .type = TRAINSTATE_REVERSE_REVERSE,
@@ -266,6 +267,8 @@ trainStateServer()
             }
 
             marklin_train_ctl(marklin_server, train, 15 | (train_state[train] & TRAIN_LIGHTS_MASK));
+
+            // set the train state to reversed
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE_REVERSE,
