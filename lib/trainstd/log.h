@@ -15,7 +15,7 @@ typedef enum {
     LOG_LEVEL_DEBUG = 4,
 } LogLevel;
 
-typedef u16 LogMask;
+typedef u32 LogMask;
 typedef enum {
     LOG_MASK_ALL     = 0,
     LOG_MASK_USER    = 1,
@@ -33,7 +33,7 @@ typedef enum {
     LOG_MASK_TRAINSTATE = 1024,
     LOG_MASK_PATH    = 2048,
     LOG_MASK_SENSOR  = 4096,
-    LOG_MASK_SWITCH  = 8192
+    LOG_MASK_SWITCH  = 8192,
 } LogMaskBits;
 
 typedef enum {
