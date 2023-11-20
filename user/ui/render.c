@@ -392,73 +392,12 @@ renderDiagnosticWinTask()
 }
 
 void
-renderDebugConsoleTask()
-{
-    RegisterAs(DEBUG_ADDRESS);
-
-    const usize DEBUG_ANCHOR_X = 1;
-    const usize DEBUG_ANCHOR_Y = 1;
-    const usize DEBUG_MAX_LINES = 32;
-    const usize DEBUG_INNER_WIDTH = 58;
-    Arena debug_arena = arena_new(20*DEBUG_MAX_LINES*(DEBUG_INNER_WIDTH+1));
-    CBuf* debug_lines = cbuf_new(DEBUG_MAX_LINES);
-    Window debug_win = win_init(117, 2, 60, 34);
-    win_draw(&debug_win);
-    w_puts_mv(&debug_win, "[debug]", 2, 0);
-    w_flush(&debug_win);
-
-    char msg_buf[DEBUG_MAX_LOG_LENGTH];
-    struct {} reply_buf; // dummy
-    int from_tid;
-    for (;;) {
-        int msg_len = Receive(&from_tid, msg_buf, DEBUG_MAX_LOG_LENGTH);
-        if (msg_len < 0) {
-            ULOG_WARN("[DEBUG CONSOLE SERVER] Error when receiving");
-            continue;
-        }
-
-        // copy message
-        // TODO cstr_copy is breaking things
-        /* uart_printf(CONSOLE, "recv from %d", from_tid); */
-        /* uart_printf(CONSOLE, "recv len %d", cstr_len(msg_buf)); */
-        char* copied = cstr_copy(&debug_arena, msg_buf);
-        Reply(from_tid, (char*)&reply_buf, 0);
-
-        /* uart_printf(CONSOLE, "after reply"); */
-
-        // scroll terminal if needed
-        if (cbuf_len(debug_lines) >= DEBUG_MAX_LINES) {
-            cbuf_pop_front(debug_lines);
-        }
-
-        cbuf_push_back(debug_lines, copied);
-
-        // rerender window
-        for (usize i = 0; i < cbuf_len(debug_lines); ++i) {
-            w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
-            for (usize j = 0; j < DEBUG_INNER_WIDTH; ++j) w_putc(&debug_win, ' ');
-            w_flush(&debug_win);
-            
-            w_mv(&debug_win, DEBUG_ANCHOR_X, DEBUG_ANCHOR_Y+i);
-            w_puts(&debug_win, cbuf_get(debug_lines, i));
-            w_flush(&debug_win);
-        }
-        /* uart_printf(CONSOLE, "after render"); */
-
-    }
-
-    Exit();
-}
-
-void
 renderTask()
 {
     RegisterAs(RENDERER_ADDRESS);
 
     term_init();
 
-    Tid debug_console_server = Create(5, &renderDebugConsoleTask, "Render Debug Console Window");
-    set_log_server(debug_console_server);
     set_log_mode(LOG_MODE_TRAIN_TERM);
 
     // CONSOLE
