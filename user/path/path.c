@@ -191,35 +191,6 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         if (i == 0) break;
     }
 
-    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
-
-    if (waiting_sensor == 0) {
-        ULOG_INFO("[PATHER] Short move");
-        for (usize i = 0; i < cbuf_len(path); ++i) {
-            // set the state of switches for all zones (short move claims all nodes)
-            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-            // TODO it is not possible for the train to start at a branch,
-            if (edge->src->type == NODE_BRANCH) {
-                // compute id of the switch
-                u32 switch_num = edge->src->num;
-
-                if (track_edge_cmp(edge->src->edge[DIR_STRAIGHT], *edge)) {
-                    SwitchChange(switch_server, switch_num, SWITCH_MODE_STRAIGHT);
-                }
-                else if (track_edge_cmp(edge->src->edge[DIR_CURVED], *edge)) {
-                    SwitchChange(switch_server, switch_num, SWITCH_MODE_CURVED);
-                }
-                else {
-                    PANIC("invalid branch");
-                }
-            }
-        }
-        marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
-        Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
-        marklin_train_ctl(io_server, train, 0);
-        return;
-    }
-
     // compute desired switch state
     CBuf* desired_switch_modes = cbuf_new(24);
     for (usize i = 0; i < cbuf_len(path); ++i) {
@@ -248,6 +219,36 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 PANIC("invalid branch");
             }
         }
+    }
+
+    i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
+
+    if (waiting_sensor == 0) {
+        ULOG_INFO("[PATHER] Short move");
+        for (usize i = 0; i < cbuf_len(path); ++i) {
+            // set the state of switches for all zones (short move claims all nodes)
+            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+
+            if (edge->src->type == NODE_SENSOR && edge->src->zone != -1) {
+
+                // TODO duplicated code, would like some sort of 'set switch in zone' function
+                TrackNode** zone_switches = (TrackNode**)track->zones[edge->src->zone].switches;
+                for (; *zone_switches != 0; ++zone_switches) {
+                    for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
+                        Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
+                        if ((*zone_switches)->num == pair->first) {
+                            ULOG_INFO("setting switch %d to state %d for short move", pair->first, pair->second);
+                            SwitchChange(switch_server, pair->first, pair->second);
+                        }
+                    }
+                }
+            }
+
+        }
+        marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
+        Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
+        marklin_train_ctl(io_server, train, 0);
+        return;
     }
     /* ULOG_INFO("switching switches..."); */
 
