@@ -4,6 +4,9 @@
 #include "user/marklin.h"
 #include "trainstate.h"
 
+#define TRAIN_SPEED_MASK     0b001111
+#define TRAIN_LIGHTS_MASK    0b010000
+
 typedef enum {
     TRAINSTATE_GET_STATE,
     TRAINSTATE_SET_SPEED,
@@ -44,6 +47,13 @@ typedef struct {
         } reverse;
     } data;
 } TrainstateResp;
+
+// serialize trainstate o binary form for marklin
+u8
+trainstate_serialize(TrainState train_state)
+{
+    return ((train_state.reversed << 5) & TRAIN_LIGHTS_MASK) | (train_state.speed & TRAIN_SPEED_MASK);
+}
 
 int
 TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
@@ -136,7 +146,7 @@ TrainstateGet(Tid trainstate_server, usize train)
 {
     if (!(1 <= train && train <= 100)) {
         ULOG_WARN("invalid train number %d", train);
-        return -1;
+        return (TrainState){0};
     }
 
     TrainstateResp resp_buf;
@@ -151,7 +161,7 @@ TrainstateGet(Tid trainstate_server, usize train)
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
         ULOG_WARN("TrainstateGet errored");
-        return -1;
+        return (TrainState){0};
     }
     return resp_buf.data.get.state;
 }
@@ -218,10 +228,10 @@ trainStateServer()
 
             usize train = msg_buf.data.set_speed.train;
             usize speed = msg_buf.data.set_speed.speed;
-            train_state[train] = (train_state[train] & ~TRAIN_SPEED_MASK) | speed;
+            train_state[train].speed = speed;
 
-            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d: %d", train, train_state[train]);
-            marklin_train_ctl(marklin_server, train, train_state[train]);
+            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d: %d", train, train_state[train].speed);
+            marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_SPEED,
@@ -239,7 +249,9 @@ trainStateServer()
             }
             else {
                 was_already_reversing = false;
-                marklin_train_ctl(marklin_server, train, 0 | (train_state[train] & TRAIN_LIGHTS_MASK));
+                TrainState temp_state = train_state[train];
+                temp_state.speed = 0;
+                marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
                 reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
             }
 
@@ -266,7 +278,10 @@ trainStateServer()
                 PANIC("Couldn't find train associated with reverse task");
             }
 
-            marklin_train_ctl(marklin_server, train, 15 | (train_state[train] & TRAIN_LIGHTS_MASK));
+
+            TrainState temp_state = train_state[train];
+            temp_state.speed = 15;
+            marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
 
             // set the train state to reversed
 
@@ -289,7 +304,7 @@ trainStateServer()
                 PANIC("Couldn't find train associated with reverse task");
             }
 
-            marklin_train_ctl(marklin_server, train, train_state[train]);
+            marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
             reverse_tasks[train] = 0;
 
             reply_buf = (TrainstateResp) {
@@ -301,15 +316,11 @@ trainStateServer()
         } else if (msg_buf.type == TRAINSTATE_SET_LIGHTS) {
 
             usize train = msg_buf.data.set_lights.train;
-            bool light_state = msg_buf.data.set_lights.lights;
 
-            if (light_state) {
-                train_state[train] |= TRAIN_LIGHTS_MASK;
-            } else {
-                train_state[train] &= ~TRAIN_LIGHTS_MASK;
-            }
-            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting lights for train %d: %d", train, train_state[train]);
-            marklin_train_ctl(marklin_server, train, train_state[train]);
+            train_state[train].lights = msg_buf.data.set_lights.lights;
+
+            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting lights for train %d: %d", train, train_state[train].lights);
+            marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_LIGHTS,
