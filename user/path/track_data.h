@@ -4,6 +4,9 @@
 #include <trainstd.h>
 #include <trainsys.h>
 
+// length of train in mm
+#define TRAIN_LENGTH 200
+
 typedef enum {
   NODE_NONE,
   NODE_SENSOR,

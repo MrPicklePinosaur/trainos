@@ -351,7 +351,7 @@ patherTask()
     usize dest = msg_buf.dest;
     usize train = msg_buf.train;
     usize train_speed = msg_buf.train_speed;
-    i32 offset = msg_buf.offset;
+    i32 offset = msg_buf.offset; // TODO ignored for now
 
     if (src == dest || src == track->nodes[dest].reverse - track->nodes) {
         ULOG_INFO("[PATHER] Source equals destination");
@@ -405,9 +405,9 @@ patherTask()
             cbuf_push_back(simple_path, extra_edge);
 
             ULOG_INFO("inserting extra edge %s->%s", extra_edge->src->name, extra_edge->dest->name);
-            patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
+            patherSimplePath(track, simple_path, train, train_speed, offset+TRAIN_LENGTH, &arena);
 
-            Delay(clock_server, 100); // TODO arbritatary and questionably necessary delay
+            Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
             marklin_train_ctl(io_server, train, SPEED_REVERSE);
             cbuf_clear(simple_path);
 
