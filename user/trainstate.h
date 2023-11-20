@@ -8,7 +8,7 @@
 #define NUMBER_OF_TRAINS 80
 
 // number of trains that we have calibration data for
-#define TRAIN_COUNT 2
+#define TRAIN_COUNT 1
 
 #define TRAINSTATE_ADDRESS "trainstate"
 
@@ -17,6 +17,7 @@ typedef struct {
     bool lights;
     bool reversed;
     usize pos;
+    isize offset;
 } TrainState;
 
 typedef PAIR(usize, usize) Pair_usize_usize;
@@ -28,6 +29,7 @@ int TrainstateReverseStatic(Tid trainstate_server, usize train);
 int TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed);
 int TrainstateReverse(Tid trainstate_server, usize train);
 int TrainstateSetLights(Tid trainstate_server, usize train, bool lights);
+int TrainstateSetOffset(Tid trainstate_server, usize train, isize offset);
 TrainState TrainstateGet(Tid trainstate_server, usize train);
 
 void trainStateServer();

@@ -15,6 +15,7 @@ typedef enum {
     TRAINSTATE_GET_STATE,
     TRAINSTATE_SET_SPEED,
     TRAINSTATE_SET_LIGHTS,
+    TRAINSTATE_SET_OFFSET,
     TRAINSTATE_REVERSE_STATIC, // special case of reverse, reverse from rest and right away
     TRAINSTATE_REVERSE,
     TRAINSTATE_REVERSE_REVERSE,
@@ -37,6 +38,10 @@ typedef struct {
             usize train;
             bool lights;
         } set_lights;
+        struct {
+            usize train;
+            isize offset;
+        } set_offset;
         struct {
             usize train;
         } reverse;
@@ -178,6 +183,32 @@ TrainstateSetLights(Tid trainstate_server, usize train, bool lights)
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
         ULOG_WARN("TrainstateSetLights errored");
+        return -1;
+    }
+    return 0;
+}
+
+int
+TrainstateSetOffset(Tid trainstate_server, usize train, isize offset)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_SET_OFFSET,
+        .data = {
+            .set_offset = {
+                .train = train,
+                .offset = offset,
+            }
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (ret < 0) {
+        ULOG_WARN("TrainstateSetOffset errored");
         return -1;
     }
     return 0;
@@ -334,6 +365,7 @@ trainStateServer()
             .lights = 0,
             .reversed = false,
             .pos = 0,
+            .offset = 0,
         };
     }
 
@@ -509,6 +541,20 @@ trainStateServer()
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_LIGHTS,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_SET_OFFSET) {
+
+            usize train = msg_buf.data.set_offset.train;
+
+            train_state[train].offset = msg_buf.data.set_offset.offset;
+
+            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting offset for train %d: %d", train, train_state[train].offset);
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_SET_OFFSET,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
