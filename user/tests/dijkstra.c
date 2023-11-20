@@ -17,9 +17,8 @@ runDijkstra(Track* track, usize train, char* start_str, char* dest_str, bool all
     }
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-        print("%s->%s,", edge->src->name, edge->dest->name);
+        print("%s->%s [type %d]\r\n", edge->src->name, edge->dest->name, edge->type);
     }
-    print("\r\n");
 }
 
 void
@@ -39,6 +38,10 @@ testDijkstra()
     zone_unreserve_all(2);
 
     runDijkstra(track, 2, "C10", "D14", false, tmp);
+    zone_unreserve_all(2);
+
+    println("test pathfinding with reverse");
+    runDijkstra(track, 2, "C10", "A1", true, tmp);
     zone_unreserve_all(2);
 
     // test pathfinding with multiple trains

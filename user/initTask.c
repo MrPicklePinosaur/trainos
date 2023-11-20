@@ -116,11 +116,6 @@ initTask()
             continue;
         }
 
-        // If train term task was selected, switch to a special logging mode
-        if (ch == 0) {
-            set_log_mode(LOG_MODE_TRAIN_TERM);
-        }
-
         Tid task_menu_task = Create(5, task_menu[ch]->taskFn, task_menu[ch]->name);
         WaitTid(task_menu_task);
         set_log_mode(LOG_MODE_STANDARD);

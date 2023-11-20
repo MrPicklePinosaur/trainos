@@ -488,6 +488,7 @@ renderTask()
 void
 uiTask()
 {
+    set_log_mode(LOG_MODE_TRAIN_TERM);
 
     Tid render_tid = Create(5, &renderTask, "Render Task");
     Tid prompt_tid = Create(5, &promptTask, "Prompt Task");

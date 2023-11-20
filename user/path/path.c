@@ -388,18 +388,15 @@ patherTask()
     // break path into simple paths (no reversals)
     CBuf* simple_path = cbuf_new(128);
     for (usize i = 0; i < cbuf_len(path); ++i) {
-        cbuf_push_back(simple_path, cbuf_get(path, i));
+        TrackEdge* cur_edge = cbuf_get(path, i);
+        cbuf_push_back(simple_path, cur_edge);
         // check for reversal
-        if (i+1 < cbuf_len(path)) {
-            TrackEdge* cur_edge = cbuf_get(path, i);
-            TrackEdge* next_edge = cbuf_get(path, i+1);
-            if (track_edge_cmp(*cur_edge->reverse, *next_edge)) {
-                ULOG_INFO("found reversal");
-                patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
-                cbuf_clear(simple_path);
-                ULOG_INFO("sending reverse to train");
-                marklin_train_ctl(io_server, train, SPEED_REVERSE);
-            }
+        if (cur_edge->type == EDGE_REVERSE) {
+            ULOG_INFO("found reversal");
+            patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
+            cbuf_clear(simple_path);
+            ULOG_INFO("sending reverse to train");
+            marklin_train_ctl(io_server, train, SPEED_REVERSE);
         }
     }
     if (cbuf_len(simple_path) > 0) {

@@ -1309,6 +1309,16 @@ track_a_init() {
         track.nodes[i].edge[DIR_REVERSE].dest = rev;
         track.nodes[i].edge[DIR_REVERSE].dist = 0;
         track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
+        
+        // also set the type of other edges
+        NodeType node_type = track.nodes[i].type;
+        if (node_type == NODE_SENSOR || node_type == NODE_MERGE) {
+            track.nodes[i].edge[DIR_AHEAD].type = EDGE_FORWARD;
+        }
+        else if (node_type == NODE_BRANCH) {
+            track.nodes[i].edge[DIR_STRAIGHT].type = EDGE_FORWARD;
+            track.nodes[i].edge[DIR_CURVED].type = EDGE_FORWARD;
+        }
     }
 
     struct ZoneBuilder {
