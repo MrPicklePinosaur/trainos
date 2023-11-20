@@ -9,6 +9,7 @@
 #include "user/switch.h"
 #include "user/trainpos.h"
 #include "user/path/reserve.h"
+#include "kern/gacha.h"
 
 #define INF 2147483647
 #define NONE 2147483647
@@ -430,8 +431,42 @@ typedef struct {
 } PathMsg;
 
 typedef struct {
-
+    Tid pather;
 } PathResp;
+
+void
+pathRandomizer(void)
+{
+    usize train_num = 2;
+    usize train_speed = 8;
+
+    Tid path_task = WhoIs(PATH_ADDRESS);
+    Track* track = get_track_a();
+
+    for (;;) {
+
+        usize dest = randint() % 80;
+        // There's a deadspot in this corner that will trap trains in it
+        if (dest == 0 || dest == 1 || dest == 12 || dest == 13 || dest == 14 || dest == 15) {
+            continue;
+        }
+
+        PathResp resp_buf;
+        PathMsg send_buf = (PathMsg) {
+            .train = train_num,
+            .speed = train_speed,
+            .offset = 0,
+            .dest = track->nodes[dest].name,
+        };
+
+        int ret = Send(path_task, (const char*)&send_buf, sizeof(PathMsg), (char*)&resp_buf, sizeof(PathResp));
+        if (ret < 0) {
+            ULOG_WARN("pathRandomizer's Send() errored");
+            return -1;
+        }
+        WaitTid(resp_buf.pather);
+    }
+}
 
 void
 pathTask(void)
@@ -457,9 +492,6 @@ pathTask(void)
             continue;
         }
 
-        reply_buf = (PathResp){};
-        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
-
         isize start_sensor = trainPosQuery(trainpos_server, msg_buf.train).pos;
         TrackNode* dest = track_node_by_name(track, msg_buf.dest);
         if (dest == NULL) {
@@ -479,6 +511,10 @@ pathTask(void)
             .offset = msg_buf.offset
         };
         int pather_task = Create(2, &patherTask, "Pather Task");
+        reply_buf = (PathResp){
+            .pather = pather_task
+        };
+        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
         Send(pather_task, (const char*)&send_buf, sizeof(PatherMsg), (char*)&resp_buf, sizeof(PatherResp));
     }
 
