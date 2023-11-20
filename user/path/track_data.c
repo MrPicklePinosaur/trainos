@@ -5,6 +5,11 @@
 
 #define SENSORS_ON_TRACK 80
 
+typedef struct {
+    char* sensors[ZONE_MAX_SENSORS];  
+    usize switches[ZONE_MAX_SWITCHES];
+} ZoneBuilder;
+
 Track track_a = {0};
 Track track_b = {0};
 
@@ -103,11 +108,70 @@ track_edge_cmp(TrackEdge a, TrackEdge b)
     return true;
 }
 
+// does programatic initalization of track
+void
+track_post_init(Track* track, ZoneBuilder* zone_builder, usize zone_count)
+{
+    // construct the edges between nodes of opposite direction
+    for (usize i = 0; i < TRACK_A_SIZE; ++i) {
+        TrackNode* rev = track->nodes[i].reverse;
+        track->nodes[i].edge[DIR_REVERSE].reverse = &rev->edge[DIR_REVERSE];
+        track->nodes[i].edge[DIR_REVERSE].src = &track->nodes[i];
+        track->nodes[i].edge[DIR_REVERSE].dest = rev;
+        track->nodes[i].edge[DIR_REVERSE].dist = 0;
+        track->nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
+        
+        // also set the type of other edges
+        NodeType node_type = track->nodes[i].type;
+        if (node_type == NODE_SENSOR || node_type == NODE_MERGE) {
+            track->nodes[i].edge[DIR_AHEAD].type = EDGE_FORWARD;
+        }
+        else if (node_type == NODE_BRANCH) {
+            track->nodes[i].edge[DIR_STRAIGHT].type = EDGE_FORWARD;
+            track->nodes[i].edge[DIR_CURVED].type = EDGE_FORWARD;
+        }
+    }
+
+    // create zones
+    track->zones = alloc(sizeof(Zone)*zone_count);
+
+    for (usize i = 0; i < TRACK_MAX; ++i) {
+        track->nodes[i].zone = -1;
+    }
+
+    // construct zones
+    for (usize i = 0; i < zone_count; ++i) {
+        ZoneId zone_id = i;
+        track->zones[i] = (Zone){
+            .zone = zone_id,
+            .sensors = {0},
+            .switches = {0}
+        };
+
+        for (usize j = 0; ; ++j) {
+            char* sensor_str = zone_builder[i].sensors[j];
+            if (sensor_str == 0) break;
+            TrackNode* node = track_node_by_name(track, sensor_str);
+            node->zone = zone_id;
+            track->zones[i].sensors[j] = node;
+        }
+
+        for (usize j = 0; ; ++j) {
+            usize switch_id = zone_builder[i].switches[j];
+            if (switch_id == 0) break;
+            TrackNode* node = track_node_by_branch_id(track, switch_id);
+            node->zone = zone_id;
+            track->zones[i].switches[j] = node;
+        }
+    }
+
+}
+
 void
 track_init()
 {
     track_a = track_a_init();
-    /* track_b = track_b_init(); */
+    track_b = track_b_init();
 }
 
 Track*
@@ -119,12 +183,12 @@ get_track_a()
 Track*
 get_track_b()
 {
-    UNIMPLEMENTED("track b not completely implemented");
     return &track_b;
 }
 
 Track
-track_a_init() {
+track_a_init()
+{
 
     Track track = {0};
     track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
@@ -1310,34 +1374,9 @@ track_a_init() {
     track.nodes[143].type = NODE_EXIT;
     track.nodes[143].reverse = &track.nodes[142];
 
-    // construct the edges between nodes of opposite direction
-    for (usize i = 0; i < TRACK_A_SIZE; ++i) {
-        TrackNode* rev = track.nodes[i].reverse;
-        track.nodes[i].edge[DIR_REVERSE].reverse = &rev->edge[DIR_REVERSE];
-        track.nodes[i].edge[DIR_REVERSE].src = &track.nodes[i];
-        track.nodes[i].edge[DIR_REVERSE].dest = rev;
-        track.nodes[i].edge[DIR_REVERSE].dist = 0;
-        track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
-        
-        // also set the type of other edges
-        NodeType node_type = track.nodes[i].type;
-        if (node_type == NODE_SENSOR || node_type == NODE_MERGE) {
-            track.nodes[i].edge[DIR_AHEAD].type = EDGE_FORWARD;
-        }
-        else if (node_type == NODE_BRANCH) {
-            track.nodes[i].edge[DIR_STRAIGHT].type = EDGE_FORWARD;
-            track.nodes[i].edge[DIR_CURVED].type = EDGE_FORWARD;
-        }
-    }
-
-    struct ZoneBuilder {
-        char* sensors[ZONE_MAX_SENSORS];  
-        usize switches[ZONE_MAX_SWITCHES];
-    };
-
     // construct zones
     // each zone is specified as list of outgoing sensors
-    struct ZoneBuilder zone_builder[] = {
+    ZoneBuilder zone_builder[] = {
         {{"B8", "A10", 0}, {0}},
         {{"B12", "A8", 0}, {0}},
         {{"B10", "A5", 0}, {0}},
@@ -1366,38 +1405,7 @@ track_a_init() {
         {{"B2", "D14", 0}, {0}},
     };
 
-    track.zones = alloc(sizeof(Zone)*ZONE_MAX);
-
-    for (usize i = 0; i < TRACK_MAX; ++i) {
-        track.nodes[i].zone = -1;
-    }
-
-    // construct zones
-    for (usize i = 0; i < ZONE_MAX; ++i) {
-        ZoneId zone_id = i;
-        track.zones[i] = (Zone){
-            .zone = zone_id,
-            .sensors = {0},
-            .switches = {0}
-        };
-
-        for (usize j = 0; ; ++j) {
-            char* sensor_str = zone_builder[i].sensors[j];
-            if (sensor_str == 0) break;
-            TrackNode* node = track_node_by_name(&track, sensor_str);
-            node->zone = zone_id;
-            track.zones[i].sensors[j] = node;
-        }
-
-        for (usize j = 0; ; ++j) {
-            usize switch_id = zone_builder[i].switches[j];
-            if (switch_id == 0) break;
-            TrackNode* node = track_node_by_branch_id(&track, switch_id);
-            node->zone = zone_id;
-            track.zones[i].switches[j] = node;
-        }
-
-    }
+    track_post_init(&track, zone_builder, ZONE_MAX);
 
     return track;
 }
@@ -2572,15 +2580,7 @@ track_b_init() {
     track.nodes[139].type = NODE_EXIT;
     track.nodes[139].reverse = &track.nodes[138];
 
-    // construct the edges between nodes of opposite direction
-    for (usize i = 0; i < TRACK_B_SIZE; ++i) {
-        TrackNode* rev = track.nodes[i].reverse;
-        track.nodes[i].edge[DIR_REVERSE].reverse = &rev->edge[DIR_REVERSE];
-        track.nodes[i].edge[DIR_REVERSE].src = &track.nodes[i];
-        track.nodes[i].edge[DIR_REVERSE].dest = rev;
-        track.nodes[i].edge[DIR_REVERSE].dist = 0;
-        track.nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
-    }
+    track_post_init(&track, NULL, 0);
 
     return track;
 }
