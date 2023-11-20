@@ -1364,7 +1364,6 @@ track_a_init() {
         {{"D15", "D13", "E14", 0}, {17, 0}},
         {{"B13", "D16", 0}, {0}},
         {{"B2", "D14", 0}, {0}},
-        // TODO might be missing a zone?
     };
 
     track.zones = alloc(sizeof(Zone)*ZONE_MAX);
