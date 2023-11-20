@@ -7,7 +7,7 @@ typedef struct {
 } Reservation;
 */
 
-usize reservations[ZONE_MAX] = {0}; // zero means no train has the zone reserved
+usize* reservations; // zero means no train has the zone reserved
 
 void
 reservationTask()
@@ -19,9 +19,10 @@ reservationTask()
 }
 
 void
-zone_init()
+zone_init(Track* track)
 {
-    for (usize i = 0; i < ZONE_MAX; ++i) {
+    reservations = alloc(track->zone_count*sizeof(usize));
+    for (usize i = 0; i < track->zone_count; ++i) {
         reservations[i] = 0;
     }
 }
@@ -54,9 +55,9 @@ zone_unreserve(usize train, ZoneId zone)
 }
 
 void
-zone_unreserve_all(usize train)
+zone_unreserve_all(Track* track, usize train)
 {
-    for (usize i = 0; i < ZONE_MAX; ++i) {
+    for (usize i = 0; i < track->zone_count; ++i) {
         if (reservations[i] == train) reservations[i] = 0;
     } 
 }

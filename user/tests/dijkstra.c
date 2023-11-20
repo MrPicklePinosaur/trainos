@@ -29,27 +29,27 @@ testDijkstra()
     Arena tmp = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
     Track* track = get_track_a();
 
-    zone_init();
+    zone_init(track);
 
     runDijkstra(track, 2, "C10", "A1", false, tmp);
-    zone_unreserve_all(2);
+    zone_unreserve_all(track, 2);
 
     runDijkstra(track, 2, "C10", "D4", false, tmp);
-    zone_unreserve_all(2);
+    zone_unreserve_all(track, 2);
 
     runDijkstra(track, 2, "C10", "D14", false, tmp);
-    zone_unreserve_all(2);
+    zone_unreserve_all(track, 2);
 
     println("test pathfinding with reverse");
     runDijkstra(track, 2, "C10", "A1", true, tmp);
-    zone_unreserve_all(2);
+    zone_unreserve_all(track, 2);
 
     // test pathfinding with multiple trains
     println("test multiple trains pathfinding");
     runDijkstra(track, 2, "B1", "D14", true, tmp);
     runDijkstra(track, 3, "B16", "E9", true, tmp);
-    zone_unreserve_all(2);
-    zone_unreserve_all(3);
+    zone_unreserve_all(track, 2);
+    zone_unreserve_all(track, 3);
 
     Exit();
 }

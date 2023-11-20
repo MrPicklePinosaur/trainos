@@ -127,7 +127,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
             ULOG_INFO("train %d reserved zone %d", train, zone);
             if (!zone_reserve(train, zone)) {
                 ULOG_WARN("failed reservation");
-                zone_unreserve_all(train);
+                zone_unreserve_all(track, train);
                 return NULL;
             }
         }
@@ -367,7 +367,7 @@ patherTask()
     }
 
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
-    zone_init(); // TODO wont need this once zone is an actual task
+    zone_init(track); // TODO wont need this once zone is an actual task
 
     ULOG_INFO("computing path...");
     CBuf* path = dijkstra(track, train, src, dest, true, &arena);

@@ -8,10 +8,10 @@
 
 void reservationTask();
 
-void zone_init();
+void zone_init(Track* track);
 bool zone_reserve(usize train, ZoneId zone);
 bool zone_unreserve(usize train, ZoneId zone);
-void zone_unreserve_all(usize train);
+void zone_unreserve_all(Track* track,usize train);
 bool zone_is_reserved(ZoneId zone);
 
 #endif // __PATH_RESERVE_H__

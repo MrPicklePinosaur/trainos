@@ -49,16 +49,17 @@ struct TrackNode {
 
 #define ZONE_MAX_SENSORS 8
 #define ZONE_MAX_SWITCHES 6
-#define ZONE_MAX 26
 typedef struct {
     ZoneId zone;
     TrackNode* sensors[ZONE_MAX_SENSORS+1];  
     TrackNode* switches[ZONE_MAX_SWITCHES+1];
 } Zone;
 
+
 struct Track {
     TrackNode* nodes; // owned pointer to array of nodes
     Zone* zones;
+    usize zone_count;
 };
 
 // The track initialization functions expect an array of this size.

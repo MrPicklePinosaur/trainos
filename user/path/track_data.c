@@ -5,6 +5,9 @@
 
 #define SENSORS_ON_TRACK 80
 
+#define TRACK_A_ZONE_COUNT 26
+#define TRACK_B_ZONE_COUNT 26
+
 typedef struct {
     char* sensors[ZONE_MAX_SENSORS];  
     usize switches[ZONE_MAX_SWITCHES];
@@ -192,6 +195,7 @@ track_a_init()
 
     Track track = {0};
     track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
+    track.zone_count = TRACK_A_ZONE_COUNT;
 
     track.nodes[0].name = "A1";
     track.nodes[0].type = NODE_SENSOR;
@@ -1405,7 +1409,7 @@ track_a_init()
         {{"B2", "D14", 0}, {0}},
     };
 
-    track_post_init(&track, zone_builder, ZONE_MAX);
+    track_post_init(&track, zone_builder, track.zone_count);
 
     return track;
 }
