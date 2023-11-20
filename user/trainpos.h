@@ -24,6 +24,7 @@ typedef struct {
 
 TrainPosWaitResult trainPosWait(Tid trainpos_server, isize train);
 TrainPos trainPosQuery(Tid trainpos_server, isize train); // same as trainPosWait but doesn't wait for a sensor to trigger
+void trainPosReverse(Tid trainpos_server); // reverse a given train
 
 void trainPosTask();
 

@@ -64,7 +64,6 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
         ZoneId curr_zone = nodes[curr].reverse->zone;
         if (curr_zone != -1) {
             if (zone_is_reserved(curr_zone)) {
-
                 continue;
             }
         }
@@ -191,9 +190,10 @@ patherTask()
     }
 
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
+    zone_init();
 
     // path is in reverse
-    /* ULOG_INFO("computing path..."); */
+    ULOG_INFO("computing path...");
     CBuf* path = dijkstra(track, train, src, dest, false, &arena);
     if (path == NULL) {
         ULOG_WARN("[PATHER] dijkstra can't find path");
@@ -201,6 +201,11 @@ patherTask()
         Exit();
     }
 
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+        print("%s->%s,", edge->src->name, edge->dest->name);
+    }
+    print("\r\n");
 
     // check if offset is valid
     TrackNode dest_node = track->nodes[dest];
@@ -231,7 +236,7 @@ patherTask()
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
     u32 distance_to_dest = 0;
-    for (usize i = usize_sub(cbuf_len(path), 1); i >= 0; usize_sub(i, 1)) {
+    for (usize i = usize_sub(cbuf_len(path), 1); ; --i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         stopping_distance -= edge->dist;
         distance_to_dest += edge->dist;
@@ -239,6 +244,7 @@ patherTask()
             waiting_sensor = edge->src; // sensor that we should wait to trip
             break;
         }
+        if (i == 0) break;
     }
 
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
