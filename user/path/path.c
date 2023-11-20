@@ -156,78 +156,22 @@ typedef struct {
 
 } PatherResp;
 
+// moves the train to a specified destination without using any reversals
 void
-patherTask()
+patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
-    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
-    Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
-
-    Track* track = get_track_a();
-
-    int from_tid;
-    PatherMsg msg_buf;
-    PatherResp reply_buf;
-    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PatherMsg));
-    if (msg_len < 0) {
-        ULOG_WARN("[PATHER] Error when receiving");
-        Exit();
-    }
-    reply_buf = (PatherResp){};
-    Reply(from_tid, (char*)&reply_buf, sizeof(PatherResp));
-
-    usize src = msg_buf.src;
-    usize dest = msg_buf.dest;
-    usize train = msg_buf.train;
-    usize train_speed = msg_buf.train_speed;
-    i32 offset = msg_buf.offset;
-
-    if (src == dest || src == track->nodes[dest].reverse - track->nodes) {
-        ULOG_INFO("[PATHER] Source equals destination");
-        Exit();
-    }
-
-    Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
-    zone_init();
-
-    // path is in reverse
-    ULOG_INFO("computing path...");
-    CBuf* path = dijkstra(track, train, src, dest, false, &arena);
-    if (path == NULL) {
-        ULOG_WARN("[PATHER] dijkstra can't find path");
-        arena_release(&arena);
-        Exit();
-    }
-
+    ULOG_INFO("executing simple path");
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         print("%s->%s,", edge->src->name, edge->dest->name);
     }
     print("\r\n");
 
-    // check if offset is valid
-    TrackNode dest_node = track->nodes[dest];
-
-    // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
-    if (offset != 0 && dest_node.type != NODE_SENSOR) {
-        ULOG_WARN("[PATHER] can't use offset from node other than sensor");
-        arena_release(&arena);
-        Exit();
-    }
-    i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
-    if (offset > 0 && offset > max_fwd_dist) {
-        ULOG_WARN("[PATHER] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
-        arena_release(&arena);
-        Exit();
-    }
-    i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
-    if (offset < 0 && -offset > max_bck_dist) {
-        ULOG_WARN("[PATHER] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
-        arena_release(&arena);
-        Exit();
-    }
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
 
     // compute which sensor to issue stop command from
     i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
@@ -271,8 +215,7 @@ patherTask()
         marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
         marklin_train_ctl(io_server, train, 0);
-        arena_release(&arena);
-        Exit();
+        return;
     }
 
     // compute desired switch state
@@ -285,7 +228,7 @@ patherTask()
 
             if (track_edge_cmp(edge->src->edge[DIR_STRAIGHT], *edge)) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to straight", switch_num);
-                Pair_u32_SwitchMode* pair = arena_alloc(&arena, Pair_u32_SwitchMode);
+                Pair_u32_SwitchMode* pair = arena_alloc(arena, Pair_u32_SwitchMode);
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_STRAIGHT;
                 cbuf_push_back(desired_switch_modes, pair);
@@ -293,7 +236,7 @@ patherTask()
             }
             else if (track_edge_cmp(edge->src->edge[DIR_CURVED], *edge)) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
-                Pair_u32_SwitchMode* pair = arena_alloc(&arena, Pair_u32_SwitchMode);
+                Pair_u32_SwitchMode* pair = arena_alloc(arena, Pair_u32_SwitchMode);
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_CURVED;
                 cbuf_push_back(desired_switch_modes, pair);
@@ -373,6 +316,95 @@ patherTask()
     marklin_train_ctl(io_server, train, 0);
 
     // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
+
+}
+
+void
+patherTask()
+{
+    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainpos_server = WhoIs(TRAINPOS_ADDRESS);
+
+    Track* track = get_track_a();
+
+    int from_tid;
+    PatherMsg msg_buf;
+    PatherResp reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PatherMsg));
+    if (msg_len < 0) {
+        ULOG_WARN("[PATHER] Error when receiving");
+        Exit();
+    }
+    reply_buf = (PatherResp){};
+    Reply(from_tid, (char*)&reply_buf, sizeof(PatherResp));
+
+    usize src = msg_buf.src;
+    usize dest = msg_buf.dest;
+    usize train = msg_buf.train;
+    usize train_speed = msg_buf.train_speed;
+    i32 offset = msg_buf.offset;
+
+    if (src == dest || src == track->nodes[dest].reverse - track->nodes) {
+        ULOG_INFO("[PATHER] Source equals destination");
+        Exit();
+    }
+
+    Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
+    zone_init(); // TODO wont need this once zone is an actual task
+
+    ULOG_INFO("computing path...");
+    CBuf* path = dijkstra(track, train, src, dest, true, &arena);
+    if (path == NULL) {
+        ULOG_WARN("[PATHER] dijkstra can't find path");
+        arena_release(&arena);
+        Exit();
+    }
+
+    // check if offset is valid
+    TrackNode dest_node = track->nodes[dest];
+
+    // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
+    if (offset != 0 && dest_node.type != NODE_SENSOR) {
+        ULOG_WARN("[PATHER] can't use offset from node other than sensor");
+        arena_release(&arena);
+        Exit();
+    }
+    i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
+    if (offset > 0 && offset > max_fwd_dist) {
+        ULOG_WARN("[PATHER] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
+        arena_release(&arena);
+        Exit();
+    }
+    i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
+    if (offset < 0 && -offset > max_bck_dist) {
+        ULOG_WARN("[PATHER] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
+        arena_release(&arena);
+        Exit();
+    }
+
+    // break path into simple paths (no reversals)
+    CBuf* simple_path = cbuf_new(128);
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        cbuf_push_back(simple_path, cbuf_get(path, i));
+        // check for reversal
+        if (i+1 < cbuf_len(path)) {
+            TrackEdge* cur_edge = cbuf_get(path, i);
+            TrackEdge* next_edge = cbuf_get(path, i+1);
+            if (track_edge_cmp(*cur_edge->reverse, *next_edge)) {
+                ULOG_INFO("found reversal");
+                patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
+                cbuf_clear(simple_path);
+                ULOG_INFO("sending reverse to train");
+                marklin_train_ctl(io_server, train, SPEED_REVERSE);
+            }
+        }
+    }
+    if (cbuf_len(simple_path) > 0) {
+        patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
+    }
 
     arena_release(&arena);
     Exit();

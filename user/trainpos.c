@@ -10,7 +10,7 @@
 
 #include "trainpos.h"
 
-#define TRAIN_COUNT 2
+#define TRAIN_COUNT 1
 
 typedef enum {
     TRAINPOS_TRIGGERED,
@@ -41,8 +41,10 @@ typedef struct {
     } data;
 } TrainposResp;
 
-usize trains[TRAIN_COUNT] = {2, 47};
-TrainPos train_pos[TRAIN_COUNT] = {(TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}, (TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}};
+/* usize trains[TRAIN_COUNT] = {2, 47}; */
+/* TrainPos train_pos[TRAIN_COUNT] = {(TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}, (TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}}; */
+usize trains[TRAIN_COUNT] = {2};
+TrainPos train_pos[TRAIN_COUNT] = {(TrainPos) {.pos = 0, .dir = TRAINDIR_FWD}};
 
 TrainPosWaitResult
 trainPosWait(Tid trainpos_server, isize train)
