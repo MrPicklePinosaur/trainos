@@ -16,6 +16,7 @@
 #include "stopwatch.h"
 #include "log.h"
 #include "util.h"
+#include "rand.h"
 
 void println(char* format, ...);
 void print(char* format, ...);

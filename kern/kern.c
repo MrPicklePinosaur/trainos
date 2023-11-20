@@ -24,7 +24,7 @@ kern_init(void)
 #if QEMU == 0
     gic_init();
 #endif
-    gacha_init();
+    rand_init();
 }
 
 void

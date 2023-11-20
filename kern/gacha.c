@@ -1,23 +1,11 @@
 #include <traindef.h>
 #include <trainstd.h>
 #include "gacha.h"
-#include "kern/dev/timer.h"
-
-u32 gacha_rand_num;
-
-u32
-randint(void)
-{
-    // glibc random integer implementation
-    // https://en.wikipedia.org/wiki/Linear_congruential_generator
-    gacha_rand_num = (1103515245 * gacha_rand_num + 12345) % 2147483648;
-    return gacha_rand_num;
-}
 
 u32
 gacha_rarity_distribution(void)
 {
-    u32 roll = randint() % 100;
+    u32 roll = rand_int() % 100;
     if (roll >= 33) {
         return 0;  // 67% chance of rolling a 1 star
     }
@@ -34,12 +22,6 @@ gacha_rarity_distribution(void)
 }
 
 void
-gacha_init(void)
-{
-    gacha_rand_num = timer_get();
-}
-
-void
 gacha_print_roll(void)
 {
     PRINT("                o}-------------------------------{o      o}------------------------------{o                ");
@@ -52,7 +34,7 @@ gacha_print_roll(void)
         u32 rarity = gacha_rarity_distribution();
         PRINT("%s  +-----------+------------------------------------------------------------------------------------------+  ", RARITY_COLORS[rarity]);
         PRINT("%s  |           |                                                                                          |  ", RARITY_COLORS[rarity]);
-        PRINT("%s  | %s |   %s |  ", RARITY_COLORS[rarity], RARITIES[rarity], UNITS[randint() % GACHA_UNIT_COUNT]);
+        PRINT("%s  | %s |   %s |  ", RARITY_COLORS[rarity], RARITIES[rarity], UNITS[rand_int() % GACHA_UNIT_COUNT]);
         PRINT("%s  |           |                                                                                          |  ", RARITY_COLORS[rarity]);
         PRINT("%s  +-----------+------------------------------------------------------------------------------------------+  ", RARITY_COLORS[rarity]);
         PRINT("\x1b[0m");

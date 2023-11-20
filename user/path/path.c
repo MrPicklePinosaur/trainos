@@ -9,7 +9,6 @@
 #include "user/switch.h"
 #include "user/trainpos.h"
 #include "user/path/reserve.h"
-#include "kern/gacha.h"
 
 #define INF 2147483647
 #define NONE 2147483647
@@ -445,7 +444,7 @@ pathRandomizer(void)
 
     for (;;) {
 
-        usize dest = randint() % 80;
+        usize dest = rand_int() % 80;
         // There's a deadspot in this corner that will trap trains in it
         if (dest == 0 || dest == 1 || dest == 12 || dest == 13 || dest == 14 || dest == 15) {
             continue;
