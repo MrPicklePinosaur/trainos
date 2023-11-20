@@ -433,7 +433,7 @@ typedef struct {
     Tid pather;
 } PathResp;
 
-void
+int
 pathRandomizer(void)
 {
     usize train_num = 2;
