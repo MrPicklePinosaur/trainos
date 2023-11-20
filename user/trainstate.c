@@ -65,7 +65,7 @@ typedef struct {
     } data;
 } TrainstateResp;
 
-usize trains[TRAIN_COUNT] = {2, 77};
+usize trains[TRAIN_COUNT] = {2, 47};
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
 // serialize trainstate o binary form for marklin

@@ -230,31 +230,38 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
-    if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
-        ULOG_INFO("[PATHER] Short move");
-        for (usize i = 0; i < cbuf_len(path); ++i) {
-            // set the state of switches for all zones (short move claims all nodes)
-            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+    TrackEdge* first_edge = ((TrackEdge*)cbuf_front(path));
+    ZoneId cur_zone = first_edge->src->reverse->zone;
+    ZoneId next_zone = track_next_sensor(switch_server, track, first_edge->src)->reverse->zone;
+    ULOG_INFO("start zone %d, next zone %d", cur_zone, next_zone);
+    ZoneId immediate_zones[2] = {cur_zone, next_zone};
+    // switch switches in current zone and next zone
+    for (usize i = 0; i < 2; ++i) {
+        // set the state of switches for all zones (short move claims all nodes)
+        ZoneId zone = immediate_zones[i];
+        if (zone == -1) {
+            ULOG_WARN("zone index %d was -1", i);
+            continue;
+        }
 
-            ZoneId zone = edge->src->reverse->zone;
-            if (edge->src->type == NODE_SENSOR && zone != -1) {
-                ULOG_INFO("short move starts in zone %d", zone);
-
-                // TODO duplicated code, would like some sort of 'set switch in zone' function
-                TrackNode** zone_switches = (TrackNode**)track->zones[zone].switches;
-                for (; *zone_switches != 0; ++zone_switches) {
-                    for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
-                        Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
-                        if ((*zone_switches)->num == pair->first) {
-                            ULOG_INFO("setting switch %d to state %d for short move", pair->first, pair->second);
-                            SwitchChange(switch_server, pair->first, pair->second);
-                        }
-                    }
+        // TODO duplicated code, would like some sort of 'set switch in zone' function
+        TrackNode** zone_switches = (TrackNode**)track->zones[zone].switches;
+        for (; *zone_switches != 0; ++zone_switches) {
+            for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
+                Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
+                if ((*zone_switches)->num == pair->first) {
+                    ULOG_INFO("setting switch %d to state %d on init", pair->first, pair->second);
+                    SwitchChange(switch_server, pair->first, pair->second);
                 }
             }
-
         }
-        TrainstateSetSpeed(trainstate_server, train, 0);
+
+    }
+
+
+    if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
+        ULOG_INFO("[PATHER] Short move");
+        TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
         TrainstateSetSpeed(trainstate_server, train, 0);
         return;
@@ -367,7 +374,6 @@ patherTask()
     }
 
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
-    zone_init(track); // TODO wont need this once zone is an actual task
 
     ULOG_INFO("computing path...");
     CBuf* path = dijkstra(track, train, src, dest, true, &arena);
@@ -498,6 +504,8 @@ pathTask(void)
 
     PathMsg msg_buf;
     PathResp reply_buf;
+
+    zone_init(track); // TODO wont need this once zone is an actual task
 
     for (;;) {
         int from_tid;

@@ -351,7 +351,7 @@ renderTask()
                 w_puts_mv(&prompt_win, "  ", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
             }
             else if (ch == CH_ENTER) {
-                for (usize i = 0; i < prompt_length; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
+                for (usize i = 0; i < prompt_length+1; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
                 prompt_length = 0;
             }
             else if ((isalnum(ch) || isblank(ch) || isprint(ch)) && prompt_length < PROMPT_MAX_LEN) {
