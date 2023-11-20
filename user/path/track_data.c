@@ -6,7 +6,7 @@
 #define SENSORS_ON_TRACK 80
 
 #define TRACK_A_ZONE_COUNT 26
-#define TRACK_B_ZONE_COUNT 26
+#define TRACK_B_ZONE_COUNT 27
 
 typedef struct {
     char* sensors[ZONE_MAX_SENSORS];  
@@ -1422,6 +1422,7 @@ track_b_init() {
 
     Track track = {0};
     track.nodes = alloc(sizeof(TrackNode)*TRACK_MAX);
+    track.zone_count = TRACK_B_ZONE_COUNT;
 
     track.nodes[0].name = "A1";
     track.nodes[0].type = NODE_SENSOR;
@@ -2584,7 +2585,37 @@ track_b_init() {
     track.nodes[139].type = NODE_EXIT;
     track.nodes[139].reverse = &track.nodes[138];
 
-    track_post_init(&track, NULL, 0);
+    ZoneBuilder zone_builder[] = {
+        {{"B8", "A10", 0}, {0}},
+        {{"B12", "A8", 0}, {0}},
+        {{"B10", "A5", 0}, {0}},
+        {{"A12", "A9", "A7", "A6", "C7", 0}, {1, 2, 3, 0}},
+        {{"C8", "C6", "C15", "D11", "C3", "E11", 0}, {6, 18, 5, 7, 0}},
+        {{"C5", "C10", "B15", 0}, {15, 0}},
+        {{"C16", "D12", 0}, {0}},
+        {{"C9", "B1", "B3", 0}, {16, 0}},
+        {{"B4", "C2", 0}, {0}},
+        {{"B16", "A3", 0}, {0}},
+        {{"A4", "C11", "C13", "A2", "A14", "A15", 0}, {14, 11, 12, 4, 0}},
+        {{"C12", "B5", "E16", 0}, {13, 0}},
+        {{"E15", "E1", 0}, {0}},
+        {{"E2", "D2", "C1", "B14", 0}, {153, 154, 155, 156, 0}},
+        {{"C14", "E7", 0}, {0}},
+        {{"B6", "D3", 0}, {0}},
+        {{"D4", "E3", "E5", 0}, {10, 0}},
+        {{"D1", "E4", 0}, {0}},
+        {{"E8", "D7", 0}, {0}},
+        {{"E6", "D6", 0}, {0}},
+        {{"D8", "D5", "E10", "D9", 0}, {9, 8, 0}},
+        {{"E12", "D10", 0}, {0}},
+        {{"E13", "E9", 0}, {0}},
+        {{"D15", "D13", "E14", 0}, {17, 0}},
+        {{"B13", "D16", 0}, {0}},
+        {{"B2", "D14", 0}, {0}},
+        {{"A16", "A11", 0}, {0}},
+    };
+
+    track_post_init(&track, zone_builder, track.zone_count);
 
     return track;
 }
