@@ -254,9 +254,9 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             }
 
         }
-        marklin_train_ctl(io_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
+        TrainstateSetSpeed(trainstate_server, train, 0);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
-        marklin_train_ctl(io_server, train, 0);
+        TrainstateSetSpeed(trainstate_server, train, 0);
         return;
     }
     /* ULOG_INFO("switching switches..."); */
@@ -265,7 +265,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     /* CBuf* stops = cbuf_new(); */
 
-    marklin_train_ctl(io_server, train, train_speed);
+    TrainstateSetSpeed(trainstate_server, train, train_speed);
 
     /* ULOG_INFO("routing train..."); */
     // start at index one since we skip the starting node (assume no short move)
@@ -327,7 +327,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     u64 delay_ticks = distance_from_sensor*100/train_vel;
     Delay(clock_server, delay_ticks);
 
-    marklin_train_ctl(io_server, train, 0);
+    TrainstateSetSpeed(trainstate_server, train, 0);
 
     // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
 
@@ -340,6 +340,7 @@ patherTask()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     Track* track = get_track_a();
 
@@ -421,7 +422,7 @@ patherTask()
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
             ULOG_INFO("sending reverse to train");
-            marklin_train_ctl(io_server, train, SPEED_REVERSE);
+            TrainstateReverseStatic(trainstate_server, train);
             cbuf_clear(simple_path);
 
 #if 0

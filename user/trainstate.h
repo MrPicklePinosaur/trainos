@@ -23,6 +23,7 @@ typedef PAIR(usize, usize) Pair_usize_usize;
 // wait for the next sensor of train
 // pair returns (train, position)
 Pair_usize_usize TrainstateWaitForSensor(Tid trainstate_server, isize train);
+int TrainstateReverseStatic(Tid trainstate_server, usize train);
 
 int TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed);
 int TrainstateReverse(Tid trainstate_server, usize train);

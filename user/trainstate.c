@@ -15,6 +15,7 @@ typedef enum {
     TRAINSTATE_GET_STATE,
     TRAINSTATE_SET_SPEED,
     TRAINSTATE_SET_LIGHTS,
+    TRAINSTATE_REVERSE_STATIC, // special case of reverse, reverse from rest and right away
     TRAINSTATE_REVERSE,
     TRAINSTATE_REVERSE_REVERSE,
     TRAINSTATE_REVERSE_RESTART,
@@ -39,6 +40,7 @@ typedef struct {
         struct {
             usize train;
         } reverse;
+        usize reverse_static;
         struct {
             usize train;
             usize new_pos;
@@ -99,6 +101,28 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
         ULOG_WARN("TrainstateSetSpeed errored");
+        return -1;
+    }
+    return 0;
+}
+
+int
+TrainstateReverseStatic(Tid trainstate_server, usize train)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_REVERSE_STATIC,
+        .data = {
+            .reverse_static = train
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (ret < 0) {
+        ULOG_WARN("TrainstateReverseStatic errored");
         return -1;
     }
     return 0;
@@ -400,6 +424,28 @@ trainStateServer()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
+        } else if (msg_buf.type == TRAINSTATE_REVERSE_STATIC) {
+
+            usize train = msg_buf.data.reverse_static;
+
+            TrainState temp_state = train_state[train];
+            temp_state.speed = 15;
+            marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+
+            train_state[train].speed = 0; // also force speed to be zero
+
+            // set the train state to reversed
+            Track* track = get_track_a(); // TODO really ugly how this is here
+            train_state[train].reversed = !train_state[train].reversed;
+            // TODO this might be race condition with notifier server
+            train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_REVERSE_STATIC,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
         } else if (msg_buf.type == TRAINSTATE_REVERSE_REVERSE) {
 
             usize train = NUMBER_OF_TRAINS;
@@ -419,7 +465,10 @@ trainStateServer()
             marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
 
             // set the train state to reversed
+            Track* track = get_track_a(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
+            // TODO this might be race condition with notifier server
+            train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE_REVERSE,
