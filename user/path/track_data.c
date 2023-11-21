@@ -127,7 +127,7 @@ track_post_init(Track* track, ZoneBuilder* zone_builder, usize zone_count)
         track->nodes[i].edge[DIR_REVERSE].reverse = &rev->edge[DIR_REVERSE];
         track->nodes[i].edge[DIR_REVERSE].src = &track->nodes[i];
         track->nodes[i].edge[DIR_REVERSE].dest = rev;
-        track->nodes[i].edge[DIR_REVERSE].dist = 0;
+        track->nodes[i].edge[DIR_REVERSE].dist = 2000;  // TODO arbitrary constant
         track->nodes[i].edge[DIR_REVERSE].type = EDGE_REVERSE;
         
         // also set the type of other edges
