@@ -71,7 +71,7 @@ reserveZonesInPath(Track* track, usize train, CBuf* path)
 void
 patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
-    ULOG_INFO_M(LOG_MASK_PATH, "Executing simple path");
+    ULOG_INFO_M(LOG_MASK_PATH, "Executing simple path offset %d", offset);
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         print("%s->%s,", edge->src->name, edge->dest->name);
@@ -88,6 +88,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     TrainState state = TrainstateGet(trainstate_server, train);
     i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
     i32 train_vel = train_data_vel(train, train_speed);
+    ULOG_INFO_M(LOG_MASK_PATH, "train %d vel is %d", train, train_vel);
 
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor = 0;
@@ -158,6 +159,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
 
+#if 0
         TrainState state = TrainstateGet(trainstate_server, train);
         // short move is impossible
         if (state.offset > distance_to_dest) {
@@ -168,6 +170,10 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             Delay(clock_server, train_data_short_move_time(train, distance_to_dest-state.offset) / 10);
             TrainstateSetSpeed(trainstate_server, train, 0);
         }
+#endif
+        TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
+        Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
+        TrainstateSetSpeed(trainstate_server, train, 0);
 
     } else {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move...");
@@ -184,12 +190,16 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
                 // wait for sensor
                 // first is train, second is pos
-                Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, train);
-                usize new_pos = res.second;
-                if (new_pos != edge->src->num) {
+                usize new_pos = 0;
+                for (;;) {
+                    Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, train);
+                    new_pos = res.second;
+                    if (new_pos == edge->src->num) {
+                        break;
+                    }
                     // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
                     // should we do some form of recovery?
-                    ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, new_pos);
+                    ULOG_WARN("expect sensor %s, got sensor %s", edge->src->name, track->nodes[new_pos].name);
                 }
 
                 // check if we entered a new zone, if so, flip the switches that we need in the next zone
@@ -215,11 +225,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         }
 
         // now wait before sending stop command
-        ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train...");
         u64 delay_ticks = distance_from_sensor*100/train_vel;
+        ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train (delay for %d)...", delay_ticks);
         Delay(clock_server, delay_ticks);
 
-        /* ULOG_INFO_M(LOG_MASK_PATH, "Train stopped..."); */
+        ULOG_INFO_M(LOG_MASK_PATH, "Train stopped...");
         TrainstateSetSpeed(trainstate_server, train, 0);
         
         /* TrainstateSetOffset(trainstate_server, train, offset); */
@@ -307,7 +317,6 @@ patherTask()
 
     // break path into simple paths (no reversals)
     CBuf* simple_path = cbuf_new(128);
-    usize reverse_offset = 0;
     for (usize i = 0; i < cbuf_len(path); ++i) {
 
         TrackEdge* cur_edge = cbuf_get(path, i);
@@ -321,7 +330,7 @@ patherTask()
             if (cbuf_len(simple_path) > 1) {
                 /* TrainState state = TrainstateGet(trainstate_server, train); */
                 /* reverse_offset = TRAIN_LENGTH; */
-                patherSimplePath(track, simple_path, train, train_speed, reverse_offset, &arena);
+                patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
             }
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
@@ -332,7 +341,7 @@ patherTask()
     }
 
     if (cbuf_len(simple_path) > 0) {
-        patherSimplePath(track, simple_path, train, train_speed, offset+reverse_offset, &arena);
+        patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
     }
 
     arena_release(&arena);

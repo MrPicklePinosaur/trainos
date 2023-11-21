@@ -81,7 +81,7 @@ typedef struct {
     } data;
 } TrainstateResp;
 
-usize trains[TRAIN_COUNT] = {2, 47};
+usize trains[TRAIN_COUNT] = {2, 77};
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
 // serialize trainstate o binary form for marklin
@@ -375,6 +375,69 @@ trainPosNotifierTask()
         int sensor_id = WaitForSensor(sensor_server, -1);
         //ULOG_INFO("sensor id %d", sensor_id);
 
+        // ====== zone impl (checks to see if sensor is in zone of train)
+        for (usize i = 0; i < TRAIN_COUNT; ++i) {
+
+            usize train = trains[i];
+
+            for (usize j = 0; ; ++j) {
+                ZoneId train_zone = track->nodes[train_state[train].pos].reverse->zone;
+                TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
+                if (zone_sensor == 0) break;
+                if (sensor_id == zone_sensor->num) {
+
+                    ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+
+                    // notify server that train position changed
+                    TrainstateMsg send_buf = (TrainstateMsg) {
+                        .type = TRAINSTATE_POSITION_UPDATE,
+                        .data = {
+                            .position_update = {
+                                .train = train,
+                                .new_pos = sensor_id
+                            }
+                        }
+                    };
+                    TrainstateResp resp_buf;
+                    Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+                    break;
+
+                }
+            }
+
+            // TODO dupliated
+            // look at the reverse direction too
+            for (usize j = 0; ; ++j) {
+                ZoneId train_zone = track->nodes[train_state[train].pos].zone;
+                TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
+                if (zone_sensor == 0) break;
+                if (sensor_id == zone_sensor->num) {
+
+                    ULOG_INFO("reverse: train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+
+                    // notify server that train position changed
+                    TrainstateMsg send_buf = (TrainstateMsg) {
+                        .type = TRAINSTATE_POSITION_UPDATE,
+                        .data = {
+                            .position_update = {
+                                .train = train,
+                                .new_pos = sensor_id
+                            }
+                        }
+                    };
+                    TrainstateResp resp_buf;
+                    Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+                    break;
+
+                }
+            }
+
+        }
+
+#if 0
+        // ====== dijkstra impl (should work well if dijkstra was more efficient)
+        // TODO currently a bit buggy since there are reversals
+
         // compute the next sensor each train is expecting
         // for each train, find the distance of the new sensor trigger from the previous observed position of the train, and take the most likely to be attributed to that specific train
         usize min_dist = 200000; //arbritrary large number
@@ -412,7 +475,7 @@ trainPosNotifierTask()
         };
         TrainstateResp resp_buf;
         Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-
+#endif
     }
 
     Exit();
@@ -541,7 +604,7 @@ trainStateServer()
             // set the train state to reversed
             Track* track = get_track_a(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
-            train_state[train].offset = -train_state[train].offset; // flip offset if reversing
+            //train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
             // TODO this is commented out since we will explicitly set the position of the train to be facing the right way.
             //      this makes use of the fact that paths with a reverse will end with a reverse node.
@@ -575,7 +638,7 @@ trainStateServer()
             // set the train state to reversed
             Track* track = get_track_a(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
-            train_state[train].offset = -train_state[train].offset; // flip offset if reversing
+            //train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
             /* train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation */
 
