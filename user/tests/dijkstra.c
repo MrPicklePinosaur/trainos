@@ -19,7 +19,18 @@ runDijkstra(Tid reserve_server, Track* track, usize train, char* start_str, char
         return;
     }
     if (check_reserve) {
-        reserveZonesInPath(reserve_server, train, path);
+        for (usize i = 0; i < cbuf_len(path); ++i) {
+            TrackEdge* edge = cbuf_get(path, i);
+            ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
+            if (zone != -1) {
+                if (!zone_reserve(reserve_server, train, zone)) {
+                    ULOG_WARN("failed reservation waiting for zone %d", zone);
+                    zone_unreserve_all(reserve_server, train);
+                    return;
+                }
+                ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
+            }
+        }
     }
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);

@@ -45,32 +45,6 @@ setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_sw
     }
 }
 
-// attempts to reserve as much of the path as possible
-bool
-reserveZonesInPath(Tid reserve_server, usize train, CBuf* path)
-{
-    for (usize i = 0; i < cbuf_len(path); ++i) {
-        // reserve the path that we found
-        // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
-        TrackEdge* edge = cbuf_get(path, i);
-        ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
-        if (zone != -1) {
-            if (!zone_reserve(reserve_server, train, zone)) {
-                ULOG_WARN("failed reservation waiting for zone %d", zone);
-                // TODO do something about this?
-                /* zone_unreserve_all(reserve_server,  train); */
-                /* return false; */
-                zone_wait(reserve_server, train, zone);
-                if (!zone_reserve(reserve_server, train, zone)) {
-                    PANIC("should have claimed zone here");
-                }
-            }
-            ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
-        }
-    }
-    return true;
-}
-
 // moves the train to a specified destination without using any reversals
 void
 patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
@@ -248,6 +222,43 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
 }
 
+// Run a path that includes reversals
+void
+patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
+{
+    // no work to do
+    if (cbuf_len(path) == 0) return;
+
+    // break path into simple paths (no reversals)
+    CBuf* simple_path = cbuf_new(128);
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+
+        TrackEdge* cur_edge = cbuf_get(path, i);
+        cbuf_push_back(simple_path, cur_edge);
+
+        // check for reversal
+        if (cur_edge->type == EDGE_REVERSE) {
+            /* ULOG_INFO_M(LOG_MASK_PATH, "found reversal"); */
+
+            // no need to move if we are only running a reversal
+            if (cbuf_len(simple_path) > 1) {
+                /* TrainState state = TrainstateGet(trainstate_server, train); */
+                /* reverse_offset = TRAIN_LENGTH; */
+                patherSimplePath(track, simple_path, train, train_speed, offset, arena);
+            }
+
+            Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
+            ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
+            TrainstateReverseStatic(trainstate_server, train);
+            cbuf_clear(simple_path);
+        }
+    }
+
+    if (cbuf_len(simple_path) > 0) {
+        patherSimplePath(track, simple_path, train, train_speed, offset, arena);
+    }
+}
+
 void
 patherTask()
 {
@@ -294,59 +305,34 @@ patherTask()
         path = dijkstra(track, train, src, dest, true, false, &arena);
     }
 
+    CBuf* complex_path = cbuf_new(128);
+
     // reserve zones in path and block if we can't aquire
-    reserveZonesInPath(reserve_server, train, path);
-
-    // check if offset is valid
-    TrackNode dest_node = track->nodes[dest];
-
-    // TODO currently not allowed to use offsets too large or too small (greater than next node, less that prev node), and also can't offset off of nodes other than sensors
-    if (offset != 0 && dest_node.type != NODE_SENSOR) {
-        ULOG_WARN("[PATHER] can't use offset from node other than sensor");
-        arena_release(&arena);
-        Exit();
-    }
-    i32 max_fwd_dist = dest_node.edge[DIR_AHEAD].dist;
-    if (offset > 0 && offset > max_fwd_dist) {
-        ULOG_WARN("[PATHER] forward offset too large (max value for node %s is %d)", dest_node.name, max_fwd_dist);
-        arena_release(&arena);
-        Exit();
-    }
-    i32 max_bck_dist = dest_node.reverse->edge[DIR_AHEAD].dist;
-    if (offset < 0 && -offset > max_bck_dist) {
-        ULOG_WARN("[PATHER] backward offset too large (max value for node %s is %d)", dest_node.name, max_bck_dist);
-        arena_release(&arena);
-        Exit();
-    }
-
-    // break path into simple paths (no reversals)
-    CBuf* simple_path = cbuf_new(128);
     for (usize i = 0; i < cbuf_len(path); ++i) {
+        // reserve the path that we found
+        // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
+        TrackEdge* edge = cbuf_get(path, i);
+        ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
+        if (zone != -1) {
+            if (!zone_reserve(reserve_server, train, zone)) {
+                ULOG_WARN("failed reservation waiting for zone %d", zone);
 
-        TrackEdge* cur_edge = cbuf_get(path, i);
-        cbuf_push_back(simple_path, cur_edge);
+                // can do partial pathfind
+                ULOG_WARN("Executing partial path of length %d", cbuf_len(complex_path));
+                patherComplexPath(trainstate_server, clock_server, track, complex_path, train, train_speed, offset, &arena);
+                cbuf_clear(complex_path);
 
-        // check for reversal
-        if (cur_edge->type == EDGE_REVERSE) {
-            /* ULOG_INFO_M(LOG_MASK_PATH, "found reversal"); */
-
-            // no need to move if we are only running a reversal
-            if (cbuf_len(simple_path) > 1) {
-                /* TrainState state = TrainstateGet(trainstate_server, train); */
-                /* reverse_offset = TRAIN_LENGTH; */
-                patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
+                zone_wait(reserve_server, train, zone);
+                if (!zone_reserve(reserve_server, train, zone)) {
+                    PANIC("should have claimed zone here");
+                }
             }
-
-            Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
-            ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
-            TrainstateReverseStatic(trainstate_server, train);
-            cbuf_clear(simple_path);
+            ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
         }
+        cbuf_push_back(complex_path, edge);
     }
 
-    if (cbuf_len(simple_path) > 0) {
-        patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
-    }
+    patherComplexPath(trainstate_server, clock_server, track, complex_path, train, train_speed, offset, &arena);
 
     arena_release(&arena);
     Exit();
@@ -368,35 +354,35 @@ pathRandomizer(void)
             continue;
         }
 
-        Tid path_task = PlanPath(train_num, train_speed, 0, track->nodes[dest].name);
+        Tid path_task = PlanPath((Path){train_num, train_speed, 0, track->nodes[dest].name});
         WaitTid(path_task);
     }
 }
 
 Tid
-PlanPath(u32 train, u32 speed, i32 offset, char* dest_str)
+PlanPath(Path path)
 {
     Track* track = get_track_a();
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
-    TrainState trainstate = TrainstateGet(trainstate_server, train);
+    TrainState trainstate = TrainstateGet(trainstate_server, path.train);
     usize start_sensor = trainstate.pos;
-    TrackNode* dest = track_node_by_name(track, dest_str);
+    TrackNode* dest = track_node_by_name(track, path.dest);
     if (dest == NULL) {
         // TODO send back error?
         ULOG_WARN("invalid destination");
         return 0;
     }
     usize dest_sensor = dest - track->nodes;
-    ULOG_INFO_M(LOG_MASK_PATH, "routing train %d from %d to %d", train, start_sensor, dest_sensor);
+    ULOG_INFO_M(LOG_MASK_PATH, "routing train %d from %d to %d", path.train, start_sensor, dest_sensor);
 
     PatherResp resp_buf;
     PatherMsg send_buf = (PatherMsg) {
         .src = start_sensor,
         .dest = dest_sensor,
-        .train = train,
-        .train_speed = speed,
-        .offset = offset
+        .train = path.train,
+        .train_speed = path.speed,
+        .offset = path.offset
     };
 
     Tid pather_task = Create(2, &patherTask, "Pather Task");
@@ -405,3 +391,41 @@ PlanPath(u32 train, u32 speed, i32 offset, char* dest_str)
     return pather_task;
 }
 
+
+typedef struct {
+    Path* path;
+    usize len;
+} PlanPathSeqMsg;
+
+// we need a task since we dont want to block task that spawned this
+void
+planPathSeqTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+
+    int from_tid;
+    PlanPathSeqMsg msg_buf;
+    struct {} reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PlanPathSeqMsg));
+    Reply(from_tid, (char*)&reply_buf, 0);
+    
+    for (usize i = 0; i < msg_buf.len; ++i) {
+        ULOG_DEBUG("Executing path index %d: train %d", i, msg_buf.path[i].train);
+        Tid path_task = PlanPath(msg_buf.path[i]);
+        WaitTid(path_task);
+        Delay(clock_server, 10); // add tiny delay
+    }
+    Exit();
+}
+
+Tid
+PlanPathSeq(Path* path, usize len)
+{
+    PlanPathSeqMsg send_buf = (PlanPathSeqMsg) { path, len };
+    struct {} resp_buf;
+
+    Tid seq_path_task = Create(2, &planPathSeqTask, "Seq Pather Task");
+    Send(seq_path_task, (const char*)&send_buf, sizeof(PlanPathSeqMsg), (char*)&resp_buf, 0);
+
+    return seq_path_task;
+}

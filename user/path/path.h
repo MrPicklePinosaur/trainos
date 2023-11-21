@@ -8,10 +8,17 @@
 #include <trainstd.h>
 #include "track_data.h"
 
-Tid PlanPath(u32 train, u32 speed, i32 offset, char* dest);
+typedef struct {
+    usize train;
+    u32 speed;
+    i32 offset;
+    char* dest;
+} Path;
+
+Tid PlanPath(Path path);
+Tid PlanPathSeq(Path* path, usize len); // plan a sequential path
 
 // some helpers
 void setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_switches);
-bool reserveZonesInPath(Tid reserve_server, usize train, CBuf* path);
 
 #endif // __PATH_PATH_H__

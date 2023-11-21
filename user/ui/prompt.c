@@ -143,7 +143,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                 );
                 renderer_append_console(renderer_server, msg);
 
-                PlanPath(train, speed, offset, dest);
+                PlanPath((Path){train, speed, offset, dest});
             }
             else {
                 char* msg = cstr_format(&tmp, "Invalid speed, must be %s%d%s, %s%d%s, %s%d%s, or %s%d%s",
@@ -163,25 +163,22 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
                     Track* track = get_track_a();
                     usize node_ind = 0;
+                    usize SPEED = 5;
                     
                     // Train 2 A5/6 -> E7/8
                     node_ind = track_node_index(track, track_node_by_name(track, "A5"));
                     TrainstateSetPos(trainstate_server, 2, node_ind);
-                    Tid train1_pather = PlanPath(2, 5, 0, "E8");
+                    Path train1_paths[] = {(Path){2, SPEED, 0, "E8"}, (Path){2, SPEED, 0, "A5"}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
 
                     // Train 47 C3/4 -> A3/4
                     node_ind = track_node_index(track, track_node_by_name(track, "C4"));
                     TrainstateSetPos(trainstate_server, 47, node_ind);
-                    Tid train2_pather = PlanPath(47, 5, 0, "A3");
+                    Path train2_paths[] = {(Path){47, SPEED, 0, "A3"}, (Path){47, SPEED, 0, "C4"}};
+                    Tid train2_pather = PlanPathSeq(train2_paths, 2);
 
-                    // now reverse the trains
-                    WaitTid(train1_pather); // TODO shouldn't have to block on both
+                    WaitTid(train1_pather);
                     WaitTid(train2_pather);
-
-                    renderer_append_console(renderer_server, "[benchmark] reversing trains");
-                    PlanPath(2, 5, 0, "A5");
-                    PlanPath(47, 5, 0, "C4");
-
 
                     break;
                 }
