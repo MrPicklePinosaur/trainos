@@ -46,6 +46,7 @@ setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_sw
     }
 }
 
+// attempts to reserve as much of the path as possible
 bool
 reserveZonesInPath(Tid reserve_server, usize train, CBuf* path)
 {
@@ -56,10 +57,14 @@ reserveZonesInPath(Tid reserve_server, usize train, CBuf* path)
         ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
         if (zone != -1) {
             if (!zone_reserve(reserve_server, train, zone)) {
-                ULOG_WARN("failed reservation");
+                ULOG_WARN("failed reservation waiting for zone %d", zone);
                 // TODO do something about this?
-                zone_unreserve_all(reserve_server,  train);
-                return false;
+                /* zone_unreserve_all(reserve_server,  train); */
+                /* return false; */
+                zone_wait(reserve_server, train, zone);
+                if (!zone_reserve(reserve_server, train, zone)) {
+                    PANIC("should have claimed zone here");
+                }
             }
             ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
         }
@@ -285,16 +290,13 @@ patherTask()
     ULOG_INFO_M(LOG_MASK_PATH, "computing path...");
     CBuf* path = dijkstra(track, train, src, dest, true, true, &arena);
     if (path == NULL) {
-        ULOG_WARN("[PATHER] dijkstra can't find path");
-        arena_release(&arena);
-        Exit();
+        // dijkstra failed, compute a partial path instead
+        ULOG_WARN("[PATHER] dijkstra can't find path, recompute a blocking path");
+        path = dijkstra(track, train, src, dest, true, false, &arena);
     }
 
-    if (!reserveZonesInPath(reserve_server, train, path)) {
-        // TODO should do some other handling if not able to reserve entire path
-        arena_release(&arena);
-        Exit();
-    }
+    // reserve zones in path and block if we can't aquire
+    reserveZonesInPath(reserve_server, train, path);
 
     // check if offset is valid
     TrackNode dest_node = track->nodes[dest];

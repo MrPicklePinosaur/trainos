@@ -116,6 +116,22 @@ zone_is_reserved(Tid reserve_server, ZoneId zone, usize train)
 
 }
 
+void
+zone_wait(Tid reserve_server, usize train, ZoneId zone)
+{
+    ReserveResp resp_buf;
+    ReserveMsg send_buf = (ReserveMsg) {
+        .type = RESERVE_WAIT,
+        .data = {
+            .wait = {
+                .train = train,
+                .zone = zone
+            }
+        }
+    };
+    int ret = Send(reserve_server, (const char*)&send_buf, sizeof(ReserveMsg), (char*)&resp_buf, sizeof(ReserveResp));
+}
+
 // returns if the zone was successfully reserved
 bool
 _zone_reserve(usize train, ZoneId zone)
