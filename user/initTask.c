@@ -12,6 +12,7 @@
 #include "kern/perf.h"
 #include "kern/dev/uart.h"
 #include "user/path/train_data.h"
+#include "user/path/reserve.h"
 
 
 typedef struct {
@@ -88,6 +89,7 @@ initTask()
 
     println("Initializing trains...");
     Tid trainstate_server = Create(5, &trainStateServer, "Train State Server");
+    Tid reserve_server = Create(2, &reservationTask, "Reservation Server");
     Tid path_tid = Create(3, &pathTask, "Path Task");
 
     println("Initalizing UI...");
