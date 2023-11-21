@@ -67,3 +67,9 @@ zone_is_reserved(ZoneId zone, usize train)
 {
     return reservations[zone] != 0 && reservations[zone] != train;
 }
+
+usize*
+zone_dump()
+{
+    return reservations;
+}

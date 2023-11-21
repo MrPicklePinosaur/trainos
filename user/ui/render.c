@@ -11,6 +11,7 @@
 #include "user/switch.h"
 #include "user/switch.h"
 #include "user/trainstate.h"
+#include "user/path/reserve.h"
 
 #include "kern/dev/uart.h"
 #include "kern/perf.h"
@@ -72,6 +73,58 @@ renderer_prompt(Tid renderer_tid, char ch)
 
     return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
 }
+
+void
+renderZoneWinTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Delay(clock_server, 40);
+
+    const usize ZONE_ANCHOR_X = 6;
+    const usize ZONE_ANCHOR_Y = 1;
+    const usize ZONE_COL_SPACING = 9;
+    Window zone_win = win_init(84, 19, 32, 17);
+    win_draw(&zone_win);
+    w_puts_mv(&zone_win, "[zones]", 2, 0);
+    w_puts_mv(&zone_win, "[00]     [13]     ", 1, 1);
+    w_puts_mv(&zone_win, "[01]     [14]     ", 1, 2);
+    w_puts_mv(&zone_win, "[02]     [15]     ", 1, 3);
+    w_puts_mv(&zone_win, "[03]     [16]     ", 1, 4);
+    w_puts_mv(&zone_win, "[04]     [17]     ", 1, 5);
+    w_puts_mv(&zone_win, "[05]     [18]     ", 1, 6);
+    w_puts_mv(&zone_win, "[06]     [19]     ", 1, 7);
+    w_puts_mv(&zone_win, "[07]     [20]     ", 1, 8);
+    w_puts_mv(&zone_win, "[08]     [21]     ", 1, 9);
+    w_puts_mv(&zone_win, "[09]     [22]     ", 1, 10);
+    w_puts_mv(&zone_win, "[10]     [23]     ", 1, 11);
+    w_puts_mv(&zone_win, "[11]     [24]     ", 1, 12);
+    w_puts_mv(&zone_win, "[12]     [25]     ", 1, 13);
+    w_flush(&zone_win);
+
+    Track* track = get_track_a();
+    usize ticks = Time(clock_server);
+    Arena tmp_base = arena_new(64);
+    for (;;) {
+        Arena tmp = tmp_base;
+
+        ticks += 100; // update every 1 second
+        DelayUntil(clock_server, ticks); 
+
+        // update all zone states (this is kinda inefficient, maybe do a listener model)
+        usize* reservation = zone_dump();
+        for (usize i = 0; i < track->zone_count; ++i) {
+            usize res = reservation[i];
+            char* res_str = cstr_format(&tmp, "%d", res);
+            usize x = ZONE_ANCHOR_X + ((i/13 == 0) ? 0 : ZONE_COL_SPACING);
+            w_puts_mv(&zone_win, "    ", x, ZONE_ANCHOR_Y+(i%13));
+            w_puts_mv(&zone_win, res_str, x, ZONE_ANCHOR_Y+(i%13));
+            w_flush(&zone_win);
+        }
+    }
+
+    Exit();
+}
+
 
 void
 renderTrainStateWinTask()
@@ -264,7 +317,6 @@ renderDiagnosticWinTask()
         w_puts_mv(&diagnostic_win, time_fmt, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y);
         w_puts_mv(&diagnostic_win, idle_str, DIAGNOSTIC_ANCHOR_X+6, DIAGNOSTIC_ANCHOR_Y+1);
         w_puts(&diagnostic_win, "%%");
-        
     }
 
     Exit();
@@ -311,6 +363,7 @@ renderTask()
     Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
+    Create(5, &renderZoneWinTask, "Render Zone Window");
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
