@@ -14,7 +14,7 @@
 
 #include "kern/perf.h"
 
-void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, Tid trainstate_server, ParserResult command);
+void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, ParserResult command);
 
 // task for getting user input form the console
 void
@@ -25,7 +25,6 @@ promptTask()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Tid path_server = WhoIs(PATH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     CBuf* line = cbuf_new(32);
@@ -55,7 +54,7 @@ promptTask()
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             // TODO since we are using a tmp arena, we can technically 
             ParserResult parsed = parse_command(parser_arena, str8(completed_line));
-            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, path_server, trainstate_server, parsed);
+            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, trainstate_server, parsed);
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -65,7 +64,7 @@ promptTask()
 }
 
 void
-executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid path_server, Tid trainstate_server, ParserResult command)
+executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
@@ -144,7 +143,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                 );
                 renderer_append_console(renderer_server, msg);
 
-                PlanPath(path_server, train, speed, offset, dest);
+                PlanPath(train, speed, offset, dest);
             }
             else {
                 char* msg = cstr_format(&tmp, "Invalid speed, must be %s%d%s, %s%d%s, %s%d%s, or %s%d%s",
@@ -163,16 +162,26 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     renderer_append_console(renderer_server, "Running benchmark 1");
 
                     Track* track = get_track_a();
+                    usize node_ind = 0;
                     
                     // Train 2 A5/6 -> E7/8
-                    usize node_ind = track_node_index(track, track_node_by_name(track, "A5"));
+                    node_ind = track_node_index(track, track_node_by_name(track, "A5"));
                     TrainstateSetPos(trainstate_server, 2, node_ind);
-                    PlanPath(path_server, 2, 5, 0, "E8");
+                    Tid train1_pather = PlanPath(2, 5, 0, "E8");
 
                     // Train 47 C3/4 -> A3/4
                     node_ind = track_node_index(track, track_node_by_name(track, "C4"));
                     TrainstateSetPos(trainstate_server, 47, node_ind);
-                    PlanPath(path_server, 47, 5, 0, "A3");
+                    Tid train2_pather = PlanPath(47, 5, 0, "A3");
+
+                    // now reverse the trains
+                    WaitTid(train1_pather); // TODO shouldn't have to block on both
+                    WaitTid(train2_pather);
+
+                    renderer_append_console(renderer_server, "[benchmark] reversing trains");
+                    PlanPath(2, 5, 0, "A5");
+                    PlanPath(47, 5, 0, "C4");
+
 
                     break;
                 }

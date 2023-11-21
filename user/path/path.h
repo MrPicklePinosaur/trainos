@@ -8,11 +8,7 @@
 #include <trainstd.h>
 #include "track_data.h"
 
-#define PATH_ADDRESS "path"
-
-int PlanPath(Tid path_tid, u32 train, u32 speed, i32 offset, char* dest);
-
-void pathTask(void);
+Tid PlanPath(u32 train, u32 speed, i32 offset, char* dest);
 
 // some helpers
 void setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_switches);

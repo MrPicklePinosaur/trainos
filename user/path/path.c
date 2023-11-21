@@ -11,9 +11,6 @@
 #include "user/path/reserve.h"
 #include "user/path/dijkstra.h"
 
-
-typedef PAIR(u32, SwitchMode) Pair_u32_SwitchMode;
-
 typedef struct {
     usize src;
     usize dest;
@@ -25,6 +22,8 @@ typedef struct {
 typedef struct {
 
 } PatherResp;
+
+typedef PAIR(u32, SwitchMode) Pair_u32_SwitchMode;
 
 void
 setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_switches)
@@ -353,24 +352,12 @@ patherTask()
     Exit();
 }
 
-typedef struct {
-    u32 train;
-    u32 speed;
-    i32 offset;
-    char* dest;
-} PathMsg;
-
-typedef struct {
-    Tid pather;
-} PathResp;
-
 int
 pathRandomizer(void)
 {
     usize train_num = 2;
     usize train_speed = 8;
 
-    Tid path_task = WhoIs(PATH_ADDRESS);
     Track* track = get_track_a();
 
     for (;;) {
@@ -381,90 +368,40 @@ pathRandomizer(void)
             continue;
         }
 
-        PathResp resp_buf;
-        PathMsg send_buf = (PathMsg) {
-            .train = train_num,
-            .speed = train_speed,
-            .offset = 0,
-            .dest = track->nodes[dest].name,
-        };
-
-        int ret = Send(path_task, (const char*)&send_buf, sizeof(PathMsg), (char*)&resp_buf, sizeof(PathResp));
-        if (ret < 0) {
-            ULOG_WARN("pathRandomizer's Send() errored");
-            return -1;
-        }
-        WaitTid(resp_buf.pather);
+        Tid path_task = PlanPath(train_num, train_speed, 0, track->nodes[dest].name);
+        WaitTid(path_task);
     }
 }
 
-void
-pathTask(void)
+Tid
+PlanPath(u32 train, u32 speed, i32 offset, char* dest_str)
 {
-    RegisterAs(PATH_ADDRESS); 
-
-    Tid sensor_server = WhoIs(SENSOR_ADDRESS);
-    Tid switch_server = WhoIs(SWITCH_ADDRESS);
-    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Track* track = get_track_a();
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
-    Track* track = get_track_a();
-
-    PathMsg msg_buf;
-    PathResp reply_buf;
-
-    for (;;) {
-        int from_tid;
-        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PathMsg));
-        if (msg_len < 0) {
-            ULOG_WARN("Error when receiving");
-            continue;
-        }
-
-        TrainState trainstate = TrainstateGet(trainstate_server, msg_buf.train);
-        usize start_sensor = trainstate.pos;
-        TrackNode* dest = track_node_by_name(track, msg_buf.dest);
-        if (dest == NULL) {
-            // TODO send back error?
-            ULOG_WARN("invalid destination");
-            continue;
-        }
-        usize dest_sensor = dest - track->nodes;
-        ULOG_INFO_M(LOG_MASK_PATH, "routing train %d from %d to %d", msg_buf.train, start_sensor, dest_sensor);
-
-        PatherResp resp_buf;
-        PatherMsg send_buf = (PatherMsg) {
-            .src = start_sensor,
-            .dest = dest_sensor,
-            .train = msg_buf.train,
-            .train_speed = msg_buf.speed,
-            .offset = msg_buf.offset
-        };
-        int pather_task = Create(2, &patherTask, "Pather Task");
-        reply_buf = (PathResp){
-            .pather = pather_task
-        };
-        Reply(from_tid, (char*)&reply_buf, sizeof(PathResp));
-        Send(pather_task, (const char*)&send_buf, sizeof(PatherMsg), (char*)&resp_buf, sizeof(PatherResp));
+    TrainState trainstate = TrainstateGet(trainstate_server, train);
+    usize start_sensor = trainstate.pos;
+    TrackNode* dest = track_node_by_name(track, dest_str);
+    if (dest == NULL) {
+        // TODO send back error?
+        ULOG_WARN("invalid destination");
+        return 0;
     }
+    usize dest_sensor = dest - track->nodes;
+    ULOG_INFO_M(LOG_MASK_PATH, "routing train %d from %d to %d", train, start_sensor, dest_sensor);
 
-    Exit();
-}
-
-int
-PlanPath(Tid path_tid, u32 train, u32 speed, i32 offset, char* dest)
-{
-    PathResp resp_buf;
-    PathMsg send_buf = (PathMsg) {
+    PatherResp resp_buf;
+    PatherMsg send_buf = (PatherMsg) {
+        .src = start_sensor,
+        .dest = dest_sensor,
         .train = train,
-        .speed = speed,
-        .offset = offset,
-        .dest = dest
+        .train_speed = speed,
+        .offset = offset
     };
 
-    int ret = Send(path_tid, (const char*)&send_buf, sizeof(PathMsg), (char*)&resp_buf, sizeof(PathResp));
+    Tid pather_task = Create(2, &patherTask, "Pather Task");
+    Send(pather_task, (const char*)&send_buf, sizeof(PatherMsg), (char*)&resp_buf, sizeof(PatherResp));
 
-    return ret;
+    return pather_task;
 }
 
