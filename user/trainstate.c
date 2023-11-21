@@ -535,8 +535,10 @@ trainStateServer()
             train_state[train].reversed = !train_state[train].reversed;
             train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
-            ULOG_INFO("train %d position was %s, will update to", train, track->nodes[train_state[train].pos].name, track->nodes[train_state[train].pos].reverse - track->nodes);
-            train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
+            // TODO this is commented out since we will explicitly set the position of the train to be facing the right way.
+            //      this makes use of the fact that paths with a reverse will end with a reverse node.
+            /* ULOG_INFO("train %d position was %s, will update to", train, track->nodes[train_state[train].pos].name, track->nodes[train_state[train].pos].reverse - track->nodes); */
+            /* train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation */
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE_STATIC,
@@ -567,7 +569,7 @@ trainStateServer()
             train_state[train].reversed = !train_state[train].reversed;
             train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
-            train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
+            /* train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation */
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE_REVERSE,

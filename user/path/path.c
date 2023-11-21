@@ -192,11 +192,11 @@ void
 patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
     ULOG_INFO_M(LOG_MASK_PATH, "Executing simple path");
-    /* for (usize i = 0; i < cbuf_len(path); ++i) { */
-    /*     TrackEdge* edge = (TrackEdge*)cbuf_get(path, i); */
-    /*     print("%s->%s,", edge->src->name, edge->dest->name); */
-    /* } */
-    /* print("\r\n"); */
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+        print("%s->%s,", edge->src->name, edge->dest->name);
+    }
+    print("\r\n");
 
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
