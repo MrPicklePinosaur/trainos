@@ -32,6 +32,12 @@ static const uint32_t TRAIN_DATA_STOP_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SP
     {14, 115, 348, 716, 1254},  // 58
     {20, 173, 447, 929, 1588},  // 77
 };
+static const uint32_t TRAIN_DATA_STOP_TIME[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
+    {1642, 2455, 2713, 2780, 2988},  // 2
+    {1493, 2377, 2672, 2641, 2865},  // 47
+    {1647, 3485, 3663, 3860, 4332},  // 58
+    {1600, 3495, 3853, 4543, 5190},  // 77
+};
 static const uint32_t TRAIN_DATA_SHORT_MOVE_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SHORT_MOVE_DIST_COUNT] = {
     {0, 10, 17, 33, 66, 97, 132, 186, 235, 305, 376, 475, 601, 725, 890, 992, 1118},  // 2
     {0, 8, 24, 39, 73, 105, 152, 203, 269, 334, 435, 555, 730, 873, 1002, 1110, 1175},  // 47
@@ -41,6 +47,7 @@ static const uint32_t TRAIN_DATA_SHORT_MOVE_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_D
 
 uint32_t train_data_vel(uint32_t train, uint32_t speed);
 uint32_t train_data_stop_dist(uint32_t train, uint32_t speed);
+uint32_t train_data_stop_time(uint32_t train, uint32_t speed);
 uint32_t train_data_short_move_time(uint32_t train, uint32_t dist);
 
 #endif // __TRAIN_DATA_H__

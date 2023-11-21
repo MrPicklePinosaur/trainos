@@ -5,7 +5,7 @@ Train 2 velocities (millimeters/second)
 11: 554
 14: 650
 
-Train 2 stopping times (microseconds before issuing stop command, C10 to E14)
+Train 2 wait before stop (microseconds before issuing stop command, C10 to E14)
  2: 4091719 (total distance 359 instead of 1045, from C10 to B1)
  5: 3437504
  8: 1344469, 1335055
@@ -21,7 +21,7 @@ Train 47 velocities:
 11: 537
 14: 578
 
-Train 47 stopping times:
+Train 47 wait before stop:
  2: 4043959 (total distance 359 instead of 1045, from C10 to B1)
  5: 3186181
  8: 1343748
@@ -35,7 +35,7 @@ Train 58 velocities:
 11: 371
 14: 579
 
-Train 58 stopping times:
+Train 58 wait before stop:
  5: 3704121 (total distance 359 instead of 1045, from C10 to B1)
  8: 3667663
 11: 886166
@@ -48,15 +48,17 @@ Train 77 velocities:
 11: 408
 14: 612
 
-Train 77 stopping times:
+Train 77 wait before stop:
  5: 1874765 (total distance 359 instead of 1045, from C10 to B1)
  8: 2578129
 11:  285465
 14:  341439, 375008 (total distance 1797 instead of 1045, from B16 to E9)
 
 Total distance: 1045
-If v is the measured velocity in mm/s and t is the stopping time in microseconds, the stopping distance is:
-1045 - (v*10^(-6)*t)
+If v is the measured velocity in mm/s and t is the wait time before stopping in microseconds, the stopping distance is:
+d = 1045 - (v*10^(-6)*t)
+As well, assuming constant decceleration, stopping time is:
+t = 2*d/v
 
 Train 2 stopping distances (millimeters):
  2:  60
@@ -85,6 +87,34 @@ Train 77 stopping distances:
  8:  447
 11:  929
 14: 1588, 1567
+
+Train 2 stopping times (milliseconds):
+ 2: 1642
+ 5: 2455
+ 8: 2713
+11: 2780
+14: 2988
+
+Train 47 stopping times:
+ 2: 1493
+ 5: 2377
+ 8: 2672
+11: 2641
+14: 2865
+
+Train 58 stopping times:
+ 2: 1647
+ 5: 3485
+ 8: 3663
+11: 3860
+14: 4332
+
+Train 77 stopping times:
+ 2: 1600
+ 5: 3495
+ 8: 3853
+11: 4543
+14: 5190
 
 Train 2 short moves (speed 8, milliseconds: millimeters):
  250:   10

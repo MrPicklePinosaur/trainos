@@ -41,6 +41,14 @@ train_data_stop_dist(uint32_t train, uint32_t speed)
 }
 
 uint32_t
+train_data_stop_time(uint32_t train, uint32_t speed)
+{
+    uint32_t train_index = get_train_index(train);
+    uint32_t speed_index = get_speed_index(speed);
+    return TRAIN_DATA_STOP_TIME[train_index][speed_index];
+}
+
+uint32_t
 train_data_short_move_time(uint32_t train, uint32_t dist)
 {
     uint32_t train_index = get_train_index(train);
