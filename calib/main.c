@@ -216,12 +216,13 @@ calibTrainStop()
         }
 
         // delay for wait time
-        int trigger_time = get_time();
+        uint32_t trigger_time = get_time();
         while (get_time()-trigger_time < wait_time) { }
 
         // issue stop
         marklin_train_ctl(train_number, 0);
 
+        trigger_time = get_time();
         // wait for sensor E14 (or timeout)
         for (;;) {
 
