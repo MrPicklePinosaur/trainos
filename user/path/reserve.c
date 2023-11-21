@@ -11,6 +11,7 @@ typedef enum {
     RESERVE_UNRESERVE,
     RESERVE_UNRESERVE_ALL,
     RESERVE_IS_RESERVED,
+    RESERVE_WAIT,
 } ReserveMsgType;
 
 typedef struct {
@@ -32,6 +33,12 @@ typedef struct {
             usize train;
             ZoneId zone;
         } is_reserved;
+
+        struct {
+            usize train;
+            ZoneId zone;
+        } wait;
+
     } data;
 } ReserveMsg;
 
@@ -136,6 +143,41 @@ _zone_unreserve(usize train, ZoneId zone)
     return true;
 }
 
+// false means that the zone is free to be claimed by train
+bool
+_zone_is_reserved(ZoneId zone, usize train)
+{
+    return reservations[zone] != 0 && reservations[zone] != train;
+}
+
+typedef struct {
+    Tid tid;
+    usize train;
+    ZoneId zone;
+} ZoneRequest;
+
+void
+reservationWaitUnblock(List* zone_requests, ZoneId updated_zone)
+{
+    ListIter it = list_iter(zone_requests);
+    ZoneRequest* request;
+    while (listiter_next(&it, (void**)&request)) {
+        if (request->zone != updated_zone) continue;
+
+        if (!_zone_is_reserved(updated_zone, request->train)) {
+
+            ULOG_INFO_M(LOG_MASK_RESERVE, "[RESERVE SERVER] unblocking task %d", request->tid);
+            ReserveResp reply_buf = (ReserveResp) {
+                .type = RESERVE_WAIT,
+            };
+            Reply(request->tid, (char*)&reply_buf, sizeof(ReserveResp));
+            list_remove(zone_requests, request);
+            return; // return since we only grant one wait request at a time
+            // TODO maybe we will unblock all and let everyone race? or if we unblock one then we have first come first serve
+        }
+    }
+}
+
 void
 reservationTask()
 {
@@ -147,6 +189,8 @@ reservationTask()
     for (usize i = 0; i < track->zone_count; ++i) {
         reservations[i] = 0;
     }
+
+    List* zone_requests = list_init();
 
     ReserveMsg msg_buf;
     ReserveResp reply_buf;
@@ -180,10 +224,15 @@ reservationTask()
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
+
+            reservationWaitUnblock(zone_requests, msg_buf.data.reserve.zone);
         }
         else if (msg_buf.type == RESERVE_UNRESERVE_ALL) {
             for (usize i = 0; i < track->zone_count; ++i) {
-                if (reservations[i] == msg_buf.data.unreserve_all) reservations[i] = 0;
+                if (reservations[i] == msg_buf.data.unreserve_all) {
+                    reservations[i] = 0;
+                    reservationWaitUnblock(zone_requests, i);
+                }
             } 
 
             reply_buf = (ReserveResp) {
@@ -195,7 +244,7 @@ reservationTask()
         else if (msg_buf.type == RESERVE_IS_RESERVED) {
             usize train = msg_buf.data.is_reserved.train;
             ZoneId zone = msg_buf.data.is_reserved.zone;
-            bool is_reserved = reservations[zone] != 0 && reservations[zone] != train;
+            bool is_reserved = _zone_is_reserved(zone, train);
 
             reply_buf = (ReserveResp) {
                 .type = RESERVE_IS_RESERVED,
@@ -204,6 +253,29 @@ reservationTask()
                 }
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
+        }
+        else if (msg_buf.type == RESERVE_WAIT) {
+
+            usize train = msg_buf.data.wait.train;
+            ZoneId zone = msg_buf.data.wait.zone;
+
+            // return right away if the train is already holding the zone
+            if (!_zone_is_reserved(zone, train)) {
+                ULOG_INFO_M(LOG_MASK_RESERVE, "[RESERVE SERVER] train %d is alreading holding zone %d, unblocking", train, zone);
+                ReserveResp reply_buf = (ReserveResp) {
+                    .type = RESERVE_WAIT,
+                };
+                Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
+                continue;
+            }
+
+            ZoneRequest* request = alloc(sizeof(ZoneRequest));
+            *request = (ZoneRequest) {
+                .tid = from_tid,
+                .train = train,
+                .zone = zone,
+            };
+            list_push_back(zone_requests, request);
         }
 
     }
