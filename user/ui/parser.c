@@ -188,6 +188,24 @@ parse_command(Arena arena, str8 command)
             }
         };
     }
+    else if (str8_cmp(cmd_name, str8("test"))) {
+
+        eat_whitespace(command, &it);
+
+        u32 num = get_number(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed TEST command: num = %d", num);
+
+        return (ParserResult) {
+            ._type = PARSER_RESULT_TEST,
+            ._data = {
+                .test = {
+                    .num = num
+                }
+            }
+        };
+
+    }
 
     return error;
 }

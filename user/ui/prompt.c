@@ -157,6 +157,24 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             }
 			break;
         } 
+        case PARSER_RESULT_TEST: {
+            switch (command._data.test.num) {
+                case 1: {
+                    renderer_append_console(renderer_server, "Running benchmark 1");
+                    
+                    // Train 2 starts at A5/6
+                    PlanPath(path_server, 2, 8, 0, "E7");
+
+                    // Train 47 starts at C3/4
+                    PlanPath(path_server, 47, 8, 0, "A3");
+
+                    break;
+                }
+                default:
+                    renderer_append_console(renderer_server, "Invalid test");
+            }
+            break;
+        }
         default: {
             renderer_append_console(renderer_server, "Invalid command");
         }

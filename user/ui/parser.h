@@ -15,6 +15,7 @@ typedef struct {
     PARSER_RESULT_LIGHTS,
     PARSER_RESULT_QUIT,
     PARSER_RESULT_PATH,
+    PARSER_RESULT_TEST,
     PARSER_RESULT_ERROR,
   } _type;
 
@@ -44,6 +45,10 @@ typedef struct {
         i32 offset;
         char* dest;
     } path;
+
+    struct {
+        usize num;
+    } test;
 
   } _data;
 } ParserResult;
