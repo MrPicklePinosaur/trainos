@@ -6,6 +6,7 @@
 #include "user/marklin.h"
 #include "user/path/track_data.h"
 #include "user/path/train_data.h"
+#include "user/path/dijkstra.h"
 #include "trainstate.h"
 
 #define TRAIN_SPEED_MASK     0b001111
@@ -201,6 +202,7 @@ TrainstateSetLights(Tid trainstate_server, usize train, bool lights)
 int
 TrainstateSetOffset(Tid trainstate_server, usize train, isize offset)
 {
+    UNIMPLEMENTED("deprecated");
     if (!(1 <= train && train <= 100)) {
         ULOG_WARN("invalid train number %d", train);
         return -1;
@@ -365,53 +367,51 @@ trainPosNotifierTask()
     Tid trainstate_server = MyParentTid();
     Track* track = get_track_a();
 
+    Arena tmp_base = arena_new(512);
     // can now wait for future sensor updates
     for (;;) {
+        Arena tmp = tmp_base;
 
         int sensor_id = WaitForSensor(sensor_server, -1);
         //ULOG_INFO("sensor id %d", sensor_id);
 
         // compute the next sensor each train is expecting
         // for each train, find the distance of the new sensor trigger from the previous observed position of the train, and take the most likely to be attributed to that specific train
-        TrackNode* dest_node = track_node_by_sensor_id(track, sensor_id);
+        usize min_dist = 200000; //arbritrary large number
+        usize min_train = 0;
+        usize dest = sensor_id;
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
             
             usize train = trains[i];
-            TrackNode* start_node = &track->nodes[train_state[train].pos]; // TODO assumed that start node should always be sensor
+            usize src = train_state[train].pos; // TODO assumed that start node should always be sensor
+            
+            CBuf* path = dijkstra(track, train, src, dest, true, false, &tmp);
 
-
-
-#if 0
-
-            // walk node graph until next sensor
-            TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
-            ULOG_INFO("train %d pos is at %s", train, node->name);
-            if (next_sensor == NULL) {
-                ULOG_WARN("couldn't find next sensor");
-                continue;
-            }
-            ULOG_INFO("next sensor for train %d is %s", train, next_sensor->name);
-
-            // see if there is a train that is expecting this sensor
-            if (sensor_id == next_sensor->num) {
-                ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
-
-                // notify server that train position changed
-                TrainstateMsg send_buf = (TrainstateMsg) {
-                    .type = TRAINSTATE_POSITION_UPDATE,
-                    .data = {
-                        .position_update = {
-                            .train = train,
-                            .new_pos = sensor_id
-                        }
-                    }
-                };
-                TrainstateResp resp_buf;
-                Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+            if (cbuf_len(path) < min_dist) {
+                min_dist = cbuf_len(path);
+                min_train = train;
             }
 
-#endif
         }
+        
+        if (min_train == 0) {
+            PANIC("at least one train should have been found");
+        }
+
+        ULOG_INFO("train %d moves to sensor %s", min_train, track->nodes[sensor_id].name);
+
+        // notify server that train position changed
+        TrainstateMsg send_buf = (TrainstateMsg) {
+            .type = TRAINSTATE_POSITION_UPDATE,
+            .data = {
+                .position_update = {
+                    .train = min_train,
+                    .new_pos = sensor_id
+                }
+            }
+        };
+        TrainstateResp resp_buf;
+        Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
 
     }
 
@@ -448,8 +448,8 @@ trainStateServer()
         int sensor = WaitForSensor(sensor_server, -1);
 
         train_state[train].pos = sensor;
-        train_state[train].offset = train_data_stop_dist(train, TRAIN_SPEED_ROCK);
-        ULOG_INFO("train %d starting at %d with offset %d", train, sensor, train_state[train].offset);
+        /* train_state[train].offset = train_data_stop_dist(train, TRAIN_SPEED_ROCK); */
+        /* ULOG_INFO("train %d starting at %d with offset %d", train, sensor, train_state[train].offset); */
 
         // stop train for now
         marklin_train_ctl(io_server, train, 0);

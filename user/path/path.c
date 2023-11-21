@@ -222,7 +222,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         /* ULOG_INFO_M(LOG_MASK_PATH, "Train stopped..."); */
         TrainstateSetSpeed(trainstate_server, train, 0);
         
-        TrainstateSetOffset(trainstate_server, train, offset);
+        /* TrainstateSetOffset(trainstate_server, train, offset); */
     }
 
     // free the path we took (but keep the place we stop at)
@@ -319,14 +319,10 @@ patherTask()
 
             // no need to move if we are only running a reversal
             if (cbuf_len(simple_path) > 1) {
-                TrainState state = TrainstateGet(trainstate_server, train);
-                reverse_offset = TRAIN_LENGTH;
+                /* TrainState state = TrainstateGet(trainstate_server, train); */
+                /* reverse_offset = TRAIN_LENGTH; */
                 patherSimplePath(track, simple_path, train, train_speed, reverse_offset, &arena);
             }
-
-            // explicitly set position (TODO this is probably pretty dangerous)
-            /* usize dest_ind = ((TrackEdge*)cbuf_back(simple_path))->dest - track->nodes; */
-            /* TrainstateSetPos(trainstate_server, train, dest_ind); */
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
             ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
