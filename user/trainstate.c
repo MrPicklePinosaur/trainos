@@ -16,6 +16,7 @@ typedef enum {
     TRAINSTATE_SET_SPEED,
     TRAINSTATE_SET_LIGHTS,
     TRAINSTATE_SET_OFFSET,
+    TRAINSTATE_SET_DEST,  // Does not actually send the train to the destination. Simply a value used by the train state window
     TRAINSTATE_REVERSE_STATIC, // special case of reverse, reverse from rest and right away
     TRAINSTATE_REVERSE,
     TRAINSTATE_REVERSE_REVERSE,
@@ -42,6 +43,10 @@ typedef struct {
             usize train;
             isize offset;
         } set_offset;
+        struct {
+            usize train;
+            usize dest;
+        } set_dest;
         struct {
             usize train;
         } reverse;
@@ -209,6 +214,32 @@ TrainstateSetOffset(Tid trainstate_server, usize train, isize offset)
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
         ULOG_WARN("TrainstateSetOffset errored");
+        return -1;
+    }
+    return 0;
+}
+
+int
+TrainstateSetDest(Tid trainstate_server, usize train, usize dest)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_SET_DEST,
+        .data = {
+            .set_dest = {
+                .train = train,
+                .dest = dest,
+            }
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (ret < 0) {
+        ULOG_WARN("TrainstateSetDest errored");
         return -1;
     }
     return 0;
@@ -557,6 +588,21 @@ trainStateServer()
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_OFFSET,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_SET_DEST) {
+
+            usize train = msg_buf.data.set_dest.train;
+            usize dest = msg_buf.data.set_dest.dest;
+
+            train_state[train].dest = dest;
+
+            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting dest for train %d: %d", train, train_state[train].dest);
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_SET_DEST,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));

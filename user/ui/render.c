@@ -83,7 +83,7 @@ renderZoneWinTask()
     const usize ZONE_ANCHOR_X = 6;
     const usize ZONE_ANCHOR_Y = 1;
     const usize ZONE_COL_SPACING = 9;
-    Window zone_win = win_init(84, 19, 32, 17);
+    Window zone_win = win_init(84, 19, 38, 17);
     win_draw(&zone_win);
     w_puts_mv(&zone_win, "[zones]", 2, 0);
     w_puts_mv(&zone_win, "[00]     [13]     ", 1, 1);
@@ -144,15 +144,15 @@ renderTrainStateWinTask()
 
     Track* track = get_track_a();
 
-    Window train_state_win = win_init(84, 2, 32, 17);
+    Window train_state_win = win_init(84, 2, 38, 17);
     win_draw(&train_state_win);
     w_puts_mv(&train_state_win, "[train state]", 2, 0);
 
-    w_puts_mv(&train_state_win, "train  curr  next  zone  spd ", 1, 2);
-    w_puts_mv(&train_state_win, "2                            ", 1, 3);
-    w_puts_mv(&train_state_win, "47                           ", 1, 4);
-    w_puts_mv(&train_state_win, "58                           ", 1, 5);
-    w_puts_mv(&train_state_win, "77                           ", 1, 6);
+    w_puts_mv(&train_state_win, "train  curr  next  zone  spd   dest", 1, 2);
+    w_puts_mv(&train_state_win, "2                                  ", 1, 3);
+    w_puts_mv(&train_state_win, "47                                 ", 1, 4);
+    w_puts_mv(&train_state_win, "58                                 ", 1, 5);
+    w_puts_mv(&train_state_win, "77                                 ", 1, 6);
 
     w_flush(&train_state_win);
 
@@ -165,8 +165,20 @@ renderTrainStateWinTask()
         usize new_pos = res.second;
         ULOG_INFO("train %d, new_pos %d", train, new_pos);
         str8 sensor_name = sensor_id_to_name(new_pos, &tmp);
+
+        TrainState state = TrainstateGet(trainstate_server, train);
+        usize speed = state.speed;
+        usize next_pos = track_next_node(switch_server, track, &track->nodes[new_pos]);
+        str8 next_sensor_name = sensor_id_to_name(next_pos, &tmp);
+        ZoneId zone = track->nodes[new_pos].reverse->zone;
+        str8 dest_sensor_name = sensor_id_to_name(state.dest, &tmp);
+
         w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, str8_to_cstr(next_sensor_name), TRAIN_STATE_TABLE_CURR_X+6, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", zone), TRAIN_STATE_TABLE_CURR_X+12, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", speed), TRAIN_STATE_TABLE_CURR_X+18, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, str8_to_cstr(dest_sensor_name), TRAIN_STATE_TABLE_CURR_X+24, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_flush(&train_state_win);
     }
     Exit();

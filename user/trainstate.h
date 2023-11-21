@@ -17,6 +17,7 @@ typedef struct {
     bool lights;
     bool reversed;
     usize pos;
+    usize dest;
     isize offset;
 } TrainState;
 
@@ -30,6 +31,7 @@ int TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed);
 int TrainstateReverse(Tid trainstate_server, usize train);
 int TrainstateSetLights(Tid trainstate_server, usize train, bool lights);
 int TrainstateSetOffset(Tid trainstate_server, usize train, isize offset);
+int TrainstateSetDest(Tid trainstate_server, usize train, usize dest);
 TrainState TrainstateGet(Tid trainstate_server, usize train);
 
 void trainStateServer();

@@ -366,6 +366,8 @@ patherTask()
     usize train_speed = msg_buf.train_speed;
     i32 offset = msg_buf.offset; // TODO ignored for now
 
+    TrainstateSetDest(trainstate_server, train, dest);
+
     if (src == dest || src == track->nodes[dest].reverse - track->nodes) {
         ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] Source equals destination");
         Exit();
