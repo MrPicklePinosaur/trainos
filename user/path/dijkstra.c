@@ -41,7 +41,6 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
             }
         }
         if (curr == NONE) {
-            ULOG_WARN("Dijkstra could not find path");
             return NULL;
         }
 

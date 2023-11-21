@@ -208,7 +208,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
                 // NOTE: need reverse since zones are denoted by sensors that are leaving zone
                 ZoneId next_zone = next_sensor->reverse->zone;
-                /* ULOG_INFO_M(LOG_MASK_PATH, "in zone %d", next_zone); */
+                ULOG_INFO_M(LOG_MASK_PATH, "at sensor %s in zone %d, next zone is %d", node->name, node->zone, next_zone);
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
                 // can release previous zone now
@@ -283,7 +283,7 @@ patherTask()
     ULOG_INFO_M(LOG_MASK_PATH, "computing path...");
     CBuf* path = dijkstra(track, train, src, dest, true, true, &arena);
     if (path == NULL) {
-        ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] dijkstra can't find path");
+        ULOG_WARN("[PATHER] dijkstra can't find path");
         arena_release(&arena);
         Exit();
     }

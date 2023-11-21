@@ -406,14 +406,16 @@ trainPosNotifierTask()
                         };
                         TrainstateResp resp_buf;
                         Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-                        break;
+                        goto loop_break;
 
                     }
                 }
             }
 
         }
+
         ULOG_WARN("[TRAINSTATE NOTIF] superious sensor %s", track_node_by_sensor_id(track, sensor_id)->name);
+        loop_break: {}
 
 #if 0
         // ====== dijkstra impl (should work well if dijkstra was more efficient)
