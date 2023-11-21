@@ -372,10 +372,17 @@ trainPosNotifierTask()
         //ULOG_INFO("sensor id %d", sensor_id);
 
         // compute the next sensor each train is expecting
+        // for each train, find the distance of the new sensor trigger from the previous observed position of the train, and take the most likely to be attributed to that specific train
+        TrackNode* dest_node = track_node_by_sensor_id(track, sensor_id);
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
             
             usize train = trains[i];
-            TrackNode* node = &track->nodes[train_state[train].pos];
+            TrackNode* start_node = &track->nodes[train_state[train].pos]; // TODO assumed that start node should always be sensor
+
+
+
+
+#if 0
 
             // walk node graph until next sensor
             TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
@@ -404,6 +411,7 @@ trainPosNotifierTask()
                 Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
             }
 
+#endif
         }
 
     }

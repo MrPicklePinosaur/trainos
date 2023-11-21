@@ -20,7 +20,7 @@ TrackEdge* edges[TRACK_MAX];
 uint32_t visited[TRACK_MAX];
 
 CBuf*
-dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Arena* arena)
+dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool check_reserve, Arena* arena)
 {
     ULOG_INFO_M(LOG_MASK_PATH, "RUNNING dijkstra from %s to %s", track->nodes[src].name, track->nodes[dest].name);
     TrackNode* nodes = track->nodes;
@@ -48,7 +48,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
             }
         }
         if (curr == NONE) {
-            ULOG_INFO_M(LOG_MASK_PATH, "Dijkstra could not find path");
+            ULOG_WARN_M(LOG_MASK_PATH, "Dijkstra could not find path");
             return NULL;
         }
 
@@ -64,11 +64,15 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
             break;
         }
 
-        // don't use this path if already reserved
-        ZoneId curr_zone = nodes[curr].reverse->zone;
-        if (curr_zone != -1) {
-            if (zone_is_reserved(curr_zone, train)) {
-                continue;
+        // TODO ideally should make dijkstra not have any concept of reservations at all
+        if (check_reserve) {
+            // don't use this path if already reserved
+            ZoneId curr_zone = nodes[curr].reverse->zone;
+            if (curr_zone != -1) {
+                // returns true if zone is NOT reserved by train
+                if (zone_is_reserved(curr_zone, train)) {
+                    continue;
+                }
             }
         }
 
@@ -120,18 +124,6 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
     uint32_t back = dest;
     for (; back != src && back != src_rev; back = prev[back]) {
 
-        // reserve the path that we found
-        // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
-        ZoneId zone = nodes[back].reverse->zone;
-        if (zone != -1) {
-            ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
-            if (!zone_reserve(train, zone)) {
-                ULOG_WARN("failed reservation");
-                zone_unreserve_all(track, train);
-                return NULL;
-            }
-        }
-
         TrackEdge* new_edge = arena_alloc(arena, TrackEdge);
         *new_edge = *edges[back]; 
         cbuf_push_front(path, new_edge);
@@ -147,8 +139,6 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
     if (back == src_rev) {
         cbuf_push_front(path, &nodes[src].edge[DIR_REVERSE]);
     }
-
-    // TODO should reserve src zone too?
 
     return path;
 }
@@ -185,6 +175,27 @@ setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_sw
             }
         }
     }
+}
+
+bool
+reserveZonesInPath(Track* track, usize train, CBuf* path)
+{
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        // reserve the path that we found
+        // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
+        TrackEdge* edge = cbuf_get(path, i);
+        ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
+        if (zone != -1) {
+            if (!zone_reserve(train, zone)) {
+                ULOG_WARN("failed reservation");
+                // TODO do something about this?
+                zone_unreserve_all(track, train);
+                return false;
+            }
+            ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
+        }
+    }
+    return true;
 }
 
 // moves the train to a specified destination without using any reversals
@@ -285,7 +296,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         } else {
             ULOG_INFO("short move with offset %d", state.offset);
             TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
-            Delay(clock_server, train_data_short_move_time(train, distance_to_dest-state.offset+30) / 10); // extra +30 to let us overshoot by a bit
+            Delay(clock_server, train_data_short_move_time(train, distance_to_dest-state.offset) / 10);
             TrainstateSetSpeed(trainstate_server, train, 0);
         }
 
@@ -391,10 +402,15 @@ patherTask()
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
     ULOG_INFO_M(LOG_MASK_PATH, "computing path...");
-    CBuf* path = dijkstra(track, train, src, dest, true, &arena);
+    CBuf* path = dijkstra(track, train, src, dest, true, true, &arena);
     if (path == NULL) {
         ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] dijkstra can't find path");
         arena_release(&arena);
+        Exit();
+    }
+
+    if (!reserveZonesInPath(track, train, path)) {
+        // TODO should do some other handling if not able to reserve entire path
         Exit();
     }
 
@@ -440,8 +456,8 @@ patherTask()
             }
 
             // explicitly set position (TODO this is probably pretty dangerous)
-            usize dest_ind = ((TrackEdge*)cbuf_back(simple_path))->dest - track->nodes;
-            TrainstateSetPos(trainstate_server, train, dest_ind);
+            /* usize dest_ind = ((TrackEdge*)cbuf_back(simple_path))->dest - track->nodes; */
+            /* TrainstateSetPos(trainstate_server, train, dest_ind); */
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
             ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
