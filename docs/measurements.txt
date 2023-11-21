@@ -22,13 +22,14 @@ Train 47 velocities:
 14: 578
 
 Train 47 stopping times:
- 2: sensors didn't work for some reason, maybe integer overflow?
+ 2: 4043959 (total distance 359 instead of 1045, from C10 to B1)
  5: 3186181
  8: 1343748
 11:  625165
 14:  375001
 
 Train 58 velocities:
+ 2:  17
  5:  66
  8: 190
 11: 371
@@ -41,6 +42,7 @@ Train 58 stopping times:
 14: 937523 (total distance 1797 instead of 1045, from B16 to E9)
 
 Train 77 velocities:
+ 2:  25
  5:  99
  8: 232
 11: 408
@@ -64,18 +66,21 @@ Train 2 stopping distances (millimeters):
 14: 971
 
 Train 47 stopping distances:
+ 2:  56
  5: 284
  8: 521
 11: 709
 14: 828
 
 Train 58 stopping distances:
+ 2:   14 (measured manually)
  5:  115
  8:  348
 11:  716
 14: 1254
 
 Train 77 stopping distances:
+ 2:   20 (measured manually)
  5:  173
  8:  447
 11:  929
