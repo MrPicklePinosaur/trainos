@@ -161,11 +161,17 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             switch (command._data.test.num) {
                 case 1: {
                     renderer_append_console(renderer_server, "Running benchmark 1");
-                    
-                    // Train 2 starts at A5/6
-                    PlanPath(path_server, 2, 8, 0, "E7");
 
-                    // Train 47 starts at C3/4
+                    Track* track = get_track_a();
+                    
+                    // Train 2 A5/6 -> E7/8
+                    usize node_ind = track_node_index(track, track_node_by_name(track, "A5"));
+                    TrainstateSetPos(trainstate_server, 2, node_ind);
+                    PlanPath(path_server, 2, 8, 0, "E8");
+
+                    // Train 47 C3/4 -> A3/4
+                    node_ind = track_node_index(track, track_node_by_name(track, "C4"));
+                    TrainstateSetPos(trainstate_server, 2, node_ind);
                     PlanPath(path_server, 47, 8, 0, "A3");
 
                     break;
@@ -173,6 +179,16 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                 default:
                     renderer_append_console(renderer_server, "Invalid test");
             }
+            break;
+        }
+        case PARSER_RESULT_POS: {
+            Track* track = get_track_a();
+            TrackNode* node = track_node_by_name(track, command._data.pos.pos);
+            usize node_ind = track_node_index(track, node);
+            char* msg = cstr_format(&tmp, "Sending train %s%d%s position to %s%s%s", ANSI_CYAN, command._data.pos.train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
+            renderer_append_console(renderer_server, msg);
+            TrainstateSetPos(trainstate_server, command._data.pos.train, node_ind);
+
             break;
         }
         default: {

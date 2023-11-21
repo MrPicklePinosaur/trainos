@@ -100,6 +100,12 @@ track_next_sensor(Tid switch_server, Track* track, TrackNode* node) {
     }
 }
 
+usize
+track_node_index(Track* track, TrackNode* node)
+{
+    return node - track->nodes;
+}
+
 bool
 track_edge_cmp(TrackEdge a, TrackEdge b)
 {

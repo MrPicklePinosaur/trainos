@@ -16,6 +16,7 @@ typedef struct {
     PARSER_RESULT_QUIT,
     PARSER_RESULT_PATH,
     PARSER_RESULT_TEST,
+    PARSER_RESULT_POS,
     PARSER_RESULT_ERROR,
   } _type;
 
@@ -49,6 +50,11 @@ typedef struct {
     struct {
         usize num;
     } test;
+
+    struct {
+        u32 train;
+        char* pos;
+    } pos;
 
   } _data;
 } ParserResult;

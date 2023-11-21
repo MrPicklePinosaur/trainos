@@ -202,7 +202,6 @@ TrainstateSetLights(Tid trainstate_server, usize train, bool lights)
 int
 TrainstateSetOffset(Tid trainstate_server, usize train, isize offset)
 {
-    UNIMPLEMENTED("deprecated");
     if (!(1 <= train && train <= 100)) {
         ULOG_WARN("invalid train number %d", train);
         return -1;
@@ -503,6 +502,8 @@ trainStateServer()
         };
     }
 
+    // temp disabling calibration
+#if 0
     // calibrate trains to determine their intial positions
     for (usize i = 0; i < TRAIN_COUNT; ++i) {
         usize train = trains[i];
@@ -518,6 +519,7 @@ trainStateServer()
         marklin_train_ctl(io_server, train, 0);
         Delay(clock_server, 500);
     }
+#endif
 
     ULOG_INFO("completed train calibration");
 

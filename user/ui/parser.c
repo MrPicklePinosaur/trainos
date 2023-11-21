@@ -171,7 +171,7 @@ parse_command(Arena arena, str8 command)
 
         i32 offset = get_signed_number(command, &it);
 
-        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s, speed = %d, offset = %d", train, dest, speed, offset);
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed PATH command: train = %d, dest = %s, speed = %d, offset = %d", train, str8_to_cstr(dest), speed, offset);
 
         // TODO dangling poitner here, so we are allocting some space
         str8 copied = str8_copy(&arena, dest);
@@ -205,6 +205,30 @@ parse_command(Arena arena, str8 command)
             }
         };
 
+    }
+    else if (str8_cmp(cmd_name, str8("pos"))) {
+
+        eat_whitespace(command, &it);
+
+        u32 train = get_number(command, &it);
+
+        eat_whitespace(command, &it);
+
+        str8 pos = get_word(command, &it);
+
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed POS command: train = %d, pos = %s", train, str8_to_cstr(pos));
+
+        str8 copied = str8_copy(&arena, pos);
+
+        return (ParserResult) {
+            ._type = PARSER_RESULT_POS,
+            ._data = {
+                .pos = {
+                    .train = train,
+                    .pos = str8_to_cstr(copied)
+                }
+            }
+        };
     }
 
     return error;
