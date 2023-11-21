@@ -171,7 +171,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
                     // Train 47 C3/4 -> A3/4
                     node_ind = track_node_index(track, track_node_by_name(track, "C4"));
-                    TrainstateSetPos(trainstate_server, 2, node_ind);
+                    TrainstateSetPos(trainstate_server, 47, node_ind);
                     PlanPath(path_server, 47, 8, 0, "A3");
 
                     break;
@@ -182,6 +182,8 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             break;
         }
         case PARSER_RESULT_POS: {
+            // TODO currently can only set position to a sensor
+
             Track* track = get_track_a();
             TrackNode* node = track_node_by_name(track, command._data.pos.pos);
             usize node_ind = track_node_index(track, node);

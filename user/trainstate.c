@@ -378,60 +378,42 @@ trainPosNotifierTask()
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
 
             usize train = trains[i];
+            TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
 
-            for (usize j = 0; ; ++j) {
-                ZoneId train_zone = track->nodes[train_state[train].pos].reverse->zone;
-                TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
-                if (zone_sensor == 0) break;
-                if (sensor_id == zone_sensor->num) {
+            ZoneId train_zones[2] = {node->reverse->zone, node->zone};
+            for (usize zone_i = 0; zone_i < 2; ++zone_i) {
+                ZoneId train_zone = train_zones[zone_i];
 
-                    ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+                if (train_zone == -1) continue;
 
-                    // notify server that train position changed
-                    TrainstateMsg send_buf = (TrainstateMsg) {
-                        .type = TRAINSTATE_POSITION_UPDATE,
-                        .data = {
-                            .position_update = {
-                                .train = train,
-                                .new_pos = sensor_id
+                for (usize j = 0; ; ++j) {
+                    // TODO train positions MUST be sensors
+                    TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
+                    if (zone_sensor == 0) break;
+                    if (sensor_id == zone_sensor->num) {
+
+                        ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+
+                        // notify server that train position changed
+                        TrainstateMsg send_buf = (TrainstateMsg) {
+                            .type = TRAINSTATE_POSITION_UPDATE,
+                            .data = {
+                                .position_update = {
+                                    .train = train,
+                                    .new_pos = sensor_id
+                                }
                             }
-                        }
-                    };
-                    TrainstateResp resp_buf;
-                    Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-                    break;
+                        };
+                        TrainstateResp resp_buf;
+                        Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+                        break;
 
-                }
-            }
-
-            // TODO dupliated
-            // look at the reverse direction too
-            for (usize j = 0; ; ++j) {
-                ZoneId train_zone = track->nodes[train_state[train].pos].zone;
-                TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
-                if (zone_sensor == 0) break;
-                if (sensor_id == zone_sensor->num) {
-
-                    ULOG_INFO("reverse: train %d moves to sensor %s", train, track->nodes[sensor_id].name);
-
-                    // notify server that train position changed
-                    TrainstateMsg send_buf = (TrainstateMsg) {
-                        .type = TRAINSTATE_POSITION_UPDATE,
-                        .data = {
-                            .position_update = {
-                                .train = train,
-                                .new_pos = sensor_id
-                            }
-                        }
-                    };
-                    TrainstateResp resp_buf;
-                    Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-                    break;
-
+                    }
                 }
             }
 
         }
+        ULOG_WARN("[TRAINSTATE NOTIF] superious sensor %s", track_node_by_sensor_id(track, sensor_id)->name);
 
 #if 0
         // ====== dijkstra impl (should work well if dijkstra was more efficient)

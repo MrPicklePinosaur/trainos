@@ -11,7 +11,7 @@ LogMode log_mode;
 
 const uint32_t train_term_log_x = 123;
 const uint32_t train_term_log_min_y = 2;
-const uint32_t train_term_log_max_y = 35;
+const uint32_t train_term_log_max_y = 60;
 uint32_t train_term_log_y;
 
 void
