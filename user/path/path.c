@@ -166,16 +166,36 @@ typedef struct {
 
 } PatherResp;
 
+void
+setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_switches)
+{
+    if (zone == -1) {
+        ULOG_WARN("zone was -1");
+        return;
+    }
+
+    TrackNode** zone_switches = (TrackNode**)track->zones[zone].switches;
+    for (; *zone_switches != 0; ++zone_switches) {
+        for (usize j = 0; j < cbuf_len(desired_switches); ++j) {
+            Pair_u32_SwitchMode* pair = cbuf_get(desired_switches, j);
+            if ((*zone_switches)->num == pair->first) {
+                ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d", pair->first, pair->second);
+                SwitchChange(switch_server, pair->first, pair->second);
+            }
+        }
+    }
+}
+
 // moves the train to a specified destination without using any reversals
 void
 patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
-    ULOG_INFO_M(LOG_MASK_PATH, "executing simple path");
-    for (usize i = 0; i < cbuf_len(path); ++i) {
-        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-        print("%s->%s,", edge->src->name, edge->dest->name);
-    }
-    print("\r\n");
+    ULOG_INFO_M(LOG_MASK_PATH, "Executing simple path");
+    /* for (usize i = 0; i < cbuf_len(path); ++i) { */
+    /*     TrackEdge* edge = (TrackEdge*)cbuf_get(path, i); */
+    /*     print("%s->%s,", edge->src->name, edge->dest->name); */
+    /* } */
+    /* print("\r\n"); */
 
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
@@ -184,9 +204,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     // compute which sensor to issue stop command from
-    ULOG_INFO_M(LOG_MASK_PATH, "Getting train state");
     TrainState state = TrainstateGet(trainstate_server, train);
-    ULOG_INFO_M(LOG_MASK_PATH, "train starts with offset %d", state.offset);
     i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
     i32 train_vel = train_data_vel(train, train_speed);
 
@@ -205,6 +223,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     }
 
     // compute desired switch state
+    ULOG_INFO_M(LOG_MASK_PATH, "Computing switch states...");
     CBuf* desired_switch_modes = cbuf_new(24);
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
@@ -218,7 +237,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_STRAIGHT;
                 cbuf_push_back(desired_switch_modes, pair);
-                ULOG_DEBUG("want switch %d as straight", pair->first);
+                ULOG_INFO("want switch %d as straight", pair->first);
             }
             else if (track_edge_cmp(edge->src->edge[DIR_CURVED], *edge)) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
@@ -226,7 +245,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_CURVED;
                 cbuf_push_back(desired_switch_modes, pair);
-                ULOG_DEBUG("want switch %d as curved", pair->first);
+                ULOG_INFO("want switch %d as curved", pair->first);
             }
             else {
                 PANIC("invalid branch");
@@ -236,10 +255,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
+    // Set switches in immediate zone
+    ULOG_INFO_M(LOG_MASK_PATH, "Setting immediate switches...");
     TrackEdge* first_edge = ((TrackEdge*)cbuf_front(path));
     ZoneId cur_zone = first_edge->src->reverse->zone;
     ZoneId next_zone = track_next_sensor(switch_server, track, first_edge->src)->reverse->zone;
-    ULOG_INFO_M(LOG_MASK_PATH, "start zone %d, next zone %d", cur_zone, next_zone);
     ZoneId immediate_zones[2] = {cur_zone, next_zone};
     // switch switches in current zone and next zone
     for (usize i = 0; i < 2; ++i) {
@@ -250,100 +270,71 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             continue;
         }
 
-        // TODO duplicated code, would like some sort of 'set switch in zone' function
-        TrackNode** zone_switches = (TrackNode**)track->zones[zone].switches;
-        for (; *zone_switches != 0; ++zone_switches) {
-            for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
-                Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
-                if ((*zone_switches)->num == pair->first) {
-                    ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d on init", pair->first, pair->second);
-                    SwitchChange(switch_server, pair->first, pair->second);
-                }
-            }
-        }
-
+        setSwitchesInZone(switch_server, track, zone, desired_switch_modes);
     }
 
 
     if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
-        ULOG_INFO_M(LOG_MASK_PATH, "[PATHER] Short move");
+        ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
+
         TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
         TrainstateSetSpeed(trainstate_server, train, 0);
-        return;
-    }
-    /* ULOG_INFO("switching switches..."); */
 
-    ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
+    } else {
+        ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move...");
+        ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
-    /* CBuf* stops = cbuf_new(); */
+        TrainstateSetSpeed(trainstate_server, train, train_speed);
 
-    TrainstateSetSpeed(trainstate_server, train, train_speed);
+        // start at index one since we skip the starting node (assume no short move)
+        for (usize i = 1; i < cbuf_len(path); ++i) {
+            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
 
-    /* ULOG_INFO("routing train..."); */
-    // start at index one since we skip the starting node (assume no short move)
-    for (usize i = 1; i < cbuf_len(path); ++i) {
-        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-        // wait for sensor
-        if (edge->src->type == NODE_SENSOR) {
-            // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
-            // block until we hit desired sensor
-            // ULOG_INFO("expecting sensor %s", edge->dest->name);
-            /* WaitForSensor(sensor_server, edge->dest->num); */
-            // first is train, second is pos
-            Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, train);
-            usize new_pos = res.second;
-            if (new_pos != edge->src->num) {
-                ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, new_pos);
-            }
+            if (edge->src->type == NODE_SENSOR) {
 
-            // check if we entered a new zone, if so, flip the switches that we need in the next zone
-            TrackNode* node = track_node_by_sensor_id(track, new_pos);
-            // NOTE: need reverse since zones are denoted by sensors that are leaving zone
-            ULOG_INFO_M(LOG_MASK_PATH, "in zone %d", node->reverse->zone);
-
-            // find next sensor
-            TrackNode* next_sensor_node = NULL;
-            for (usize offset = i+1; offset < cbuf_len(path); ++offset) {
-                TrackEdge* offset_edge = (TrackEdge*)cbuf_get(path, offset);
-                if (offset_edge->src->type == NODE_SENSOR) {
-                    next_sensor_node = offset_edge->src;
-                    break;
+                // wait for sensor
+                // first is train, second is pos
+                Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, train);
+                usize new_pos = res.second;
+                if (new_pos != edge->src->num) {
+                    // TODO what happens if we hit an unexpected sensor? (in the case that a sensor misses the trigger)
+                    // should we do some form of recovery?
+                    ULOG_WARN("expect sensor %d, got sensor %d", edge->src->num, new_pos);
                 }
-            }
-            if (next_sensor_node != NULL) {
-                ZoneId next_zone = next_sensor_node->reverse->zone;
-                if (next_zone != -1) {
-                    ULOG_INFO_M(LOG_MASK_PATH, "next in zone %d", next_zone);
-                    TrackNode** zone_switches = (TrackNode**)track->zones[next_zone].switches;
-                    for (; *zone_switches != 0; ++zone_switches) {
-                        for (usize j = 0; j < cbuf_len(desired_switch_modes); ++j) {
-                            Pair_u32_SwitchMode* pair = cbuf_get(desired_switch_modes, j);
-                            if ((*zone_switches)->num == pair->first) {
-                                ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d", pair->first, pair->second);
-                                SwitchChange(switch_server, pair->first, pair->second);
-                            }
-                        }
-                    }
-                }
-            }
+
+                // check if we entered a new zone, if so, flip the switches that we need in the next zone
+                TrackNode* node = track_node_by_sensor_id(track, new_pos);
+                TrackNode* next_sensor = track_next_sensor(switch_server, track, node);
+
+                // NOTE: need reverse since zones are denoted by sensors that are leaving zone
+                ZoneId next_zone = next_sensor->reverse->zone;
+                ULOG_INFO_M(LOG_MASK_PATH, "in zone %d", next_zone);
+                setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
+
+                // can release previous zone now
 
 
-            if (edge->src->num == waiting_sensor->num) break;
-            
+                // stop once we hit target sensor
+                if (edge->src->num == waiting_sensor->num) break;
+                
+            }
         }
+
+        // now wait before sending stop command
+        ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train...");
+        u64 delay_ticks = distance_from_sensor*100/train_vel;
+        Delay(clock_server, delay_ticks);
+
+        ULOG_INFO_M(LOG_MASK_PATH, "Train stopped...");
+        TrainstateSetSpeed(trainstate_server, train, 0);
+        
+        /* TrainstateSetOffset(trainstate_server, train, offset); */
     }
-    
-    // ULOG_INFO_M(LOG_MASK_PATH, "hit target sensor");
 
-    // now wait before sending stop command
-    u64 delay_ticks = distance_from_sensor*100/train_vel;
-    Delay(clock_server, delay_ticks);
-
-    TrainstateSetSpeed(trainstate_server, train, 0);
-    /* TrainstateSetOffset(trainstate_server, train, offset); */
-
-    // ULOG_INFO_M(LOG_MASK_PATH, "stopped train");
+    // free the path we took (but keep the place we stop at)
+    zone_unreserve_all(track, train);
+    zone_reserve(train, ((TrackEdge*)cbuf_back(path))->dest->zone);
 
 }
 
@@ -415,18 +406,13 @@ patherTask()
     // break path into simple paths (no reversals)
     CBuf* simple_path = cbuf_new(128);
     for (usize i = 0; i < cbuf_len(path); ++i) {
+
         TrackEdge* cur_edge = cbuf_get(path, i);
         cbuf_push_back(simple_path, cur_edge);
+
         // check for reversal
         if (cur_edge->type == EDGE_REVERSE) {
             ULOG_INFO_M(LOG_MASK_PATH, "found reversal");
-            // insert an extra edge to give some buffer if there are switches
-#if 0
-            TrackEdge* extra_edge = arena_alloc(&arena, TrackEdge);
-            *extra_edge = *track_next_edge(switch_server, track, cur_edge->src);
-            cbuf_push_back(simple_path, extra_edge);
-            ULOG_INFO_M(LOG_MASK_PATH, "inserting extra edge %s->%s", extra_edge->src->name, extra_edge->dest->name);
-#endif
 
             // no need to move if we are only running a reversal
             if (cbuf_len(simple_path) > 1) {
@@ -436,22 +422,15 @@ patherTask()
             }
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
-            ULOG_INFO_M(LOG_MASK_PATH, "sending reverse to train");
+            ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
             TrainstateReverseStatic(trainstate_server, train);
             cbuf_clear(simple_path);
-
-#if 0
-            cbuf_push_back(simple_path, extra_edge->reverse); // also need to add the extra edge in next path
-#endif
         }
     }
+
     if (cbuf_len(simple_path) > 0) {
         patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
     }
-
-    // free the path we took (but keep the place we stop at)
-    zone_unreserve_all(track, train);
-    zone_reserve(train, track->nodes[dest].zone);
 
     arena_release(&arena);
     Exit();
