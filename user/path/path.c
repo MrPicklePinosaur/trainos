@@ -224,7 +224,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     }
 
     // compute desired switch state
-    ULOG_INFO_M(LOG_MASK_PATH, "Computing switch states...");
+    /* ULOG_INFO_M(LOG_MASK_PATH, "Computing switch states..."); */
     CBuf* desired_switch_modes = cbuf_new(24);
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
@@ -257,7 +257,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     i32 distance_from_sensor = -stopping_distance; // distance after sensor in which to send stop command
 
     // Set switches in immediate zone
-    ULOG_INFO_M(LOG_MASK_PATH, "Setting immediate switches...");
+    /* ULOG_INFO_M(LOG_MASK_PATH, "Setting immediate switches..."); */
     TrackEdge* first_edge = ((TrackEdge*)cbuf_front(path));
     ZoneId cur_zone = first_edge->src->reverse->zone;
     ZoneId next_zone = track_next_sensor(switch_server, track, first_edge->src)->reverse->zone;
@@ -278,9 +278,16 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
 
-        TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
-        Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
-        TrainstateSetSpeed(trainstate_server, train, 0);
+        TrainState state = TrainstateGet(trainstate_server, train);
+        // short move is impossible
+        if (state.offset > distance_to_dest) {
+            ULOG_WARN("short move not possible");
+        } else {
+            ULOG_INFO("short move with offset %d", state.offset);
+            TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
+            Delay(clock_server, train_data_short_move_time(train, distance_to_dest-state.offset+30) / 10); // extra +30 to let us overshoot by a bit
+            TrainstateSetSpeed(trainstate_server, train, 0);
+        }
 
     } else {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move...");
@@ -311,7 +318,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
                 // NOTE: need reverse since zones are denoted by sensors that are leaving zone
                 ZoneId next_zone = next_sensor->reverse->zone;
-                ULOG_INFO_M(LOG_MASK_PATH, "in zone %d", next_zone);
+                /* ULOG_INFO_M(LOG_MASK_PATH, "in zone %d", next_zone); */
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
                 // can release previous zone now
@@ -332,10 +339,10 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         u64 delay_ticks = distance_from_sensor*100/train_vel;
         Delay(clock_server, delay_ticks);
 
-        ULOG_INFO_M(LOG_MASK_PATH, "Train stopped...");
+        /* ULOG_INFO_M(LOG_MASK_PATH, "Train stopped..."); */
         TrainstateSetSpeed(trainstate_server, train, 0);
         
-        /* TrainstateSetOffset(trainstate_server, train, offset); */
+        TrainstateSetOffset(trainstate_server, train, offset);
     }
 
     // free the path we took (but keep the place we stop at)
@@ -415,6 +422,7 @@ patherTask()
 
     // break path into simple paths (no reversals)
     CBuf* simple_path = cbuf_new(128);
+    usize reverse_offset = 0;
     for (usize i = 0; i < cbuf_len(path); ++i) {
 
         TrackEdge* cur_edge = cbuf_get(path, i);
@@ -422,12 +430,12 @@ patherTask()
 
         // check for reversal
         if (cur_edge->type == EDGE_REVERSE) {
-            ULOG_INFO_M(LOG_MASK_PATH, "found reversal");
+            /* ULOG_INFO_M(LOG_MASK_PATH, "found reversal"); */
 
             // no need to move if we are only running a reversal
             if (cbuf_len(simple_path) > 1) {
                 TrainState state = TrainstateGet(trainstate_server, train);
-                usize reverse_offset = (state.reversed) ? 0 : TRAIN_LENGTH ;
+                reverse_offset = TRAIN_LENGTH;
                 patherSimplePath(track, simple_path, train, train_speed, reverse_offset, &arena);
             }
 
@@ -443,7 +451,7 @@ patherTask()
     }
 
     if (cbuf_len(simple_path) > 0) {
-        patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
+        patherSimplePath(track, simple_path, train, train_speed, offset+reverse_offset, &arena);
     }
 
     arena_release(&arena);

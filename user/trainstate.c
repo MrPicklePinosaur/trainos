@@ -437,11 +437,12 @@ trainStateServer()
     for (usize i = 0; i < TRAIN_COUNT; ++i) {
         usize train = trains[i];
         // start the train and wait for it to hit the first sensor
-        marklin_train_ctl(io_server, train, 3); // some decently slow speed
+        marklin_train_ctl(io_server, train, TRAIN_SPEED_ROCK); // some decently slow speed
         int sensor = WaitForSensor(sensor_server, -1);
 
         train_state[train].pos = sensor;
-        //ULOG_INFO("train %d starting at %d", train, sensor);
+        train_state[train].offset = train_data_stop_dist(train, TRAIN_SPEED_ROCK);
+        ULOG_INFO("train %d starting at %d with offset %d", train, sensor, train_state[train].offset);
 
         // stop train for now
         marklin_train_ctl(io_server, train, 0);
