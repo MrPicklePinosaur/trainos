@@ -1,6 +1,7 @@
 #include <trainsys.h>
 #include <traindef.h>
 #include <trainstd.h>
+#include <traintasks.h>
 #include "user/path/reserve.h"
 #include "dijkstra.h"
 
@@ -10,6 +11,8 @@
 CBuf*
 dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool check_reserve, Arena* arena)
 {
+    Tid reserve_server = WhoIs(RESERVE_ADDRESS);
+
     uint32_t dist[TRACK_MAX];
     uint32_t prev[TRACK_MAX];
     TrackEdge* edges[TRACK_MAX];
@@ -62,7 +65,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
             ZoneId curr_zone = nodes[curr].reverse->zone;
             if (curr_zone != -1) {
                 // returns true if zone is NOT reserved by train
-                if (zone_is_reserved(curr_zone, train)) {
+                if (zone_is_reserved(reserve_server, curr_zone, train)) {
                     continue;
                 }
             }

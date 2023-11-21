@@ -374,7 +374,7 @@ renderTask()
     Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
-    Create(5, &renderZoneWinTask, "Render Zone Window");
+    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
 
     RendererMsg msg_buf;
     RendererResp reply_buf;

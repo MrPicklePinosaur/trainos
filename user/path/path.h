@@ -16,6 +16,6 @@ void pathTask(void);
 
 // some helpers
 void setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_switches);
-bool reserveZonesInPath(Track* track, usize train, CBuf* path);
+bool reserveZonesInPath(Tid reserve_server, usize train, CBuf* path);
 
 #endif // __PATH_PATH_H__

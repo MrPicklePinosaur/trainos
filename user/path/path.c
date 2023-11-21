@@ -47,7 +47,7 @@ setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_sw
 }
 
 bool
-reserveZonesInPath(Track* track, usize train, CBuf* path)
+reserveZonesInPath(Tid reserve_server, usize train, CBuf* path)
 {
     for (usize i = 0; i < cbuf_len(path); ++i) {
         // reserve the path that we found
@@ -55,10 +55,10 @@ reserveZonesInPath(Track* track, usize train, CBuf* path)
         TrackEdge* edge = cbuf_get(path, i);
         ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
         if (zone != -1) {
-            if (!zone_reserve(train, zone)) {
+            if (!zone_reserve(reserve_server, train, zone)) {
                 ULOG_WARN("failed reservation");
                 // TODO do something about this?
-                zone_unreserve_all(track, train);
+                zone_unreserve_all(reserve_server,  train);
                 return false;
             }
             ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
@@ -83,6 +83,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
+    Tid reserve_server = WhoIs(RESERVE_ADDRESS);
 
     // compute which sensor to issue stop command from
     TrainState state = TrainstateGet(trainstate_server, train);
@@ -214,7 +215,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 // can release previous zone now
                 if (prev_zone != -1) {
                     ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, prev_zone);
-                    zone_unreserve(train, prev_zone);
+                    zone_unreserve(reserve_server, train, prev_zone);
                 }
                 prev_zone = node->zone;
 
@@ -236,10 +237,10 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     }
 
     // free the path we took (but keep the place we stop at)
-    zone_unreserve_all(track, train);
+    zone_unreserve_all(reserve_server, train);
     ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->zone;
     ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone);
-    zone_reserve(train, dest_zone);
+    zone_reserve(reserve_server, train, dest_zone);
 
 }
 
@@ -251,6 +252,7 @@ patherTask()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
+    Tid reserve_server = WhoIs(RESERVE_ADDRESS);
 
     Track* track = get_track_a();
 
@@ -288,7 +290,7 @@ patherTask()
         Exit();
     }
 
-    if (!reserveZonesInPath(track, train, path)) {
+    if (!reserveZonesInPath(reserve_server, train, path)) {
         // TODO should do some other handling if not able to reserve entire path
         Exit();
     }
@@ -408,8 +410,6 @@ pathTask(void)
 
     PathMsg msg_buf;
     PathResp reply_buf;
-
-    zone_init(track); // TODO wont need this once zone is an actual task
 
     for (;;) {
         int from_tid;
