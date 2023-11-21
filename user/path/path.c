@@ -292,6 +292,7 @@ patherTask()
 
     if (!reserveZonesInPath(reserve_server, train, path)) {
         // TODO should do some other handling if not able to reserve entire path
+        arena_release(&arena);
         Exit();
     }
 
