@@ -338,10 +338,6 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         /* TrainstateSetOffset(trainstate_server, train, offset); */
     }
 
-    // explicitly set position (TODO this is probably pretty dangerous)
-    usize dest_ind = ((TrackEdge*)cbuf_back(path))->dest - track->nodes;
-    TrainstateSetPos(trainstate_server, train, dest_ind);
-
     // free the path we took (but keep the place we stop at)
     zone_unreserve_all(track, train);
     ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->zone;
@@ -434,6 +430,10 @@ patherTask()
                 usize reverse_offset = (state.reversed) ? 0 : TRAIN_LENGTH ;
                 patherSimplePath(track, simple_path, train, train_speed, reverse_offset, &arena);
             }
+
+            // explicitly set position (TODO this is probably pretty dangerous)
+            usize dest_ind = ((TrackEdge*)cbuf_back(simple_path))->dest - track->nodes;
+            TrainstateSetPos(trainstate_server, train, dest_ind);
 
             Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
             ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
