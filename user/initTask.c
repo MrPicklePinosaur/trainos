@@ -95,11 +95,11 @@ initTask()
 
     Delay(clock_server, 100);
 
-    /* Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL"); */
-    /* WaitTid(marklinctl_task); */
+    Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL");
+    WaitTid(marklinctl_task);
 
-    Tid tester = Create(5, &testHarness, "test harness");
-    WaitTid(tester);
+    /* Tid tester = Create(5, &testHarness, "test harness"); */
+    /* WaitTid(tester); */
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");

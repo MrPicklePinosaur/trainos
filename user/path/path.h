@@ -10,8 +10,6 @@
 
 #define PATH_ADDRESS "path"
 
-CBuf* dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool check_reserve, Arena* arena);
-
 int PlanPath(Tid path_tid, u32 train, u32 speed, i32 offset, char* dest);
 
 void pathTask(void);

@@ -381,7 +381,6 @@ trainPosNotifierTask()
 
 
 
-
 #if 0
 
             // walk node graph until next sensor

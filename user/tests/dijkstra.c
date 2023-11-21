@@ -3,6 +3,7 @@
 #include "tester.h"
 #include "user/path/path.h"
 #include "user/path/reserve.h"
+#include "user/path/dijkstra.h"
 
 void
 runDijkstra(Track* track, usize train, char* start_str, char* dest_str, bool allow_reversal, bool check_reserve, Arena tmp)
