@@ -163,7 +163,6 @@ renderTrainStateWinTask()
         Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, -1);
         usize train = res.first;
         usize new_pos = res.second;
-        ULOG_INFO("train %d, new_pos %d", train, new_pos);
         str8 sensor_name = sensor_id_to_name(new_pos, &tmp);
 
         TrainState state = TrainstateGet(trainstate_server, train);
@@ -371,11 +370,11 @@ renderTask()
 
     w_flush(&prompt_win);
 
-    Create(5, &renderSwitchWinTask, "Render Switch Window");
+    /* Create(5, &renderSwitchWinTask, "Render Switch Window"); */
     Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
-    Create(5, &renderTrainStateWinTask, "Render Train State Window");
-    Create(5, &renderZoneWinTask, "Render Zone Window");
+    /* Create(5, &renderTrainStateWinTask, "Render Train State Window"); */
+    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
 
     RendererMsg msg_buf;
     RendererResp reply_buf;

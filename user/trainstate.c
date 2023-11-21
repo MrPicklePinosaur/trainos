@@ -17,6 +17,7 @@ typedef enum {
     TRAINSTATE_SET_LIGHTS,
     TRAINSTATE_SET_OFFSET,
     TRAINSTATE_SET_DEST,  // Does not actually send the train to the destination. Simply a value used by the train state window
+    TRAINSTATE_SET_POS,
     TRAINSTATE_REVERSE_STATIC, // special case of reverse, reverse from rest and right away
     TRAINSTATE_REVERSE,
     TRAINSTATE_REVERSE_REVERSE,
@@ -47,6 +48,10 @@ typedef struct {
             usize train;
             usize dest;
         } set_dest;
+        struct {
+            usize train;
+            usize pos;
+        } set_pos;
         struct {
             usize train;
         } reverse;
@@ -245,6 +250,33 @@ TrainstateSetDest(Tid trainstate_server, usize train, usize dest)
     return 0;
 }
 
+int
+TrainstateSetPos(Tid trainstate_server, usize train, usize pos)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_SET_POS,
+        .data = {
+            .set_pos = {
+                .train = train,
+                .pos = pos,
+            }
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (ret < 0) {
+        ULOG_WARN("TrainstateSetOffset errored");
+        return -1;
+    }
+    return 0;
+
+}
+
 TrainState
 TrainstateGet(Tid trainstate_server, usize train)
 {
@@ -343,19 +375,20 @@ trainPosNotifierTask()
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
             
             usize train = trains[i];
-            TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
+            TrackNode* node = &track->nodes[train_state[train].pos];
 
             // walk node graph until next sensor
             TrackNode* next_sensor = track_next_sensor(switch_server, track, node); 
+            ULOG_INFO("train %d pos is at %s", train, node->name);
             if (next_sensor == NULL) {
                 ULOG_WARN("couldn't find next sensor");
                 continue;
             }
-            //ULOG_INFO("next sensor for train %d is %s", train, next_sensor->name);
+            ULOG_INFO("next sensor for train %d is %s", train, next_sensor->name);
 
             // see if there is a train that is expecting this sensor
             if (sensor_id == next_sensor->num) {
-                //ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
+                ULOG_INFO("train %d moves to sensor %s", train, next_sensor->name);
 
                 // notify server that train position changed
                 TrainstateMsg send_buf = (TrainstateMsg) {
@@ -502,6 +535,7 @@ trainStateServer()
             train_state[train].reversed = !train_state[train].reversed;
             train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
+            ULOG_INFO("train %d position was %s, will update to", train, track->nodes[train_state[train].pos].name, track->nodes[train_state[train].pos].reverse - track->nodes);
             train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
 
             reply_buf = (TrainstateResp) {
@@ -607,9 +641,28 @@ trainStateServer()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
+        } else if (msg_buf.type == TRAINSTATE_SET_POS) {
+
+            usize train = msg_buf.data.set_pos.train;
+
+            train_state[train].pos = msg_buf.data.set_pos.pos;
+
+            ULOG_INFO("Explicitly setting pos for train %d: %s", train, get_track_a()->nodes[train_state[train].pos].name);
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_SET_POS,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
         } else if (msg_buf.type == TRAINSTATE_POSITION_UPDATE) {
 
             train_state[msg_buf.data.position_update.train].pos = msg_buf.data.position_update.new_pos;
+
+            TrainstateResp reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_POSITION_UPDATE
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
             ListIter it = list_iter(trainpos_requests); 
             Pair_Tid_isize* request;
@@ -631,10 +684,6 @@ trainStateServer()
                 }
             }
 
-            TrainstateResp reply_buf = (TrainstateResp) {
-                .type = TRAINSTATE_POSITION_UPDATE
-            };
-            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
         } else if (msg_buf.type == TRAINSTATE_POSITION_WAIT) {
 

@@ -119,9 +119,6 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
     uint32_t src_rev = nodes[src].reverse - nodes;
     uint32_t back = dest;
     for (; back != src && back != src_rev; back = prev[back]) {
-        TrackEdge* new_edge = arena_alloc(arena, TrackEdge);
-        *new_edge = *edges[back]; 
-        cbuf_push_front(path, new_edge);
 
         // reserve the path that we found
         // TODO technically there could be barging if another train reseves the task we found before we do (assuming not possible for another pathfind request to come this quickly for now)
@@ -134,6 +131,10 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
                 return NULL;
             }
         }
+
+        TrackEdge* new_edge = arena_alloc(arena, TrackEdge);
+        *new_edge = *edges[back]; 
+        cbuf_push_front(path, new_edge);
         
         if (iters > 128) {
             ULOG_WARN("[dijkstra] unable to find src when constructing edge graph");
@@ -288,6 +289,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         TrainstateSetSpeed(trainstate_server, train, train_speed);
 
         // start at index one since we skip the starting node (assume no short move)
+        ZoneId prev_zone = -1;
         for (usize i = 1; i < cbuf_len(path); ++i) {
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
 
@@ -313,7 +315,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
                 // can release previous zone now
-
+                if (prev_zone != -1) {
+                    ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, prev_zone);
+                    zone_unreserve(train, prev_zone);
+                }
+                prev_zone = node->zone;
 
                 // stop once we hit target sensor
                 if (edge->src->num == waiting_sensor->num) break;
@@ -332,9 +338,15 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         /* TrainstateSetOffset(trainstate_server, train, offset); */
     }
 
+    // explicitly set position (TODO this is probably pretty dangerous)
+    usize dest_ind = ((TrackEdge*)cbuf_back(path))->dest - track->nodes;
+    TrainstateSetPos(trainstate_server, train, dest_ind);
+
     // free the path we took (but keep the place we stop at)
     zone_unreserve_all(track, train);
-    zone_reserve(train, ((TrackEdge*)cbuf_back(path))->dest->zone);
+    ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->zone;
+    ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone);
+    zone_reserve(train, dest_zone);
 
 }
 
