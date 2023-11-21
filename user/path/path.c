@@ -67,7 +67,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, Aren
         // don't use this path if already reserved
         ZoneId curr_zone = nodes[curr].reverse->zone;
         if (curr_zone != -1) {
-            if (zone_is_reserved(curr_zone)) {
+            if (zone_is_reserved(curr_zone, train)) {
                 continue;
             }
         }
@@ -448,6 +448,10 @@ patherTask()
     if (cbuf_len(simple_path) > 0) {
         patherSimplePath(track, simple_path, train, train_speed, offset, &arena);
     }
+
+    // free the path we took (but keep the place we stop at)
+    zone_unreserve_all(track, train);
+    zone_reserve(train, track->nodes[dest].zone);
 
     arena_release(&arena);
     Exit();

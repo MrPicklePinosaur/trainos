@@ -63,7 +63,7 @@ zone_unreserve_all(Track* track, usize train)
 }
 
 bool
-zone_is_reserved(ZoneId zone)
+zone_is_reserved(ZoneId zone, usize train)
 {
-    return reservations[zone] != 0;
+    return reservations[zone] != 0 && reservations[zone] != train;
 }

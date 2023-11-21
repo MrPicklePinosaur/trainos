@@ -70,7 +70,7 @@ typedef struct {
     } data;
 } TrainstateResp;
 
-usize trains[TRAIN_COUNT] = {2, 47};
+usize trains[TRAIN_COUNT] = {2, 77};
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 
 // serialize trainstate o binary form for marklin
@@ -469,6 +469,7 @@ trainStateServer()
             // set the train state to reversed
             Track* track = get_track_a(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
+            train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
             train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
 
@@ -499,6 +500,7 @@ trainStateServer()
             // set the train state to reversed
             Track* track = get_track_a(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
+            train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
             train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation
 
