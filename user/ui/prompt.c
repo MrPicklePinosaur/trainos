@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "user/path/path.h"
 #include "user/path/train_data.h"
+#include "user/path/reserve.h"
 #include "user/sensor.h"
 #include "user/switch.h"
 #include "parser.h"
@@ -14,7 +15,7 @@
 
 #include "kern/perf.h"
 
-void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, ParserResult command);
+void executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, Tid reserve_server, ParserResult command);
 
 // task for getting user input form the console
 void
@@ -26,6 +27,7 @@ promptTask()
     Tid renderer_server = WhoIs(RENDERER_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
+    Tid reserve_server = WhoIs(RESERVE_ADDRESS);
 
     CBuf* line = cbuf_new(32);
 
@@ -54,7 +56,7 @@ promptTask()
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             // TODO since we are using a tmp arena, we can technically 
             ParserResult parsed = parse_command(parser_arena, str8(completed_line));
-            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, trainstate_server, parsed);
+            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, trainstate_server, reserve_server, parsed);
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -64,7 +66,7 @@ promptTask()
 }
 
 void
-executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, ParserResult command)
+executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, Tid reserve_server, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
@@ -162,18 +164,18 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     renderer_append_console(renderer_server, "Running benchmark 1");
 
                     Track* track = get_track();
-                    usize node_ind = 0;
+                    TrackNode* node = 0;
                     usize SPEED = 5;
                     
                     // Train 2 A5/6 -> E7/8
-                    node_ind = track_node_index(track, track_node_by_name(track, "A5"));
-                    TrainstateSetPos(trainstate_server, 2, node_ind);
+                    node = track_node_by_name(track, "A5");
+                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
                     Path train1_paths[] = {(Path){2, SPEED, 0, "E8"}, (Path){2, SPEED, 0, "A5"}};
                     Tid train1_pather = PlanPathSeq(train1_paths, 2);
 
                     // Train 47 C3/4 -> A3/4
-                    node_ind = track_node_index(track, track_node_by_name(track, "C4"));
-                    TrainstateSetPos(trainstate_server, 47, node_ind);
+                    node = track_node_by_name(track, "C4");
+                    TrainstateSetPos(trainstate_server, reserve_server, 47, node);
                     Path train2_paths[] = {(Path){47, SPEED, 0, "A3"}, (Path){47, SPEED, 0, "C4"}};
                     Tid train2_pather = PlanPathSeq(train2_paths, 2);
 
@@ -190,12 +192,13 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
         case PARSER_RESULT_POS: {
             // TODO currently can only set position to a sensor
 
+            usize train = command._data.pos.train;
             Track* track = get_track();
             TrackNode* node = track_node_by_name(track, command._data.pos.pos);
-            usize node_ind = track_node_index(track, node);
-            char* msg = cstr_format(&tmp, "Sending train %s%d%s position to %s%s%s", ANSI_CYAN, command._data.pos.train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
+
+            char* msg = cstr_format(&tmp, "Sending train %s%d%s position to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
             renderer_append_console(renderer_server, msg);
-            TrainstateSetPos(trainstate_server, command._data.pos.train, node_ind);
+            TrainstateSetPos(trainstate_server, reserve_server, command._data.pos.train, node);
 
             break;
         }

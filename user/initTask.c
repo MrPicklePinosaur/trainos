@@ -89,7 +89,7 @@ initTask()
 
     println("Initializing trains...");
     Tid trainstate_server = Create(5, &trainStateServer, "Train State Server");
-    Tid reserve_server = Create(2, &reservationTask, "Reservation Server");
+    Tid reserve_server = Create(5, &reservationTask, "Reservation Server");
 
     println("Initalizing UI...");
     Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");

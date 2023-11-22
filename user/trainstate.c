@@ -4,6 +4,8 @@
 #include "user/sensor.h"
 #include "user/switch.h"
 #include "user/marklin.h"
+#include "user/path/reserve.h"
+#include "user/path/dijkstra.h"
 #include "user/path/track_data.h"
 #include "user/path/train_data.h"
 #include "user/path/dijkstra.h"
@@ -252,10 +254,22 @@ TrainstateSetDest(Tid trainstate_server, usize train, usize dest)
 }
 
 int
-TrainstateSetPos(Tid trainstate_server, usize train, usize pos)
+TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNode* node)
 {
+    Track* track = get_track();
+
+    if (node->type != NODE_SENSOR) {
+        UNIMPLEMENTED("TrainstateSetPos doesn't support nodes besides sensors");
+    }
+
     if (!(1 <= train && train <= 100)) {
         ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
+    // TODO not sure if reserve server should be coupled here
+    if (node->zone != -1 && !zone_reserve(reserve_server, train, node->zone)) {
+        ULOG_WARN("Failed to reserve zone %d when setting position", node->zone);
         return -1;
     }
 
@@ -265,7 +279,7 @@ TrainstateSetPos(Tid trainstate_server, usize train, usize pos)
         .data = {
             .set_pos = {
                 .train = train,
-                .pos = pos,
+                .pos = track_node_index(track, node),
             }
         }
     };
