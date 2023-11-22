@@ -192,23 +192,71 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     break;
                 }
                 case 2: {
-                    renderer_append_console(renderer_server, "Running benchmark 2: three trains pincer");
+                    renderer_append_console(renderer_server, "Running benchmark 2: speed test with reversals");
 
                     TrackNode* node = 0;
                     usize SPEED = 5;
-
-#if 0
-                    node = track_node_by_name(track, "A5");
-                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
-                    Path train1_paths[] = {(Path){2, SPEED, 0, "E8"}, (Path){2, SPEED, 0, "A5"}};
-                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
-#endif
                     
+                    usize start_time = Time(clock_server);
+
+                    // Train 2 B16 -> A5
+                    node = track_node_by_name(track, "B16");
+                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
+                    Path train1_paths[] = {(Path){2, SPEED, 0, "A5"}, (Path){2, SPEED, 0, "D7"}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
+
+                    // Train 47 D7 -> C3
+                    node = track_node_by_name(track, "D7");
+                    TrainstateSetPos(trainstate_server, reserve_server, 47, node);
+                    Path train2_paths[] = {(Path){47, SPEED, 0, "C3"}, (Path){47, SPEED, 0, "B16"}};
+                    Tid train2_pather = PlanPathSeq(train2_paths, 2);
+
+                    WaitTid(train1_pather);
+                    WaitTid(train2_pather);
+
+                    usize end_time = Time(clock_server);
+
+                    char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
+                    renderer_append_console(renderer_server, msg);
 
                     break;
                 }
                 case 3: {
-                    renderer_append_console(renderer_server, "Running benchmark 3: single train reverse on switch");
+                    renderer_append_console(renderer_server, "Running benchmark 3: three trains cycle");
+
+                    TrackNode* node = 0;
+                    usize SPEED = 5;
+                    usize TRAIN = 0;
+
+                    // A4 -> D14 -> E6 -> A4
+                    TRAIN = 2;
+                    node = track_node_by_name(track, "A4");
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
+                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "D14"}, (Path){TRAIN, SPEED, 0, "E6"}, (Path){TRAIN, SPEED, 0, "A4"}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 3);
+
+                    // D14 -> E6 -> A4 -> D14
+                    TRAIN = 47;
+                    node = track_node_by_name(track, "D14");
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
+                    Path train2_paths[] = {(Path){TRAIN, SPEED, 0, "E6"}, (Path){TRAIN, SPEED, 0, "A4"}, (Path){TRAIN, SPEED, 0, "D14"}};
+                    Tid train2_pather = PlanPathSeq(train2_paths, 3);
+
+                    // E6 -> A4 -> D14 -> E6
+                    TRAIN = 58;
+                    node = track_node_by_name(track, "E6");
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
+                    Path train3_paths[] = {(Path){TRAIN, SPEED, 0, "A4"}, (Path){TRAIN, SPEED, 0, "D14"}, (Path){TRAIN, SPEED, 0, "E6"}};
+                    Tid train3_pather = PlanPathSeq(train3_paths, 3);
+                    
+                    WaitTid(train1_pather);
+                    WaitTid(train2_pather);
+                    WaitTid(train3_pather);
+
+                    break;
+                }
+                case 4: {
+                    renderer_append_console(renderer_server, "Running benchmark 4: single train reverse on switch");
 
                     usize SPEED = 5;
 
@@ -220,7 +268,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
                     break;
                 }
-                case 4: {
+                case 5: {
                     createPathRandomizer(2, 5);
                     createPathRandomizer(47, 5);
 
@@ -229,7 +277,6 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                 default:
                     renderer_append_console(renderer_server, "Invalid test");
             }
-
 
             break;
         }
