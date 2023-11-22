@@ -63,25 +63,41 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid reserve_server = WhoIs(RESERVE_ADDRESS);
 
-    // compute which sensor to issue stop command from
     TrainState state = TrainstateGet(trainstate_server, train);
-    i32 stopping_distance = train_data_stop_dist(train, train_speed)-offset;
-    i32 train_vel = train_data_vel(train, train_speed);
-    ULOG_INFO_M(LOG_MASK_PATH, "train %d vel is %d", train, train_vel);
 
+    i32 stopping_distance;
+    i32 train_vel;
+
+    // compute which sensor to issue stop command from
     // TODO it is possible to run out of path
-    TrackNode* waiting_sensor = 0;
-    u32 distance_to_dest = 0;
-    for (usize i = usize_sub(cbuf_len(path), 1); ; --i) {
-        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-        stopping_distance -= edge->dist;
-        distance_to_dest += edge->dist;
-        if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
-            waiting_sensor = edge->src; // sensor that we should wait to trip
+    TrackNode* waiting_sensor;
+    u32 distance_to_dest;
+    for (i32 speed_i = get_speed_index(train_speed); speed_i >= 0; --speed_i) {
+        train_speed = TRAIN_DATA_SPEEDS[speed_i];
+
+        stopping_distance = train_data_stop_dist(train, train_speed)-offset;
+        train_vel = train_data_vel(train, train_speed);
+
+        waiting_sensor = 0;
+        distance_to_dest = 0;
+
+        for (usize i = usize_sub(cbuf_len(path), 1); ; --i) {
+            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+            stopping_distance -= edge->dist;
+            distance_to_dest += edge->dist;
+            if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
+                waiting_sensor = edge->src; // sensor that we should wait to trip
+                break;
+            }
+            if (i == 0) break;
+        }
+
+        if (!(waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor)) {
             break;
         }
-        if (i == 0) break;
     }
+
+    ULOG_INFO_M(LOG_MASK_PATH, "train %d vel is %d", train, train_vel);
 
     // compute desired switch state
     /* ULOG_INFO_M(LOG_MASK_PATH, "Computing switch states..."); */
