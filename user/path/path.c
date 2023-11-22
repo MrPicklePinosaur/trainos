@@ -71,7 +71,6 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     // compute which sensor to issue stop command from
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor;
-    u32 distance_to_dest;
     for (i32 speed_i = get_speed_index(train_speed); speed_i >= 0; --speed_i) {
         train_speed = TRAIN_DATA_SPEEDS[speed_i];
 
@@ -79,12 +78,9 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         train_vel = train_data_vel(train, train_speed);
 
         waiting_sensor = 0;
-        distance_to_dest = 0;
-
         for (usize i = usize_sub(cbuf_len(path), 1); ; --i) {
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
             stopping_distance -= edge->dist;
-            distance_to_dest += edge->dist;
             if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
                 waiting_sensor = edge->src; // sensor that we should wait to trip
                 break;
@@ -153,6 +149,12 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
+
+        u32 distance_to_dest = 0;
+        for (usize i = 0; i < cbuf_len(path); ++i) {
+            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+            distance_to_dest += edge->dist;
+        }
 
 #if 0
         TrainState state = TrainstateGet(trainstate_server, train);
