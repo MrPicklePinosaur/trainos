@@ -99,7 +99,8 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
         }
 
         // also add in the reverse edge
-        if (allow_reversal) {
+        // reversals are only allowed on sensor nodes
+        if (allow_reversal && nodes[curr].type == NODE_SENSOR) {
             uint32_t rev = nodes[curr].reverse - nodes;
             if (dist[curr] < dist[rev]) {
                 dist[rev] = dist[curr];

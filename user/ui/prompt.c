@@ -159,14 +159,16 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 			break;
         } 
         case PARSER_RESULT_TEST: {
+            Track* track = get_track();
             switch (command._data.test.num) {
                 case 1: {
-                    renderer_append_console(renderer_server, "Running benchmark 1");
+                    renderer_append_console(renderer_server, "Running benchmark 1: speed test with two trains");
 
-                    Track* track = get_track();
                     TrackNode* node = 0;
                     usize SPEED = 5;
                     
+                    usize start_time = Time(clock_server);
+
                     // Train 2 A5/6 -> E7/8
                     node = track_node_by_name(track, "A5");
                     TrainstateSetPos(trainstate_server, reserve_server, 2, node);
@@ -182,11 +184,47 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     WaitTid(train1_pather);
                     WaitTid(train2_pather);
 
+                    usize end_time = Time(clock_server);
+
+                    char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
+                    renderer_append_console(renderer_server, msg);
+
+                    break;
+                }
+                case 2: {
+                    renderer_append_console(renderer_server, "Running benchmark 2: three trains pincer");
+
+                    TrackNode* node = 0;
+                    usize SPEED = 5;
+
+#if 0
+                    node = track_node_by_name(track, "A5");
+                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
+                    Path train1_paths[] = {(Path){2, SPEED, 0, "E8"}, (Path){2, SPEED, 0, "A5"}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
+#endif
+                    
+
+                    break;
+                }
+                case 3: {
+                    renderer_append_console(renderer_server, "Running benchmark 3: single train reverse on switch");
+
+                    usize SPEED = 5;
+
+                    TrackNode* node = track_node_by_name(track, "A5");
+                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
+                    Tid pather_task = PlanPath((Path){2, SPEED, 0, "A3"});
+
+                    WaitTid(pather_task);
+
                     break;
                 }
                 default:
                     renderer_append_console(renderer_server, "Invalid test");
             }
+
+
             break;
         }
         case PARSER_RESULT_POS: {
