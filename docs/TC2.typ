@@ -126,10 +126,23 @@ Upon entry of a new zone, the current zone is immediately freed. This is a safe 
 
 Upon entry of a new zone, the switches in the zone after are set to the desired state. This ensures that there is one zone of buffer time before the train arrives as the zone with the switch. Through previous testing, if the switches were activated upon entry of the zone, there will be cases (especially at higher speeds), that the switches don't activate on time.
 
+= Collision prevention
+
+
+
 = Servers
 
 The following servers were introduced in TC2
 
 == Trainstate server
 
+The train state server maintains the single source of truth in terms of state of each train. This includes current speed setting, orientation, and position. A train position notifier runs sensor attribution on each sensor trigger and updates train position as well. Any desired changes to train state (such as setting the speed of a train) must be done through this server. This guarentees mutual exclusion. Trainstate server is also what can be used for a task that wishes to block until a train changes position. This is incredibly helpful for pathfinding algorithms.
+
 == Reservation server
+
+The reservation server keeps track of all reserved zones, as well as which train has reserved the zone. It has a simple reserve/unreserve interface that is idempotent (a train is allowed to reserve a zone many times).
+
+== Trainterm (render) server
+ 
+Since in our UI, each window is it's own task that is able to render on demand, we have multiple tasks attempting to print to the console at once. This can result in many visual bugs where tasks get interrupted in the middle of rendering in some text, especially when ANSI control sequences are involved. Thus, the render server was introduced to guarentee mutual exclusion on the cursor. Each window maintains it's own output buffer and writes into it. The ouput buffer is only flushed upon calling `w_flush()`, where the entire buffer is sent to the render server to be rendered atomically. The render server processes theses requests in FIFO order.
+
