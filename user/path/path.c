@@ -209,10 +209,15 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
                 // can release previous zone now
+                if (node->zone != -1) {
+                    zone_unreserve(reserve_server, train, node->zone);
+                }
+                /*
                 if (prev_zone != -1) {
                     ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, prev_zone);
                     zone_unreserve(reserve_server, train, prev_zone);
                 }
+                */
                 prev_zone = node->zone;
 
                 // stop once we hit target sensor

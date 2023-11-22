@@ -5,10 +5,11 @@
 #include <traindef.h>
 #include <trainsys.h>
 
+
 #define NUMBER_OF_TRAINS 80
 
 // number of trains that we have calibration data for
-#define TRAIN_COUNT 2
+#define TRAIN_COUNT 1
 
 #define TRAINSTATE_ADDRESS "trainstate"
 
@@ -32,7 +33,7 @@ int TrainstateReverse(Tid trainstate_server, usize train);
 int TrainstateSetLights(Tid trainstate_server, usize train, bool lights);
 int TrainstateSetOffset(Tid trainstate_server, usize train, isize offset);
 int TrainstateSetDest(Tid trainstate_server, usize train, usize dest);
-int TrainstateSetPos(Tid trainstate_server, usize train, usize pos);
+int TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNode* node);
 TrainState TrainstateGet(Tid trainstate_server, usize train);
 
 void trainStateServer();
