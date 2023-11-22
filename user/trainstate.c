@@ -327,16 +327,36 @@ TrainstateWaitForSensor(Tid trainstate_server, isize train)
 }
 
 
+typedef struct {
+    usize train;
+    usize speed;
+} ReverseMsg;
+
+typedef struct {
+
+} ReverseResp;
+
+
 void
 reverseTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
+    int from_tid;
+    ReverseMsg msg_buf;
+    ReverseResp reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(ReverseMsg));
+    if (msg_len < 0) {
+        ULOG_WARN("[REVERSE] Error when receiving");
+        Exit();
+    }
+    reply_buf = (ReverseResp){};
+    Reply(from_tid, (char*)&reply_buf, sizeof(ReverseResp));
+
     TrainstateResp resp_buf;
     TrainstateMsg send_buf;
 
-    // TODO potential optimization: adjust this delay time depending on the current speed of the train
-    Delay(clock_server, 400); // TODO arbitrary delay
+    Delay(clock_server, train_data_stop_time(msg_buf.train, msg_buf.speed) / 10 + 100);
     send_buf = (TrainstateMsg) {
         .type = TRAINSTATE_REVERSE_REVERSE,
     };
@@ -554,6 +574,7 @@ trainStateServer()
         } else if (msg_buf.type == TRAINSTATE_REVERSE) {
 
             usize train = msg_buf.data.reverse.train;
+            usize speed = train_state[train].speed;
 
             bool was_already_reversing;
             if (reverse_tasks[train] != 0) {
@@ -565,6 +586,13 @@ trainStateServer()
                 temp_state.speed = 0;
                 marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
                 reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
+
+                ReverseResp resp_buf;
+                ReverseMsg send_buf = (ReverseMsg) {
+                    .train = train,
+                    .speed = speed
+                };
+                int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
             }
 
             reply_buf = (TrainstateResp) {
