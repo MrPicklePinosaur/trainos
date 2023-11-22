@@ -9,7 +9,7 @@ testTraindata()
 {
     println("Running test suite for train data -----------------");
 
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     TEST(strcmp(track_node_by_name(track, "A1")->name, "A1") == 0);
     TEST(strcmp(track_node_by_name(track, "A16")->name, "A16") == 0);

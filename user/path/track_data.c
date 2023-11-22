@@ -15,6 +15,7 @@ typedef struct {
 
 Track track_a = {0};
 Track track_b = {0};
+Track* current_track;
 
 Track track_a_init();
 Track track_b_init();
@@ -182,18 +183,13 @@ track_init()
 {
     track_a = track_a_init();
     track_b = track_b_init();
+    current_track = &track_a;
 }
 
 Track*
-get_track_a()
+get_track()
 {
-    return &track_a;
-}
-
-Track*
-get_track_b()
-{
-    return &track_b;
+    return current_track;
 }
 
 Track

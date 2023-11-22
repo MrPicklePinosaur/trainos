@@ -199,7 +199,7 @@ reservationTask()
 {
     RegisterAs(RESERVE_ADDRESS);
 
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     reservations = alloc(track->zone_count*sizeof(usize));
     for (usize i = 0; i < track->zone_count; ++i) {

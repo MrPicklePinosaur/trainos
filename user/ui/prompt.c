@@ -161,7 +161,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                 case 1: {
                     renderer_append_console(renderer_server, "Running benchmark 1");
 
-                    Track* track = get_track_a();
+                    Track* track = get_track();
                     usize node_ind = 0;
                     usize SPEED = 5;
                     
@@ -190,7 +190,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
         case PARSER_RESULT_POS: {
             // TODO currently can only set position to a sensor
 
-            Track* track = get_track_a();
+            Track* track = get_track();
             TrackNode* node = track_node_by_name(track, command._data.pos.pos);
             usize node_ind = track_node_index(track, node);
             char* msg = cstr_format(&tmp, "Sending train %s%d%s position to %s%s%s", ANSI_CYAN, command._data.pos.train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);

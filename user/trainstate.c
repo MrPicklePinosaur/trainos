@@ -384,7 +384,7 @@ trainPosNotifierTask()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = MyParentTid();
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     Arena tmp_base = arena_new(512);
     // can now wait for future sensor updates
@@ -616,7 +616,7 @@ trainStateServer()
             train_state[train].speed = 0; // also force speed to be zero
 
             // set the train state to reversed
-            Track* track = get_track_a(); // TODO really ugly how this is here
+            Track* track = get_track(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
             //train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
@@ -650,7 +650,7 @@ trainStateServer()
             marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
 
             // set the train state to reversed
-            Track* track = get_track_a(); // TODO really ugly how this is here
+            Track* track = get_track(); // TODO really ugly how this is here
             train_state[train].reversed = !train_state[train].reversed;
             //train_state[train].offset = -train_state[train].offset; // flip offset if reversing
             // TODO this might be race condition with notifier server
@@ -734,7 +734,7 @@ trainStateServer()
 
             train_state[train].pos = msg_buf.data.set_pos.pos;
 
-            ULOG_INFO("Explicitly setting pos for train %d: %s", train, get_track_a()->nodes[train_state[train].pos].name);
+            ULOG_INFO("Explicitly setting pos for train %d: %s", train, get_track()->nodes[train_state[train].pos].name);
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_POS,

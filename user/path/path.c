@@ -269,7 +269,7 @@ patherTask()
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid reserve_server = WhoIs(RESERVE_ADDRESS);
 
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     int from_tid;
     PatherMsg msg_buf;
@@ -344,7 +344,7 @@ pathRandomizer(void)
     usize train_num = 2;
     usize train_speed = 8;
 
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     for (;;) {
 
@@ -362,7 +362,7 @@ pathRandomizer(void)
 Tid
 PlanPath(Path path)
 {
-    Track* track = get_track_a();
+    Track* track = get_track();
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
     TrainState trainstate = TrainstateGet(trainstate_server, path.train);

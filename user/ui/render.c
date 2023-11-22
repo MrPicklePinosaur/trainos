@@ -101,7 +101,7 @@ renderZoneWinTask()
     w_puts_mv(&zone_win, "[12]     [25]     ", 1, 13);
     w_flush(&zone_win);
 
-    Track* track = get_track_a();
+    Track* track = get_track();
     usize ticks = Time(clock_server);
     Arena tmp_base = arena_new(64);
     for (;;) {
@@ -142,7 +142,7 @@ renderTrainStateWinTask()
 
     Delay(clock_server, 30);
 
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     Window train_state_win = win_init(84, 2, 38, 17);
     win_draw(&train_state_win);

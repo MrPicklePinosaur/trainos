@@ -45,7 +45,7 @@ testDijkstra()
     Tid reserver_server = WhoIs(RESERVE_ADDRESS);
 
     Arena tmp = arena_new(sizeof(TrackNode)*TRACK_MAX+sizeof(Map)*TRACK_MAX*4);
-    Track* track = get_track_a();
+    Track* track = get_track();
 
     ULOG_INFO("test basic pathfinding");
     runDijkstra(reserver_server, track, 2, "C10", "A1", false, false, tmp);

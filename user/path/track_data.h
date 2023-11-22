@@ -68,8 +68,7 @@ struct Track {
 #define TRACK_B_SIZE 140
 
 void track_init();
-Track* get_track_a();
-Track* get_track_b();
+Track* get_track();
 
 bool track_edge_cmp(TrackEdge a, TrackEdge b);
 
