@@ -37,6 +37,7 @@ set_task_state(Task* task, TaskState state)
 void
 on_enter_kernelmode(Tid from_tid)
 {
+    end_user();
     if (from_tid == idle_tid()) end_idle();
 }
 
@@ -45,6 +46,7 @@ void
 on_exit_kernelmode(Tid to_tid)
 {
     if (to_tid == idle_tid()) start_idle();
+    start_user();
 }
 
 Tid

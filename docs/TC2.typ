@@ -129,3 +129,7 @@ Upon entry of a new zone, the switches in the zone after are set to the desired 
 = Servers
 
 The following servers were introduced in TC2
+
+== Trainstate server
+
+== Reservation server

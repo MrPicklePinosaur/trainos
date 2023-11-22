@@ -309,7 +309,7 @@ renderDiagnosticWinTask()
 
         w_flush(&diagnostic_win);
 
-        ticks += 10; // update every 1/10 second
+        ticks += 100; // update every 1/10 second
         DelayUntil(clock_server, ticks); 
 
         char idle_str[20] = {0};
@@ -320,7 +320,8 @@ renderDiagnosticWinTask()
         u32 f_secs = (ticks / 100) % 60;
         u32 f_tenths = (ticks % 100);
 
-        char* time_fmt = cstr_format(&tmp, "%d:%d:%d", f_min, f_secs, f_tenths);
+        /* char* time_fmt = cstr_format(&tmp, "%d:%d:%d", f_min, f_secs, f_tenths); */
+        char* time_fmt = cstr_format(&tmp, "%d:%d", f_min, f_secs);
 
         // TODO don't need to keep reredendering this
         w_puts_mv(&diagnostic_win, "Time:            ", DIAGNOSTIC_ANCHOR_X, DIAGNOSTIC_ANCHOR_Y);
@@ -374,7 +375,7 @@ renderTask()
     Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
-    Create(5, &renderZoneWinTask, "Render Zone Window");
+    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
 
     RendererMsg msg_buf;
     RendererResp reply_buf;
