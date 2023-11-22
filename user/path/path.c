@@ -170,7 +170,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 #endif
         TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
+
         TrainstateSetSpeed(trainstate_server, train, 0);
+        ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait short move");
+        Delay(clock_server, train_data_stop_time(train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
+        ULOG_INFO_M(LOG_MASK_PATH, "After stop wait short move");
 
     } else {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move...");
@@ -231,8 +235,10 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train (delay for %d)...", delay_ticks);
         Delay(clock_server, delay_ticks);
 
-        ULOG_INFO_M(LOG_MASK_PATH, "Train stopped...");
         TrainstateSetSpeed(trainstate_server, train, 0);
+        ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait regular move");
+        Delay(clock_server, train_data_stop_time(train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
+        ULOG_INFO_M(LOG_MASK_PATH, "After stop wait regular move");
         
         /* TrainstateSetOffset(trainstate_server, train, offset); */
     }
