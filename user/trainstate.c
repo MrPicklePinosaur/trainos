@@ -582,17 +582,23 @@ trainStateServer()
             }
             else {
                 was_already_reversing = false;
-                TrainState temp_state = train_state[train];
-                temp_state.speed = 0;
-                marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-                reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
+                if (speed == 0) {
+                    TrainState temp_state = train_state[train];
+                    temp_state.speed = 15;
+                    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+                } else {
+                    TrainState temp_state = train_state[train];
+                    temp_state.speed = 0;
+                    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+                    reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
 
-                ReverseResp resp_buf;
-                ReverseMsg send_buf = (ReverseMsg) {
-                    .train = train,
-                    .speed = speed
-                };
-                int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
+                    ReverseResp resp_buf;
+                    ReverseMsg send_buf = (ReverseMsg) {
+                        .train = train,
+                        .speed = speed
+                    };
+                    int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
+                }
             }
 
             reply_buf = (TrainstateResp) {

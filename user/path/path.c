@@ -246,10 +246,8 @@ patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* p
                 /* reverse_offset = TRAIN_LENGTH; */
                 patherSimplePath(track, simple_path, train, train_speed, offset, arena);
             }
-
-            Delay(clock_server, 400); // TODO arbritatary and questionably necessary delay
             ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
-            TrainstateReverseStatic(trainstate_server, train);
+            TrainstateReverse(trainstate_server, train);
             cbuf_clear(simple_path);
         }
     }
