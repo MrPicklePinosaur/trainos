@@ -269,6 +269,8 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     break;
                 }
                 case 5: {
+                    renderer_append_console(renderer_server, "Running benchmark 5: random train destinations");
+
                     createPathRandomizer(2, 5);
                     createPathRandomizer(47, 5);
 
