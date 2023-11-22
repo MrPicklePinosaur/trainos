@@ -220,6 +220,12 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
                     break;
                 }
+                case 4: {
+                    createPathRandomizer(2, 5);
+                    createPathRandomizer(47, 5);
+
+                    break;
+                }
                 default:
                     renderer_append_console(renderer_server, "Invalid test");
             }

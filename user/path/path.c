@@ -359,11 +359,32 @@ patherTask()
     Exit();
 }
 
+typedef struct {
+    usize train;
+    usize speed;
+} RandomizerMsg;
+
+typedef struct {
+
+} RandomizerResp;
+
+
 int
 pathRandomizer(void)
 {
-    usize train_num = 2;
-    usize train_speed = 8;
+    int from_tid;
+    RandomizerMsg msg_buf;
+    RandomizerResp reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(RandomizerMsg));
+    if (msg_len < 0) {
+        ULOG_WARN("[RANDOMIZER] Error when receiving");
+        Exit();
+    }
+    reply_buf = (RandomizerResp){};
+    Reply(from_tid, (char*)&reply_buf, sizeof(RandomizerResp));
+
+    usize train_num = msg_buf.train;
+    usize train_speed = msg_buf.speed;
 
     Track* track = get_track();
 
@@ -374,11 +395,30 @@ pathRandomizer(void)
         if (dest == 0 || dest == 1 || dest == 12 || dest == 13 || dest == 14 || dest == 15) {
             continue;
         }
+        // We do not know the direction of the bar, so it may crash into the stopper if it goes to these sensors
+        if (dest == 10 || dest == 11 || dest == 22 || dest == 23 || dest == 24 || dest == 25 || dest == 26 || dest == 27) {
+            continue;
+        }
 
         Tid path_task = PlanPath((Path){train_num, train_speed, 0, track->nodes[dest].name});
         WaitTid(path_task);
     }
 }
+
+
+void
+createPathRandomizer(usize train, usize speed)
+{
+    RandomizerResp resp_buf;
+    RandomizerMsg send_buf = (RandomizerMsg) {
+        .train = train,
+        .speed = speed
+    };
+
+    int task = Create(2, &pathRandomizer, "Path Randomizer Task");
+    int ret = Send(task, (const char*)&send_buf, sizeof(RandomizerMsg), (char*)&resp_buf, sizeof(RandomizerResp));
+}
+
 
 Tid
 PlanPath(Path path)
