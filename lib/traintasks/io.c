@@ -203,30 +203,6 @@ ctsNotifierMarklin(void)
 }
 
 void
-putcTestTask(void)
-{
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
-    Putc(io_server, 192);
-    Putc(io_server, 26);
-    Putc(io_server, 77);
-    for (;;) {
-        Putc(io_server, 133);
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        println("DATA GOTTEN: %d", Getc(io_server));
-        Delay(clock_server, 1000);
-    }
-}
-
-void
 ioServer(size_t line)
 {
     bool cts = true;
@@ -235,8 +211,8 @@ ioServer(size_t line)
     IOResp reply_buf;
     int from_tid;
 
-    List* getc_tasks = list_init();  // all tasks waiting to get a character
-    List* output_fifo = list_init();
+    CBuf* getc_tasks = cbuf_new(64);  // all tasks waiting to get a character
+    CBuf* output_fifo = cbuf_new(256);
 
     for (;;) {
         int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(IOMsg));
@@ -265,7 +241,7 @@ ioServer(size_t line)
 
             // Otherwise, wait until RX interrupt happens
             else {
-                list_push_back(getc_tasks, (void*)from_tid);
+                cbuf_push_back(getc_tasks, (void*)from_tid);
             }
 
         }
@@ -281,7 +257,7 @@ ioServer(size_t line)
             }
             else {
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, msg_buf.data.putc.ch);
-                list_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
+                cbuf_push_back(output_fifo, (void*)msg_buf.data.putc.ch);
             }
 
             reply_buf = (IOResp) {
@@ -309,7 +285,7 @@ ioServer(size_t line)
                 }
 
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS off, queued %d", line, s[i]);
-                list_push_back(output_fifo, (void*) s[i]);
+                cbuf_push_back(output_fifo, (void*) s[i]);
 
             }
 
@@ -333,15 +309,15 @@ ioServer(size_t line)
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
 
             // If no tasks are waiting on Getc(), wait until the next Getc()
-            if (list_len(getc_tasks) == 0) {
+            if (cbuf_len(getc_tasks) == 0) {
                 continue;
             }
 
             // Respond to all tasks waiting on Getc()
             bool is_buffer_empty;
             unsigned char ch = uart_getc_buffered(line, &is_buffer_empty);
-            while (list_len(getc_tasks) > 0) {
-                Tid tid = list_pop_front(getc_tasks);
+            while (cbuf_len(getc_tasks) > 0) {
+                Tid tid = (Tid)cbuf_pop_front(getc_tasks);
 
                 reply_buf = (IOResp) {
                     .type = IO_GETC,
@@ -364,9 +340,9 @@ ioServer(size_t line)
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(IOResp));
 
-            if (list_len(output_fifo) > 0) {
-                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is a queued char %d, printing", line, list_peek_front(output_fifo));
-                uart_putc(line, list_pop_front(output_fifo));
+            if (cbuf_len(output_fifo) > 0) {
+                ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is a queued char %d, printing", line, cbuf_front(output_fifo));
+                uart_putc(line, (char)cbuf_pop_front(output_fifo));
             }
             else {
                 ULOG_INFO_M(LOG_MASK_IO, "Line %d CTS received, there is no queued char", line);
