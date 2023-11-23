@@ -24,7 +24,8 @@ promptTask()
     Tid io_server = WhoIs(IO_ADDRESS_CONSOLE);
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid renderer_server = WhoIs(RENDERER_ADDRESS);
+    Tid prompt_renderer_server = WhoIs(PROMPT_ADDRESS);
+    Tid console_renderer_server = WhoIs(CONSOLE_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid reserve_server = WhoIs(RESERVE_ADDRESS);
@@ -39,7 +40,7 @@ promptTask()
     for (;;) {
         int c = Getc(io_server);
 
-        renderer_prompt(renderer_server, c);
+        renderer_prompt(prompt_renderer_server, c);
 
         if (isalnum(c) || isblank(c) || isprint(c)) {
             cbuf_push_back(line, c);
@@ -56,7 +57,7 @@ promptTask()
             // it is okay to parse and execute commands synchronously here, since we don't want to print the next prompt line until the command finishes
             // TODO since we are using a tmp arena, we can technically 
             ParserResult parsed = parse_command(parser_arena, str8(completed_line));
-            executeCommand(tmp_arena, marklin_server, clock_server, renderer_server, switch_server, trainstate_server, reserve_server, parsed);
+            executeCommand(tmp_arena, marklin_server, clock_server, console_renderer_server, switch_server, trainstate_server, reserve_server, parsed);
 
         } else if (c == CH_BACKSPACE) {
             cbuf_pop_back(line);
@@ -66,7 +67,7 @@ promptTask()
 }
 
 void
-executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_server, Tid switch_server, Tid trainstate_server, Tid reserve_server, ParserResult command)
+executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_renderer_server, Tid switch_server, Tid trainstate_server, Tid reserve_server, ParserResult command)
 {
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
@@ -74,7 +75,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             uint32_t speed = command._data.train_speed.speed;
 
             char* msg = cstr_format(&tmp, "Setting train %s%d%s to speed %s%d%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, speed, ANSI_RESET);
-            renderer_append_console(renderer_server, msg);
+            renderer_append_console(console_renderer_server, msg);
             TrainstateSetSpeed(trainstate_server, train, speed);
 
 			break;
@@ -83,7 +84,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             uint32_t train = command._data.reverse.train;
 
             char* msg = cstr_format(&tmp, "Reversing train %s%d%s", ANSI_CYAN, train, ANSI_CYAN);
-            renderer_append_console(renderer_server, msg);
+            renderer_append_console(console_renderer_server, msg);
             TrainstateReverse(trainstate_server, train);
 
 			break;
@@ -93,18 +94,18 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             SwitchMode switch_mode = command._data.switch_control.switch_mode;
 
             char* msg = cstr_format(&tmp, "Setting switch %s%x%s to %s%s%s", ANSI_CYAN, switch_id, ANSI_RESET, ANSI_GREEN, (switch_mode == SWITCH_MODE_CURVED) ? "curved" : "straight", ANSI_RESET);
-            renderer_append_console(renderer_server, msg);
+            renderer_append_console(console_renderer_server, msg);
 
             SwitchChange(switch_server, switch_id, switch_mode);
 			break;
 		}
         case PARSER_RESULT_STOP: {
-            renderer_append_console(renderer_server, "Powering off marklin");
+            renderer_append_console(console_renderer_server, "Powering off marklin");
             marklin_stop(marklin_server);
 			break;
 		}
         case PARSER_RESULT_GO: {
-            renderer_append_console(renderer_server, "Powering on marklin");
+            renderer_append_console(console_renderer_server, "Powering on marklin");
             marklin_go(marklin_server);
 			break;
 		}
@@ -113,7 +114,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             bool light_state = command._data.lights.state;
 
             char* msg = cstr_format(&tmp, "Turned lights on train %s%d%s %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, (light_state) ? "on" : "off", ANSI_RESET);
-            renderer_append_console(renderer_server, msg);
+            renderer_append_console(console_renderer_server, msg);
 
             TrainstateSetLights(trainstate_server, train, light_state);
 
@@ -143,7 +144,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     ANSI_GREEN, speed, ANSI_RESET,
                     ANSI_GREEN, offset, ANSI_RESET
                 );
-                renderer_append_console(renderer_server, msg);
+                renderer_append_console(console_renderer_server, msg);
 
                 PlanPath((Path){train, speed, offset, dest});
             }
@@ -154,7 +155,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     ANSI_GREEN, TRAIN_SPEED_MED, ANSI_RESET,
                     ANSI_GREEN, TRAIN_SPEED_HIGH, ANSI_RESET
                 );
-                renderer_append_console(renderer_server, msg);
+                renderer_append_console(console_renderer_server, msg);
             }
 			break;
         } 
@@ -162,7 +163,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             Track* track = get_track();
             switch (command._data.test.num) {
                 case 1: {
-                    renderer_append_console(renderer_server, "Running benchmark 1: speed test with two trains");
+                    renderer_append_console(console_renderer_server, "Running benchmark 1: speed test with two trains");
 
                     TrackNode* node = 0;
                     usize SPEED = 5;
@@ -187,12 +188,12 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     usize end_time = Time(clock_server);
 
                     char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
-                    renderer_append_console(renderer_server, msg);
+                    renderer_append_console(console_renderer_server, msg);
 
                     break;
                 }
                 case 2: {
-                    renderer_append_console(renderer_server, "Running benchmark 2: speed test with reversals");
+                    renderer_append_console(console_renderer_server, "Running benchmark 2: speed test with reversals");
 
                     TrackNode* node = 0;
                     usize SPEED = 5;
@@ -217,12 +218,12 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     usize end_time = Time(clock_server);
 
                     char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
-                    renderer_append_console(renderer_server, msg);
+                    renderer_append_console(console_renderer_server, msg);
 
                     break;
                 }
                 case 3: {
-                    renderer_append_console(renderer_server, "Running benchmark 3: three trains cycle");
+                    renderer_append_console(console_renderer_server, "Running benchmark 3: three trains cycle");
 
                     TrackNode* node = 0;
                     usize SPEED = 5;
@@ -256,7 +257,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     break;
                 }
                 case 4: {
-                    renderer_append_console(renderer_server, "Running benchmark 4: single train reverse on switch");
+                    renderer_append_console(console_renderer_server, "Running benchmark 4: single train reverse on switch");
 
                     usize SPEED = 5;
 
@@ -269,7 +270,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     break;
                 }
                 case 5: {
-                    renderer_append_console(renderer_server, "Running benchmark 5: random train destinations");
+                    renderer_append_console(console_renderer_server, "Running benchmark 5: random train destinations");
 
                     createPathRandomizer(2, 5);
                     createPathRandomizer(47, 5);
@@ -277,7 +278,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
                     break;
                 }
                 default:
-                    renderer_append_console(renderer_server, "Invalid test");
+                    renderer_append_console(console_renderer_server, "Invalid test");
             }
 
             break;
@@ -290,29 +291,29 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
             TrackNode* node = track_node_by_name(track, command._data.pos.pos);
 
             char* msg = cstr_format(&tmp, "Sending train %s%d%s position to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
-            renderer_append_console(renderer_server, msg);
+            renderer_append_console(console_renderer_server, msg);
             TrainstateSetPos(trainstate_server, reserve_server, command._data.pos.train, node);
 
             break;
         }
         case PARSER_RESULT_HELP: {
-            renderer_append_console(renderer_server, (char*)"MarklinCTL help =======");
-            renderer_append_console(renderer_server, (char*)"tr <train> <speed>           set speed of train");
-            renderer_append_console(renderer_server, (char*)"rv <train>                   reverse a train's direction");
-            renderer_append_console(renderer_server, (char*)"sw <switch> [S|C]            set the state of a switch");
-            renderer_append_console(renderer_server, (char*)"stop                         turn off the marklin");
-            renderer_append_console(renderer_server, (char*)"go                           turn on the marklin");
-            renderer_append_console(renderer_server, (char*)"lights <train> [on|off]      control lights on train");
-            renderer_append_console(renderer_server, (char*)"quit                         exit MarklinCTL");
-            renderer_append_console(renderer_server, (char*)"path <train> <node> <speed>  pathfind to destination");
-            renderer_append_console(renderer_server, (char*)"test <testnum>               run a predefined test");
-            renderer_append_console(renderer_server, (char*)"pos <train> <node>           set the position of train");
-            renderer_append_console(renderer_server, (char*)"help                         print this message");
+            renderer_append_console(console_renderer_server, (char*)"MarklinCTL help =======");
+            renderer_append_console(console_renderer_server, (char*)"tr <train> <speed>           set speed of train");
+            renderer_append_console(console_renderer_server, (char*)"rv <train>                   reverse a train's direction");
+            renderer_append_console(console_renderer_server, (char*)"sw <switch> [S|C]            set the state of a switch");
+            renderer_append_console(console_renderer_server, (char*)"stop                         turn off the marklin");
+            renderer_append_console(console_renderer_server, (char*)"go                           turn on the marklin");
+            renderer_append_console(console_renderer_server, (char*)"lights <train> [on|off]      control lights on train");
+            renderer_append_console(console_renderer_server, (char*)"quit                         exit MarklinCTL");
+            renderer_append_console(console_renderer_server, (char*)"path <train> <node> <speed>  pathfind to destination");
+            renderer_append_console(console_renderer_server, (char*)"test <testnum>               run a predefined test");
+            renderer_append_console(console_renderer_server, (char*)"pos <train> <node>           set the position of train");
+            renderer_append_console(console_renderer_server, (char*)"help                         print this message");
 
             break;
         }
         default: {
-            renderer_append_console(renderer_server, "Invalid command");
+            renderer_append_console(console_renderer_server, "Invalid command");
         }
     }
 }

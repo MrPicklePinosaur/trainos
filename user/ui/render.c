@@ -16,62 +16,24 @@
 #include "kern/dev/uart.h"
 #include "kern/perf.h"
 
-typedef enum {
-    RENDERER_APPEND_CONSOLE,
-    RENDERER_PROMPT, // rerender prompt
-} RendererMsgType;
-
-typedef struct {
-    RendererMsgType type;
-
-    union {
-        struct {
-            char* line;
-        } append_console;
-        struct {
-            char ch;
-        } prompt;
-        struct {
-            usize switch_id;
-            SwitchMode mode;
-        } flip_switch;
-    } data;
-} RendererMsg;
-
-typedef struct { } RendererResp;
-
 const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
 
 int
-renderer_append_console(Tid renderer_tid, char* line)
+renderer_append_console(Tid console_renderer_server, char* line)
 {
-    RendererResp resp_buf;
-    RendererMsg send_buf = (RendererMsg) {
-        .type = RENDERER_APPEND_CONSOLE,
-        .data = {
-            .append_console = {
-                .line = line
-            }
-        }
-    };
+    struct {} resp_buf;
+    char* send_buf = line;
 
-    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
+    return Send(console_renderer_server, (const char*)&send_buf, sizeof(char*), (char*)&resp_buf, 0);
 }
 
 int
-renderer_prompt(Tid renderer_tid, char ch)
+renderer_prompt(Tid prompt_renderer_server, char ch)
 {
-    RendererResp resp_buf;
-    RendererMsg send_buf = (RendererMsg) {
-        .type = RENDERER_PROMPT,
-        .data = {
-            .prompt = {
-                .ch = ch
-            }
-        }
-    };
+    struct {} resp_buf;
+    char send_buf = ch;
 
-    return Send(renderer_tid, (const char*)&send_buf, sizeof(RendererMsg), (char*)&resp_buf, sizeof(RendererResp));
+    return Send(prompt_renderer_server, (const char*)&send_buf, sizeof(char), (char*)&resp_buf, 0);
 }
 
 void
@@ -335,27 +297,10 @@ renderDiagnosticWinTask()
 }
 
 void
-renderTask()
+renderPromptTask()
 {
-    RegisterAs(RENDERER_ADDRESS);
+    RegisterAs(PROMPT_ADDRESS);
 
-    term_init();
-
-    set_log_mode(LOG_MODE_TRAIN_TERM);
-
-    // CONSOLE
-    const usize CONSOLE_ANCHOR_X = 1;
-    const usize CONSOLE_ANCHOR_Y = 29;
-    const usize CONSOLE_MAX_LINES = 29;
-    const usize CONSOLE_INNER_WIDTH = 58;
-    Arena console_arena = arena_new(CONSOLE_MAX_LINES*(CONSOLE_INNER_WIDTH+1));
-    CBuf* console_lines = cbuf_new(CONSOLE_MAX_LINES);
-    Window console_win = win_init(2, 2, 60, 31);
-    win_draw(&console_win);
-    w_puts_mv(&console_win, "[console]", 2, 0);
-    w_flush(&console_win);
-
-    // PROMPT
     const usize PROMPT_ANCHOR_X = 3;
     const usize PROMPT_ANCHOR_Y = 1;
     const usize PROMPT_MAX_LEN = 56;
@@ -371,68 +316,85 @@ renderTask()
 
     w_flush(&prompt_win);
 
-    Create(5, &renderSwitchWinTask, "Render Switch Window");
-    Create(5, &renderSensorWinTask, "Render Sensor Window");
-    Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
-    Create(5, &renderTrainStateWinTask, "Render Train State Window");
-    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
+    char msg_buf;
+    struct {} reply_buf;
+    for (;;) {
 
-    RendererMsg msg_buf;
-    RendererResp reply_buf;
+        int from_tid;
+        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(char));
+
+        char ch = msg_buf;
+        if (ch == CH_BACKSPACE) {
+            prompt_length = usize_sub(prompt_length, PROMPT_ANCHOR_Y);
+            w_puts_mv(&prompt_win, "  ", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+        }
+        else if (ch == CH_ENTER) {
+            for (usize i = 0; i < prompt_length+1; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
+            prompt_length = 0;
+        }
+        else if ((isalnum(ch) || isblank(ch) || isprint(ch)) && prompt_length < PROMPT_MAX_LEN) {
+            // normal character
+            w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+            prompt_length += 1;
+        }
+        
+        // draw the cursor
+        w_attr(&prompt_win, ATTR_BLINK);
+        w_puts_mv(&prompt_win, "█", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
+        w_attr_reset(&prompt_win);
+        w_flush(&prompt_win);
+
+        Reply(from_tid, (char*)&reply_buf, 0);
+    }
+}
+
+void
+renderConsoleTask()
+{
+    RegisterAs(CONSOLE_ADDRESS);
+
+    // CONSOLE
+    const usize CONSOLE_ANCHOR_X = 1;
+    const usize CONSOLE_ANCHOR_Y = 29;
+    const usize CONSOLE_MAX_LINES = 29;
+    const usize CONSOLE_INNER_WIDTH = 58;
+
+    // currently can only hold 4 times the size of the console, should free old strings when we scroll past
+    Arena console_arena = arena_new(CONSOLE_MAX_LINES*4*(CONSOLE_INNER_WIDTH+1));
+    CBuf* console_lines = cbuf_new(CONSOLE_MAX_LINES);
+    Window console_win = win_init(2, 2, 60, 31);
+    win_draw(&console_win);
+    w_puts_mv(&console_win, "[console]", 2, 0);
+    w_flush(&console_win);
+
+    char* msg_buf;
+    struct {} reply_buf;
 
     for (;;) {
         int from_tid;
-        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(RendererMsg));
+        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(char*));
 
-        if (msg_buf.type == RENDERER_APPEND_CONSOLE) {
-
-            if (cbuf_len(console_lines) >= CONSOLE_MAX_LINES) {
-                cbuf_pop_front(console_lines);
-            }
-
-            // need to first copy the data
-            char* new_str = cstr_copy(&console_arena, msg_buf.data.append_console.line);
-            cbuf_push_back(console_lines, new_str);
-
-            for (usize i = 0; i < cbuf_len(console_lines); ++i) {
-
-                // clear line first
-                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
-                for (usize j = 0; j < CONSOLE_INNER_WIDTH; ++j) w_putc(&console_win, ' ');
-
-                // render the line
-                w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
-                w_puts(&console_win, (char*)cbuf_get(console_lines, i));
-                w_flush(&console_win);
-            }
-
-            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
+        if (cbuf_len(console_lines) >= CONSOLE_MAX_LINES) {
+            cbuf_pop_front(console_lines);
         }
-        else if (msg_buf.type == RENDERER_PROMPT) {
 
-            char ch = msg_buf.data.prompt.ch;
-            if (ch == CH_BACKSPACE) {
-                prompt_length = usize_sub(prompt_length, PROMPT_ANCHOR_Y);
-                w_puts_mv(&prompt_win, "  ", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
-            }
-            else if (ch == CH_ENTER) {
-                for (usize i = 0; i < prompt_length+1; ++i) w_putc_mv(&prompt_win, ' ', PROMPT_ANCHOR_X+i, PROMPT_ANCHOR_Y);
-                prompt_length = 0;
-            }
-            else if ((isalnum(ch) || isblank(ch) || isprint(ch)) && prompt_length < PROMPT_MAX_LEN) {
-                // normal character
-                w_putc_mv(&prompt_win, ch, PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
-                prompt_length += 1;
-            }
-            
-            // draw the cursor
-            w_attr(&prompt_win, ATTR_BLINK);
-            w_puts_mv(&prompt_win, "█", PROMPT_ANCHOR_X+prompt_length, PROMPT_ANCHOR_Y);
-            w_attr_reset(&prompt_win);
-            w_flush(&prompt_win);
+        // need to first copy the data
+        char* new_str = cstr_copy(&console_arena, msg_buf);
+        cbuf_push_back(console_lines, new_str);
 
-            Reply(from_tid, (char*)&reply_buf, sizeof(RendererResp));
+        for (usize i = 0; i < cbuf_len(console_lines); ++i) {
+
+            // clear line first
+            w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
+            for (usize j = 0; j < CONSOLE_INNER_WIDTH; ++j) w_putc(&console_win, ' ');
+
+            // render the line
+            w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+i+1);
+            w_puts(&console_win, (char*)cbuf_get(console_lines, i));
+            w_flush(&console_win);
         }
+
+        Reply(from_tid, (char*)&reply_buf, 0);
     }
 }
 
@@ -441,10 +403,19 @@ renderTask()
 void
 uiTask()
 {
+    term_init();
+
     set_log_mode(LOG_MODE_TRAIN_TERM);
 
-    Tid render_tid = Create(5, &renderTask, "Render Task");
     Tid prompt_tid = Create(5, &promptTask, "Prompt Task");
+
+    Create(5, &renderPromptTask, "Render Prompt Window");
+    Create(5, &renderConsoleTask, "Render Console Window");
+    Create(5, &renderSwitchWinTask, "Render Switch Window");
+    Create(5, &renderSensorWinTask, "Render Sensor Window");
+    Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
+    Create(5, &renderTrainStateWinTask, "Render Train State Window");
+    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
 
     WaitTid(prompt_tid);
 
