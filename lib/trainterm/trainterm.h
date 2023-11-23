@@ -59,7 +59,7 @@ void term_clear(void);
 
 // window commands
 Window win_init(usize x, usize y, usize w, usize h);
-void win_draw(Window* win);
+void win_draw_border(Window* win);
 
 void w_attr(Window* win, Attr attr);
 void w_attr_reset(Window* win);

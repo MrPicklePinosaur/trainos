@@ -37,7 +37,7 @@ win_flush(Window* win)
 }
 
 void
-win_draw(Window* win)
+win_draw_border(Window* win)
 {
     // TURBO naive window drawing
     w_puts_mv(win, "╭", 0, 0);

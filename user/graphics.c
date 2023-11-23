@@ -7,7 +7,7 @@ graphicsTask()
 {
     term_init();
     Window win = win_init(2, 2, 20, 10);
-    win_draw(&win);
+    win_draw_border(&win);
 
     w_mv(&win, 1, 1);
     w_puts(&win, "hello world");
