@@ -295,6 +295,22 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid renderer_ser
 
             break;
         }
+        case PARSER_RESULT_HELP: {
+            renderer_append_console(renderer_server, (char*)"MarklinCTL help =======");
+            renderer_append_console(renderer_server, (char*)"tr <train> <speed>           set speed of train");
+            renderer_append_console(renderer_server, (char*)"rv <train>                   reverse a train's direction");
+            renderer_append_console(renderer_server, (char*)"sw <switch> [S|C]            set the state of a switch");
+            renderer_append_console(renderer_server, (char*)"stop                         turn off the marklin");
+            renderer_append_console(renderer_server, (char*)"go                           turn on the marklin");
+            renderer_append_console(renderer_server, (char*)"lights <train> [on|off]      control lights on train");
+            renderer_append_console(renderer_server, (char*)"quit                         exit MarklinCTL");
+            renderer_append_console(renderer_server, (char*)"path <train> <node> <speed>  pathfind to destination");
+            renderer_append_console(renderer_server, (char*)"test <testnum>               run a predefined test");
+            renderer_append_console(renderer_server, (char*)"pos <train> <node>           set the position of train");
+            renderer_append_console(renderer_server, (char*)"help                         print this message");
+
+            break;
+        }
         default: {
             renderer_append_console(renderer_server, "Invalid command");
         }

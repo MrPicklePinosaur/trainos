@@ -180,7 +180,7 @@ cstr_to_u64(char* str)
 
 }
 
-#define CSTR_LEN_MAX_LENGTH 256
+#define CSTR_LEN_MAX_LENGTH 512
 usize
 cstr_len(char* s)
 {

@@ -230,6 +230,12 @@ parse_command(Arena arena, str8 command)
             }
         };
     }
+    else if (str8_cmp(cmd_name, str8("help"))) {
+        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed HELP command");
+        return (ParserResult) {
+            ._type = PARSER_RESULT_HELP,
+        };
+    }
 
     return error;
 }
