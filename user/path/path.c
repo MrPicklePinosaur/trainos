@@ -39,7 +39,7 @@ setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_sw
         for (usize j = 0; j < cbuf_len(desired_switches); ++j) {
             Pair_u32_SwitchMode* pair = cbuf_get(desired_switches, j);
             if ((*zone_switches)->num == pair->first) {
-                ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d", pair->first, pair->second);
+                /* ULOG_INFO_M(LOG_MASK_PATH, "setting switch %d to state %d", pair->first, pair->second); */
                 SwitchChange(switch_server, pair->first, pair->second);
             }
         }
@@ -50,12 +50,12 @@ setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_sw
 void
 patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
-    ULOG_INFO_M(LOG_MASK_PATH, "Executing simple path offset %d", offset);
-    for (usize i = 0; i < cbuf_len(path); ++i) {
-        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-        print("%s->%s,", edge->src->name, edge->dest->name);
-    }
-    print("\r\n");
+    /* ULOG_INFO_M(LOG_MASK_PATH, "Executing simple path offset %d", offset); */
+    /* for (usize i = 0; i < cbuf_len(path); ++i) { */
+    /*     TrackEdge* edge = (TrackEdge*)cbuf_get(path, i); */
+    /*     print("%s->%s,", edge->src->name, edge->dest->name); */
+    /* } */
+    /* print("\r\n"); */
 
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
@@ -94,7 +94,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         }
     }
 
-    ULOG_INFO_M(LOG_MASK_PATH, "train %d vel is %d", train, train_vel);
+    /* ULOG_INFO_M(LOG_MASK_PATH, "train %d vel is %d", train, train_vel); */
 
     // compute desired switch state
     /* ULOG_INFO_M(LOG_MASK_PATH, "Computing switch states..."); */
@@ -111,7 +111,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_STRAIGHT;
                 cbuf_push_back(desired_switch_modes, pair);
-                ULOG_INFO("want switch %d as straight", pair->first);
+                /* ULOG_INFO("want switch %d as straight", pair->first); */
             }
             else if (track_edge_cmp(edge->src->edge[DIR_CURVED], *edge)) {
                 //ULOG_INFO_M(LOG_MASK_PATH, "switch %d to curved", switch_num);
@@ -119,7 +119,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 pair->first = switch_num;
                 pair->second = SWITCH_MODE_CURVED;
                 cbuf_push_back(desired_switch_modes, pair);
-                ULOG_INFO("want switch %d as curved", pair->first);
+                /* ULOG_INFO("want switch %d as curved", pair->first); */
             }
             else {
                 PANIC("invalid branch");
@@ -173,13 +173,12 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
 
         TrainstateSetSpeed(trainstate_server, train, 0);
-        ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait short move");
+        /* ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait short move"); */
         Delay(clock_server, train_data_stop_time(train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
-        ULOG_INFO_M(LOG_MASK_PATH, "After stop wait short move");
+        /* ULOG_INFO_M(LOG_MASK_PATH, "After stop wait short move"); */
 
     } else {
-        ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move...");
-        ULOG_INFO_M(LOG_MASK_PATH, "sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
+        ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
         TrainstateSetSpeed(trainstate_server, train, train_speed);
 
@@ -233,13 +232,13 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
         // now wait before sending stop command
         u64 delay_ticks = distance_from_sensor*100/train_vel;
-        ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train (delay for %d)...", delay_ticks);
+        /* ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train (delay for %d)...", delay_ticks); */
         Delay(clock_server, delay_ticks);
 
         TrainstateSetSpeed(trainstate_server, train, 0);
-        ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait regular move");
+        /* ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait regular move"); */
         Delay(clock_server, train_data_stop_time(train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
-        ULOG_INFO_M(LOG_MASK_PATH, "After stop wait regular move");
+        /* ULOG_INFO_M(LOG_MASK_PATH, "After stop wait regular move"); */
         
         /* TrainstateSetOffset(trainstate_server, train, offset); */
     }
@@ -247,7 +246,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     // free the path we took (but keep the place we stop at)
     zone_unreserve_all(reserve_server, train);
     ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->zone;
-    ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone);
+    /* ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone); */
     zone_reserve(reserve_server, train, dest_zone);
 
 }
@@ -326,7 +325,7 @@ patherTask()
 
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
-    ULOG_INFO_M(LOG_MASK_PATH, "computing path...");
+    /* ULOG_INFO_M(LOG_MASK_PATH, "computing path..."); */
     CBuf* path = dijkstra(track, train, src, dest, allow_reversal, true, &arena);
     if (path == NULL) {
         // dijkstra failed, compute a partial path instead
@@ -344,10 +343,10 @@ patherTask()
         ZoneId zone = edge->dest->reverse->zone; // TODO should also reserve start?
         if (zone != -1) {
             if (!zone_reserve(reserve_server, train, zone)) {
-                ULOG_WARN("failed reservation waiting for zone %d", zone);
+                /* ULOG_WARN("failed reservation waiting for zone %d", zone); */
 
                 // can do partial pathfind
-                ULOG_WARN("Executing partial path of length %d", cbuf_len(complex_path));
+                /* ULOG_WARN("Executing partial path of length %d", cbuf_len(complex_path)); */
                 patherComplexPath(trainstate_server, clock_server, track, complex_path, train, train_speed, offset, &arena);
                 cbuf_clear(complex_path);
 
@@ -356,7 +355,7 @@ patherTask()
                     PANIC("should have claimed zone here");
                 }
             }
-            ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone);
+            /* ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone); */
         }
         cbuf_push_back(complex_path, edge);
     }

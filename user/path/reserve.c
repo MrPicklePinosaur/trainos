@@ -12,6 +12,7 @@ typedef enum {
     RESERVE_UNRESERVE_ALL,
     RESERVE_IS_RESERVED,
     RESERVE_WAIT,
+    RESERVE_WAIT_CHANGE, // wait for a change in zone reservation
 } ReserveMsgType;
 
 typedef struct {
@@ -132,6 +133,16 @@ zone_wait(Tid reserve_server, usize train, ZoneId zone)
     int ret = Send(reserve_server, (const char*)&send_buf, sizeof(ReserveMsg), (char*)&resp_buf, sizeof(ReserveResp));
 }
 
+void
+zone_wait_change(Tid reserve_server)
+{
+    ReserveResp resp_buf;
+    ReserveMsg send_buf = (ReserveMsg) {
+        .type = RESERVE_WAIT_CHANGE
+    };
+    int ret = Send(reserve_server, (const char*)&send_buf, sizeof(ReserveMsg), (char*)&resp_buf, sizeof(ReserveResp));
+}
+
 // returns if the zone was successfully reserved
 bool
 _zone_reserve(usize train, ZoneId zone)
@@ -195,6 +206,18 @@ reservationWaitUnblock(List* zone_requests, ZoneId updated_zone)
 }
 
 void
+unblockAllWaiting(CBuf* wait_change_requests)
+{
+    ReserveResp reply_buf = (ReserveResp) {
+        .type = RESERVE_WAIT_CHANGE
+    };
+    while (cbuf_len(wait_change_requests) > 0) {
+        Tid from_tid = (Tid)cbuf_pop_front(wait_change_requests);
+        Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
+    }
+}
+
+void
 reservationTask()
 {
     RegisterAs(RESERVE_ADDRESS);
@@ -207,6 +230,7 @@ reservationTask()
     }
 
     List* zone_requests = list_init();
+    CBuf* wait_change_requests = cbuf_new(16);
 
     ReserveMsg msg_buf;
     ReserveResp reply_buf;
@@ -229,6 +253,8 @@ reservationTask()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
 
+            unblockAllWaiting(wait_change_requests);
+
         }
         else if (msg_buf.type == RESERVE_UNRESERVE) {
             bool ret = _zone_unreserve(msg_buf.data.reserve.train, msg_buf.data.reserve.zone);
@@ -242,6 +268,8 @@ reservationTask()
             Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
 
             reservationWaitUnblock(zone_requests, msg_buf.data.reserve.zone);
+
+            unblockAllWaiting(wait_change_requests);
         }
         else if (msg_buf.type == RESERVE_UNRESERVE_ALL) {
             for (usize i = 0; i < track->zone_count; ++i) {
@@ -255,6 +283,8 @@ reservationTask()
                 .type = RESERVE_UNRESERVE_ALL,
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(ReserveResp));
+
+            unblockAllWaiting(wait_change_requests);
 
         }
         else if (msg_buf.type == RESERVE_IS_RESERVED) {
@@ -292,6 +322,11 @@ reservationTask()
                 .zone = zone,
             };
             list_push_back(zone_requests, request);
+        }
+        else if (msg_buf.type == RESERVE_WAIT_CHANGE) {
+
+            cbuf_push_back(wait_change_requests, (void*)from_tid);
+
         }
 
     }

@@ -40,6 +40,7 @@ void
 renderZoneWinTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid reserve_server = WhoIs(RESERVE_ADDRESS);
     Delay(clock_server, 40);
 
     const usize ZONE_ANCHOR_X = 6;
@@ -64,22 +65,25 @@ renderZoneWinTask()
     w_flush(&zone_win);
 
     Track* track = get_track();
-    usize ticks = Time(clock_server);
     Arena tmp_base = arena_new(64);
+
+    const Attr RESERVATION_COLORS[] = {ATTR_RED, ATTR_BLUE, ATTR_GREEN, ATTR_YELLOW, ATTR_MAGENTA};
     for (;;) {
         Arena tmp = tmp_base;
 
-        ticks += 100; // update every 1 second
-        DelayUntil(clock_server, ticks); 
+        zone_wait_change(reserve_server);
 
         // update all zone states (this is kinda inefficient, maybe do a listener model)
         usize* reservation = zone_dump();
         for (usize i = 0; i < track->zone_count; ++i) {
             usize res = reservation[i];
+            bool reserved = (res != 0);
             char* res_str = cstr_format(&tmp, "%d", res);
             usize x = ZONE_ANCHOR_X + ((i/13 == 0) ? 0 : ZONE_COL_SPACING);
             w_puts_mv(&zone_win, "    ", x, ZONE_ANCHOR_Y+(i%13));
+            if (reserved) w_attr(&zone_win, RESERVATION_COLORS[get_train_index(res)]);
             w_puts_mv(&zone_win, res_str, x, ZONE_ANCHOR_Y+(i%13));
+            w_attr_reset(&zone_win);
             w_flush(&zone_win);
         }
     }
@@ -428,7 +432,7 @@ uiTask()
     Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
-    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
+    Create(5, &renderZoneWinTask, "Render Zone Window");
 
     WaitTid(prompt_tid);
 
