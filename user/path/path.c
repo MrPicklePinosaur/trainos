@@ -17,6 +17,7 @@ typedef struct {
     usize train;
     usize train_speed;
     i32 offset;
+    bool allow_reversal;
 } PatherMsg;
 
 typedef struct {
@@ -314,6 +315,7 @@ patherTask()
     usize train = msg_buf.train;
     usize train_speed = msg_buf.train_speed;
     i32 offset = msg_buf.offset; // TODO ignored for now
+    bool allow_reversal = msg_buf.allow_reversal;
 
     TrainstateSetDest(trainstate_server, train, dest);
 
@@ -325,11 +327,11 @@ patherTask()
     Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX*2);
 
     ULOG_INFO_M(LOG_MASK_PATH, "computing path...");
-    CBuf* path = dijkstra(track, train, src, dest, true, true, &arena);
+    CBuf* path = dijkstra(track, train, src, dest, allow_reversal, true, &arena);
     if (path == NULL) {
         // dijkstra failed, compute a partial path instead
         ULOG_WARN("[PATHER] dijkstra can't find path, recompute a blocking path");
-        path = dijkstra(track, train, src, dest, true, false, &arena);
+        path = dijkstra(track, train, src, dest, allow_reversal, false, &arena);
     }
 
     CBuf* complex_path = cbuf_new(128);
@@ -406,7 +408,7 @@ pathRandomizer(void)
             continue;
         }
 
-        Tid path_task = PlanPath((Path){train_num, train_speed, 0, track->nodes[dest].name});
+        Tid path_task = PlanPath((Path){train_num, train_speed, 0, track->nodes[dest].name, true});
         WaitTid(path_task);
     }
 }
@@ -449,7 +451,8 @@ PlanPath(Path path)
         .dest = dest_sensor,
         .train = path.train,
         .train_speed = path.speed,
-        .offset = path.offset
+        .offset = path.offset,
+        .allow_reversal = path.allow_reversal 
     };
 
     Tid pather_task = Create(2, &patherTask, "Pather Task");

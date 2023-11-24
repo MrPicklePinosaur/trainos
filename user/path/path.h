@@ -13,6 +13,7 @@ typedef struct {
     u32 speed;
     i32 offset;
     char* dest;
+    bool allow_reversal;
 } Path;
 
 Tid PlanPath(Path path);

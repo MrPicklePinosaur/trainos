@@ -173,13 +173,13 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     // Train 2 A5/6 -> E7/8
                     node = track_node_by_name(track, "A5");
                     TrainstateSetPos(trainstate_server, reserve_server, 2, node);
-                    Path train1_paths[] = {(Path){2, SPEED, 0, "E8"}, (Path){2, SPEED, 0, "A5"}};
+                    Path train1_paths[] = {(Path){2, SPEED, 0, "E8", true}, (Path){2, SPEED, 0, "A5", true}};
                     Tid train1_pather = PlanPathSeq(train1_paths, 2);
 
                     // Train 47 C3/4 -> A3/4
                     node = track_node_by_name(track, "C4");
                     TrainstateSetPos(trainstate_server, reserve_server, 47, node);
-                    Path train2_paths[] = {(Path){47, SPEED, 0, "A3"}, (Path){47, SPEED, 0, "C4"}};
+                    Path train2_paths[] = {(Path){47, SPEED, 0, "A3", true}, (Path){47, SPEED, 0, "C4", true}};
                     Tid train2_pather = PlanPathSeq(train2_paths, 2);
 
                     WaitTid(train1_pather);
@@ -203,13 +203,13 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     // Train 2 B16 -> A5
                     node = track_node_by_name(track, "B16");
                     TrainstateSetPos(trainstate_server, reserve_server, 2, node);
-                    Path train1_paths[] = {(Path){2, SPEED, 0, "A5"}, (Path){2, SPEED, 0, "D7"}};
+                    Path train1_paths[] = {(Path){2, SPEED, 0, "A5", true}, (Path){2, SPEED, 0, "D7", true}};
                     Tid train1_pather = PlanPathSeq(train1_paths, 2);
 
                     // Train 47 D7 -> C3
                     node = track_node_by_name(track, "D7");
                     TrainstateSetPos(trainstate_server, reserve_server, 47, node);
-                    Path train2_paths[] = {(Path){47, SPEED, 0, "C3"}, (Path){47, SPEED, 0, "B16"}};
+                    Path train2_paths[] = {(Path){47, SPEED, 0, "C3", true}, (Path){47, SPEED, 0, "B16", true}};
                     Tid train2_pather = PlanPathSeq(train2_paths, 2);
 
                     WaitTid(train1_pather);
@@ -233,21 +233,21 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     TRAIN = 2;
                     node = track_node_by_name(track, "A4");
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
-                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "D14"}, (Path){TRAIN, SPEED, 0, "E6"}, (Path){TRAIN, SPEED, 0, "A4"}};
+                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "D14", false}, (Path){TRAIN, SPEED, 0, "E6", false}, (Path){TRAIN, SPEED, 0, "A4", false}};
                     Tid train1_pather = PlanPathSeq(train1_paths, 3);
 
                     // D14 -> E6 -> A4 -> D14
                     TRAIN = 47;
                     node = track_node_by_name(track, "D14");
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
-                    Path train2_paths[] = {(Path){TRAIN, SPEED, 0, "E6"}, (Path){TRAIN, SPEED, 0, "A4"}, (Path){TRAIN, SPEED, 0, "D14"}};
+                    Path train2_paths[] = {(Path){TRAIN, SPEED, 0, "E6", false}, (Path){TRAIN, SPEED, 0, "A4", false}, (Path){TRAIN, SPEED, 0, "D14", false}};
                     Tid train2_pather = PlanPathSeq(train2_paths, 3);
 
                     // E6 -> A4 -> D14 -> E6
                     TRAIN = 58;
                     node = track_node_by_name(track, "E6");
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
-                    Path train3_paths[] = {(Path){TRAIN, SPEED, 0, "A4"}, (Path){TRAIN, SPEED, 0, "D14"}, (Path){TRAIN, SPEED, 0, "E6"}};
+                    Path train3_paths[] = {(Path){TRAIN, SPEED, 0, "A4", false}, (Path){TRAIN, SPEED, 0, "D14", false}, (Path){TRAIN, SPEED, 0, "E6", false}};
                     Tid train3_pather = PlanPathSeq(train3_paths, 3);
                     
                     WaitTid(train1_pather);
@@ -263,7 +263,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
 
                     TrackNode* node = track_node_by_name(track, "A5");
                     TrainstateSetPos(trainstate_server, reserve_server, 2, node);
-                    Tid pather_task = PlanPath((Path){2, SPEED, 0, "A3"});
+                    Tid pather_task = PlanPath((Path){2, SPEED, 0, "A3", true});
 
                     WaitTid(pather_task);
 
@@ -272,10 +272,46 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                 case 5: {
                     renderer_append_console(console_renderer_server, "Running benchmark 5: random train destinations");
 
+                    // TODO modify this to pick 'good' random destinations, in other words, it should pick locations that shouldnt use too many reverses, avoids problems spots on the track, and also chooses spots decently far away
                     createPathRandomizer(2, 5);
                     createPathRandomizer(47, 5);
 
                     break;
+                }
+                case 6: {
+                    renderer_append_console(console_renderer_server, "Running benchmark 6: move to exit and back out");
+
+                    usize SPEED = 5;
+                    usize TRAIN = 2;
+
+                    TrackNode* node = track_node_by_name(track, "E8");
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
+                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "A14"}, (Path){TRAIN, SPEED, 0, "E8", true}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
+
+                    break;
+                }
+                case 7: {
+                    renderer_append_console(console_renderer_server, "Running benchmark 7: double circles");
+
+                    TrackNode* node = 0;
+                    usize SPEED = 5;
+                    usize TRAIN = 0;
+
+                    TRAIN = 2;
+                    node = track_node_by_name(track, "E6");
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
+                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "D5", false}, (Path){TRAIN, SPEED, 0, "E9", false}, (Path){TRAIN, SPEED, 0, "E14", false}, (Path){TRAIN, SPEED, 0, "D16", false}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 4);
+
+                    TRAIN = 77;
+                    SPEED = 5;
+                    node = track_node_by_name(track, "C11");
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
+                    Path train2_paths[] = {(Path){TRAIN, SPEED, 0, "A3", false}, (Path){TRAIN, SPEED, 0, "B15", false}, (Path){TRAIN, SPEED, 0, "C9", false}, (Path){TRAIN, SPEED, 0, "B4", false}};
+                    Tid train2_pather = PlanPathSeq(train2_paths, 4);
+
+                    break; 
                 }
                 default:
                     renderer_append_console(console_renderer_server, "Invalid test");
