@@ -12,6 +12,9 @@
 // number of trains that we have calibration data for
 #define TRAIN_COUNT 4
 
+// special NULL position for trains
+#define TRAIN_POS_NULL 255
+
 #define TRAINSTATE_ADDRESS "trainstate"
 
 typedef struct {

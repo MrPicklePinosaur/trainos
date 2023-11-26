@@ -412,6 +412,12 @@ trainPosNotifierTask()
         for (usize i = 0; i < TRAIN_COUNT; ++i) {
 
             usize train = trains[i];
+
+            // train position not calibrated, skip checking
+            if (train_state[train].pos == TRAIN_POS_NULL) {
+                continue;
+            }
+
             TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
 
             ZoneId train_zones[2] = {node->reverse->zone, node->zone};
@@ -515,7 +521,7 @@ trainStateServer()
             .speed = 0,
             .lights = 0,
             .reversed = false,
-            .pos = 0,
+            .pos = TRAIN_POS_NULL,
             .offset = 0,
         };
     }

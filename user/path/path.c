@@ -408,6 +408,7 @@ pathRandomizer(void)
         }
 
         Tid path_task = PlanPath((Path){train_num, train_speed, 0, track->nodes[dest].name, true});
+        if (path_task == 0) continue;
         WaitTid(path_task);
     }
 }
@@ -435,6 +436,10 @@ PlanPath(Path path)
 
     TrainState trainstate = TrainstateGet(trainstate_server, path.train);
     usize start_sensor = trainstate.pos;
+    if (start_sensor == TRAIN_POS_NULL) {
+        ULOG_WARN("Train %d has unknown current position, aborting PlanPath", path.train);
+        return 0;
+    }
     TrackNode* dest = track_node_by_name(track, path.dest);
     if (dest == NULL) {
         // TODO send back error?
@@ -481,6 +486,7 @@ planPathSeqTask()
     for (usize i = 0; i < msg_buf.len; ++i) {
         ULOG_DEBUG("Executing path index %d: train %d", i, msg_buf.path[i].train);
         Tid path_task = PlanPath(msg_buf.path[i]);
+        if (path_task == 0) continue;
         WaitTid(path_task);
         Delay(clock_server, 10); // add tiny delay
     }
