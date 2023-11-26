@@ -166,7 +166,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     renderer_append_console(console_renderer_server, "Running benchmark 1: speed test with two trains");
 
                     TrackNode* node = 0;
-                    usize SPEED = 5;
+                    usize SPEED = 14;
                     
                     usize start_time = Time(clock_server);
 
@@ -186,6 +186,11 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     WaitTid(train2_pather);
 
                     usize end_time = Time(clock_server);
+
+                    // reverse the two trains so we can run this test again
+
+                    TrainstateReverseStatic(trainstate_server, 2);
+                    TrainstateReverseStatic(trainstate_server, 47);
 
                     char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
                     renderer_append_console(console_renderer_server, msg);

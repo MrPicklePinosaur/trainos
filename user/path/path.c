@@ -214,6 +214,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
                 // can release previous zone now
                 if (node->zone != -1) {
+                    ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, node->zone);
                     zone_unreserve(reserve_server, train, node->zone);
                 }
                 /*
@@ -275,8 +276,8 @@ patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* p
                 /* reverse_offset = TRAIN_LENGTH; */
                 patherSimplePath(track, simple_path, train, train_speed, offset, arena);
             }
-            ULOG_INFO_M(LOG_MASK_PATH, "Reversing train...");
-            TrainstateReverse(trainstate_server, train);
+            ULOG_INFO_M(LOG_MASK_PATH, "Reversing train %d...", train);
+            TrainstateReverseStatic(trainstate_server, train);
             cbuf_clear(simple_path);
         }
     }
@@ -284,6 +285,37 @@ patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* p
     if (cbuf_len(simple_path) > 0) {
         patherSimplePath(track, simple_path, train, train_speed, offset, arena);
     }
+}
+
+
+typedef struct {
+    Tid trainstate_server;
+    Tid clock_server;
+    Track* track;
+    CBuf* path;
+    usize train;
+    usize train_speed;
+    isize offset;
+} PartialPatherMsg;
+
+void
+patherPartialPath()
+{
+    Arena arena = arena_new(sizeof(TrackEdge*)*TRACK_MAX);
+
+    int from_tid;
+    PartialPatherMsg msg_buf;
+    struct {} reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(PartialPatherMsg));
+    if (msg_len < 0) {
+        ULOG_WARN("[PARTIAL PATHER] Error when receiving");
+        Exit();
+    }
+    Reply(from_tid, (char*)&reply_buf, 0);
+
+    patherComplexPath(msg_buf.trainstate_server, msg_buf.clock_server, msg_buf.track, msg_buf.path, msg_buf.train, msg_buf.train_speed, msg_buf.offset, &arena);
+
+    Exit();
 }
 
 void
@@ -347,13 +379,29 @@ patherTask()
 
                 // can do partial pathfind
                 /* ULOG_WARN("Executing partial path of length %d", cbuf_len(complex_path)); */
-                patherComplexPath(trainstate_server, clock_server, track, complex_path, train, train_speed, offset, &arena);
-                cbuf_clear(complex_path);
+
+                Tid partial_path_task = Create(5, &patherPartialPath, "partial path");
+                PartialPatherMsg partial_pather_msg = (PartialPatherMsg) {
+                    .trainstate_server = trainstate_server,
+                    .clock_server = clock_server,
+                    .track = track,
+                    .path = complex_path,
+                    .train = train,
+                    .train_speed = train_speed,
+                    .offset = offset,
+                };
+                struct {} resp_buf;
+                Send(partial_path_task, (const char*)&partial_pather_msg, sizeof(PartialPatherMsg), (char*)&resp_buf, 0);
 
                 zone_wait(reserve_server, train, zone);
                 if (!zone_reserve(reserve_server, train, zone)) {
                     PANIC("should have claimed zone here");
                 }
+
+                // kill pather complex path
+                WaitTid(partial_path_task);
+
+                cbuf_clear(complex_path);
             }
             /* ULOG_INFO_M(LOG_MASK_PATH, "train %d reserved zone %d", train, zone); */
         }
@@ -488,7 +536,7 @@ planPathSeqTask()
         Tid path_task = PlanPath(msg_buf.path[i]);
         if (path_task == 0) continue;
         WaitTid(path_task);
-        Delay(clock_server, 10); // add tiny delay
+        Delay(clock_server, 5); // add tiny delay
     }
     Exit();
 }

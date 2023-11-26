@@ -291,7 +291,7 @@ switchServerTask()
                 SwitchMode mode = track_a_init_switch_state[i].second;
                 marklin_switch_ctl(marklin_server, switch_id, mode);
                 states[switch_index(switch_id)] = mode;
-                Delay(clock_server, 10);
+                //Delay(clock_server, 10);
             }
 
             reply_buf = (SwitchResp) {
