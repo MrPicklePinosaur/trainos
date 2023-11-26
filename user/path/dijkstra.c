@@ -75,7 +75,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
             TrackEdge* edge_ahead = &nodes[curr].edge[DIR_AHEAD];
             uint32_t ahead = edge_ahead->dest - nodes;  // Use array math to get the index of the neighbor node
             if (dist[curr] + edge_ahead->dist < dist[ahead]) {
-                dist[ahead] = dist[curr] + edge_ahead->dist;
+                dist[ahead] = dist[curr] + edge_ahead->dist + edge_ahead->bias;
                 prev[ahead] = curr;
                 edges[ahead] = edge_ahead;
             }
@@ -84,7 +84,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
             TrackEdge* edge_straight = &nodes[curr].edge[DIR_STRAIGHT];
             uint32_t straight = edge_straight->dest - nodes;
             if (dist[curr] + edge_straight->dist < dist[straight]) {
-                dist[straight] = dist[curr] + edge_straight->dist;
+                dist[straight] = dist[curr] + edge_straight->dist + edge_straight->bias;
                 prev[straight] = curr;
                 edges[straight] = edge_straight;
             }
@@ -92,7 +92,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
             TrackEdge* edge_curved = &nodes[curr].edge[DIR_CURVED];
             uint32_t curved = edge_curved->dest - nodes;
             if (dist[curr] + edge_curved->dist < dist[curved]) {
-                dist[curved] = dist[curr] + edge_curved->dist;
+                dist[curved] = dist[curr] + edge_curved->dist + edge_curved->bias;
                 prev[curved] = curr;
                 edges[curved] = edge_curved;
             }
@@ -101,11 +101,12 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
         // also add in the reverse edge
         // reversals are only allowed on sensor nodes
         if (allow_reversal && nodes[curr].type == NODE_SENSOR) {
+            TrackEdge* edge_rev = &nodes[curr].edge[DIR_REVERSE];
             uint32_t rev = nodes[curr].reverse - nodes;
-            if (dist[curr] < dist[rev]) {
-                dist[rev] = dist[curr];
+            if (dist[curr] + edge_rev->dist < dist[rev]) {
+                dist[rev] = dist[curr] + edge_rev->dist + edge_rev->bias;
                 prev[rev] = curr;
-                edges[rev] = &nodes[curr].edge[DIR_REVERSE];
+                edges[rev] = edge_rev;
             }
         }
 

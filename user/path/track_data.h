@@ -34,15 +34,16 @@ typedef isize ZoneId;
 struct TrackEdge {
     TrackEdge *reverse;
     TrackNode *src, *dest;
-    int dist;             /* in millimetres */
+    int dist; // in millimeters
+    int bias; // aditional weight that can be applied to an edge
     EdgeType type;
 };
 
 struct TrackNode {
     char *name;
     NodeType type;
-    int num;              /* sensor or switch number */
-    TrackNode *reverse;  /* same location, but opposite direction */
+    int num;             // sensor or switch number
+    TrackNode *reverse;  // same location, but opposite direction
     ZoneId zone;
     TrackEdge edge[3];
 };
