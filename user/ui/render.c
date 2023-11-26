@@ -49,19 +49,21 @@ renderZoneWinTask()
     Window zone_win = win_init(84, 24, 38, 17);
     win_draw_border(&zone_win);
     w_puts_mv(&zone_win, "[zones]", 2, 0);
-    w_puts_mv(&zone_win, "[00]     [13]     ", 1, 1);
-    w_puts_mv(&zone_win, "[01]     [14]     ", 1, 2);
-    w_puts_mv(&zone_win, "[02]     [15]     ", 1, 3);
-    w_puts_mv(&zone_win, "[03]     [16]     ", 1, 4);
-    w_puts_mv(&zone_win, "[04]     [17]     ", 1, 5);
-    w_puts_mv(&zone_win, "[05]     [18]     ", 1, 6);
-    w_puts_mv(&zone_win, "[06]     [19]     ", 1, 7);
-    w_puts_mv(&zone_win, "[07]     [20]     ", 1, 8);
-    w_puts_mv(&zone_win, "[08]     [21]     ", 1, 9);
-    w_puts_mv(&zone_win, "[09]     [22]     ", 1, 10);
-    w_puts_mv(&zone_win, "[10]     [23]     ", 1, 11);
-    w_puts_mv(&zone_win, "[11]     [24]     ", 1, 12);
-    w_puts_mv(&zone_win, "[12]     [25]     ", 1, 13);
+    w_puts_mv(&zone_win, "[00]     [15]     ", 1, 1);
+    w_puts_mv(&zone_win, "[01]     [16]     ", 1, 2);
+    w_puts_mv(&zone_win, "[02]     [17]     ", 1, 3);
+    w_puts_mv(&zone_win, "[03]     [18]     ", 1, 4);
+    w_puts_mv(&zone_win, "[04]     [19]     ", 1, 5);
+    w_puts_mv(&zone_win, "[05]     [20]     ", 1, 6);
+    w_puts_mv(&zone_win, "[06]     [21]     ", 1, 7);
+    w_puts_mv(&zone_win, "[07]     [22]     ", 1, 8);
+    w_puts_mv(&zone_win, "[08]     [23]     ", 1, 9);
+    w_puts_mv(&zone_win, "[09]     [24]     ", 1, 10);
+    w_puts_mv(&zone_win, "[10]     [25]     ", 1, 11);
+    w_puts_mv(&zone_win, "[11]     [26]     ", 1, 12);
+    w_puts_mv(&zone_win, "[12]     [27]     ", 1, 13);
+    w_puts_mv(&zone_win, "[13]     [28]     ", 1, 14);
+    w_puts_mv(&zone_win, "[14]     [29]     ", 1, 15);
     w_flush(&zone_win);
 
     Track* track = get_track();
@@ -79,10 +81,10 @@ renderZoneWinTask()
             usize res = reservation[i];
             bool reserved = (res != 0);
             char* res_str = cstr_format(&tmp, "%d", res);
-            usize x = ZONE_ANCHOR_X + ((i/13 == 0) ? 0 : ZONE_COL_SPACING);
-            w_puts_mv(&zone_win, "    ", x, ZONE_ANCHOR_Y+(i%13));
+            usize x = ZONE_ANCHOR_X + ((i/15 == 0) ? 0 : ZONE_COL_SPACING);
+            w_puts_mv(&zone_win, "    ", x, ZONE_ANCHOR_Y+(i%15));
             if (reserved) w_attr(&zone_win, RESERVATION_COLORS[get_train_index(res)]);
-            w_puts_mv(&zone_win, res_str, x, ZONE_ANCHOR_Y+(i%13));
+            w_puts_mv(&zone_win, res_str, x, ZONE_ANCHOR_Y+(i%15));
             w_attr_reset(&zone_win);
             w_flush(&zone_win);
         }

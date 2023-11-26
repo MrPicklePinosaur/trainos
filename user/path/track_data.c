@@ -5,8 +5,8 @@
 
 #define SENSORS_ON_TRACK 80
 
-#define TRACK_A_ZONE_COUNT 26
-#define TRACK_B_ZONE_COUNT 27
+#define TRACK_A_ZONE_COUNT 30
+#define TRACK_B_ZONE_COUNT 30
 
 typedef struct {
     char* sensors[ZONE_MAX_SENSORS];  
@@ -1414,6 +1414,10 @@ track_a_init()
         {{"D15", "D13", "E14", 0}, {17, 0}},
         {{"B13", "D16", 0}, {0}},
         {{"B2", "D14", 0}, {0}},
+        {{"C4", 0}, {0}},
+        {{"A1", 0}, {0}},
+        {{"A13", 0}, {0}},
+        {{"A16", 0}, {0}},
     };
 
     track_post_init(&track, zone_builder, track.zone_count);
@@ -2620,6 +2624,9 @@ track_b_init()
         {{"D15", "D13", "E14", 0}, {17, 0}},
         {{"B13", "D16", 0}, {0}},
         {{"B2", "D14", 0}, {0}},
+        {{"C4", 0}, {0}},
+        {{"A1", 0}, {0}},
+        {{"A13", 0}, {0}},
         {{"A16", "A11", 0}, {0}},
     };
 

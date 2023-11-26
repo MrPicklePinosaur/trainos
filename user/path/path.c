@@ -245,7 +245,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     // free the path we took (but keep the place we stop at)
     zone_unreserve_all(reserve_server, train);
-    ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->zone;
+    ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->reverse->zone;
     /* ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone); */
     zone_reserve(reserve_server, train, dest_zone);
 
