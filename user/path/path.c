@@ -399,7 +399,7 @@ patherTask()
                 }
 
                 // kill pather complex path
-                WaitTid(partial_path_task);
+                Kill(partial_path_task);
 
                 cbuf_clear(complex_path);
             }

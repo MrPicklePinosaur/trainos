@@ -99,7 +99,7 @@ scheduler_remove(Tid tid)
 {
     KLOG_DEBUG_M(LOG_MASK_SCHED, "removing task id %d, previous task_count = %d", tid, task_count);
     if (task_count == 0) {
-        KLOG_ERROR("cannot remove task id %d because scheduler is empty", tid);
+        KLOG_WARN("cannot remove task id %d because scheduler is empty", tid);
         return;
     }
 
@@ -123,7 +123,7 @@ scheduler_remove(Tid tid)
         }
     }
 
-    KLOG_ERROR("could not find task id %d in scheduler", tid);
+    KLOG_WARN("could not find task id %d in scheduler", tid);
 }
 
 void scheduler_unblock_event(int eventid, int event_data) {
