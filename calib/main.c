@@ -42,6 +42,7 @@ uint32_t query_sensor(size_t sensor_group) {
 void calibTrainSpeed();
 void calibTrainStop();
 void calibTrainShortMove();
+void calibTrainAcceleration();
 
 int kmain() {
 
@@ -56,6 +57,7 @@ int kmain() {
         uart_printf(CONSOLE, "1: calibTrainSpeed\r\n");
         uart_printf(CONSOLE, "2: calibTrainStop\r\n");
         uart_printf(CONSOLE, "3: calibTrainShortMove\r\n");
+        uart_printf(CONSOLE, "4: calibTrainAcceleration\r\n");
         uart_printf(CONSOLE, "========================\r\n");
 
         int ch = uart_getc(CONSOLE) - '0';
@@ -71,6 +73,10 @@ int kmain() {
             case 3:
                 uart_printf(CONSOLE, "running train short move calib\r\n");
                 calibTrainShortMove();
+                break;
+            case 4:
+                uart_printf(CONSOLE, "running train acceleration calib\r\n");
+                calibTrainAcceleration();
                 break;
             default:
                 uart_printf(CONSOLE, "invalid calib task");
@@ -300,6 +306,70 @@ calibTrainShortMove()
         marklin_train_ctl(train_number, train_speed);
         uint32_t start_time = get_time();
         while (get_time() - start_time <= wait) { }
+        marklin_train_ctl(train_number, 0);
+    }
+}
+
+void
+calibTrainAcceleration()
+{
+    marklin_switch_ctl(9, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(10, SWITCH_MODE_STRAIGHT);
+    marklin_switch_ctl(15, SWITCH_MODE_CURVED);
+    marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
+
+    const uint32_t train_number = 2;
+
+    const uint32_t SENSOR_GROUP = 5;
+    const uint32_t SENSOR_INDEX = 14;
+
+    const uint32_t SPEEDUP_END_GROUP = 3;
+    const uint32_t SPEEDUP_END_INDEX = 12;
+
+    const uint32_t SPEED_COUNT = 5;
+    const uint32_t SPEEDS[] = {2, 5, 8, 11, 14};
+
+    marklin_train_ctl(train_number, 0);
+    uart_printf(CONSOLE, "Running acceleration for train %d\r\n", train_number);
+
+    for (;;) {
+        uint32_t train_speed;
+        for (;;) {
+            uart_printf(CONSOLE, "Once you've placed the train on C10:\r\n");
+            for (uint32_t i = 0; i < SPEED_COUNT; i++) {
+                uart_printf(CONSOLE, "[%d] for speed %d\r\n", i+1, SPEEDS[i]);
+            }
+            unsigned char ch = uart_getc(CONSOLE);
+            if ('1' <= ch && ch < '1'+SPEED_COUNT) {
+                train_speed = SPEEDS[ch-'1'];
+                break;
+            }
+        }
+
+        marklin_train_ctl(train_number, train_speed);
+        uint32_t start_time = get_time();
+        for (;;) {
+            uint32_t triggered = query_sensor(SENSOR_GROUP);
+            if (triggered == 0) continue;
+            char sensor_group = (triggered / 16);
+            uint8_t sensor_index = (triggered % 16)+1;
+            if (sensor_group == SENSOR_GROUP && sensor_index == SENSOR_INDEX) {
+                break;
+            }
+        }
+        uint32_t end_time = get_time();
+        uart_printf(CONSOLE, "Time: %d\r\n", end_time - start_time);
+
+        // Loop back around to C10
+        for (;;) {
+            uint32_t triggered = query_sensor(SPEEDUP_END_GROUP);
+            if (triggered == 0) continue;
+            char sensor_group = (triggered / 16);
+            uint8_t sensor_index = (triggered % 16)+1;
+            if (sensor_group == SPEEDUP_END_GROUP && sensor_index == SPEEDUP_END_INDEX) {
+                break;
+            }
+        }
         marklin_train_ctl(train_number, 0);
     }
 }
