@@ -6,7 +6,7 @@
 #include <trainsys.h>
 
 #define SENSOR_ADDRESS "sensor"
-#define MAX_TRIGGERED 8
+#define MAX_TRIGGERED 16
 
 void sensorServerTask();
 
