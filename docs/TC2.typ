@@ -191,9 +191,9 @@ It has a simple reserve/unreserve interface that is idempotent (allowing a train
 In our UI, each window is its own task.
 This means multiple tasks are trying to print to the console at once, which can lead to issues if the task is interrupted in the middle of a print.
 Cursor positioning gets messed up, and the resulting visual bugs can render the UI unreadable.
-We introduced the render server to guarentee mutual exclusion on the cursor.
 
+We introduced the render server to guarentee mutual exclusion on the cursor.
 Each window maintains it's own output buffer and writes into it.
 The ouput buffer is only flushed upon calling `w_flush()`, where the entire buffer is sent to the render server to be rendered atomically.
 
-The render server processes theses requests in FIFO order.
+The render server processes these requests in FIFO order.
