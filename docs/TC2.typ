@@ -41,7 +41,7 @@
 
 Gitlab repository name: `d278liu/trainos`
 
-Commit SHA: `TBD`
+Commit SHA: e55e4a8b2d55c98545e804d85b3466d7bcec5a23
 
 = Train Movement
 
