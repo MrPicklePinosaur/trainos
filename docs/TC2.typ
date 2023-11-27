@@ -34,7 +34,7 @@
     "Joey Zhou (j438zhou, 20894170)",
     "Daniel Liu (d278liu, 20892282)",
   ),
-  date: "November 22nd, 2023",
+  date: "November 26th, 2023",
 )
 
 = Git Info
@@ -47,84 +47,114 @@ Commit SHA: `TBD`
 
 == Reversals
 
-Dijkstra was modified to also consider the reverse of the node when exploring neighbour nodes. The difficulty with train reversal is that we need to ensure that the train is not parked ontop of a switch when the switch changes state. To remedy this, dijkstra guarentees that the node a reversal occurs on must be a sensor mode, which (in most cases), guarentee the train to be in a safe position.
+Our pathfinding now considers reversals.
+Dijkstra will travel along reverse edges, treating them as length 0 edges.
+However, reversing is not instant, so this assumption is inaccurate.
+Sometimes the train will spend a lot of time reversing
 
-The pathfinding algorithm will then break a path into simple paths that contain no reversals. Thus, the train will pathfinding and stop at the point of the reversal, then receive the reverse command, and continue to the next destination. This was done as our original method of train reversal makes no guarentee on where the reversal point of the train was.
+One challenge with train reversal is that sometimes the train comes to a stop halfway on top of a switch, causing it to derail when it reverses.
+Our solution is to stop at the first sensor after the switch before reversing, which (in most cases) guarentees the train is in a safe position before reversing.
+
+Reversals are implemented by pathfinding to the point of reversal, reversing, and then doing another pathfind after reversing.
 
 == Short Moves
 
-Short moves are measured manually.
-We start with the train stopped.
-We then set the train to speed 8, and wait x milliseconds.
-We then stop the train, and use a tape measure to determine how far it moved.
+Short moves were measured manually.
+We started with the train stopped.
+We then set the train to speed 8, then waited x milliseconds before stopping the train.
+A tape measure was used to determine how far this moved it.
 
-We start x at 250ms and we increase it by 250ms each test, up to 4000ms.
-Measuring every 250ms gives us more than enough granularity, and measuring up to 4000ms lets us cover the largest possible short move (from C13 to E7).
+The variable x started at 250ms and was increased by 250ms each test, up to 4000ms.
+Measuring every 250ms gave us enough granularity.
+As well, going up to 4000ms lets us cover the largest possible short move (from C13 to E7).
 
-We use linear interpolation to determine give us some more accuracy with short moves.
-As well, we can also extrapolate if a short move is longer than the longest measured distance.
+We use linear interpolation to estimate wait times for distances between our measured distances.
+As well, we extrapolate from the last two measurements if a short move is longer than the longest measured distance.
+
+
 
 = Calibration
 
-== Automatic Mode
+== Automatic Calibration Mode
 
-As part of the initalization process, each train callibrates itself. It does this by moving at a slow speed until a sensor is hit, and then stopping immediately. This way without any human intervention we are able to determine the orientation (assuming that trains always start moving forward) and position of each train. It is also possible to determine which trains are placed onto the track by using a timeout after sending the callibration command, and if the timeout expires, the train is not on the track.
+In automatic calibration mode, each train determines its location by moving at a slow speed until a sensor is hit.
+If a sensor is not tripped within a certain amount of time, we determine that the train is not on the track.
 
-This method is great but it does take some time during startup, unideal when doing rapid prototyping. Furthermore, due to stopping delays, trains will always overshoot the sensor by some distance after calibration, which may lead to the train running into the next zone. Due to these limitations, a manual calibration mode was also introduced.
+This method works great but takes a long time to do.
+We turn it off during testing, because manual setup is much faster.
 
-== Manual Mode
+Another problem with this mode is that the trains don't stop exactly on top of the sensors; they take some time to decelerate.
+This overshooting can lead to the train poking into the next zone, potentially causing a collision in the future.
 
-In manual calibration mode, trains do not calibrate themselves. Instead the user uses the prompt (the `pos` command) to input the starting locations of each train themselves. This method has obvious user error issues, especially getting the sensor directions wrong.
+== Manual Calibration Mode
+
+In manual calibration mode, the user must input the train's current sensor by using the `pos` command.
+This method has obvious user error issues.
+Getting the sensor direction wrong is a pretty common one.
+
+
 
 = Sensor Attribution
 
-There are three different algorithms implemented for sensor attribution that can be swapped around via a recompile. We experimented a bit with different schemes to see what gives the best results.
+We have two different algorithms for sensor attribution; they can be swapped via a recompile.
 
 == Zone local attribution
 
-In zone local attribution, for each train we see if the newly hit sensor falls into the zone of the train. Due to how our zones are formed (see `Zoning` section), all sensors in a zone are adjacent (have no sensors sepratating them). This naturally helps account for cases where the train goes down the wrong branch.
+This is the attribution algorithm that we used in the demo.
 
-If no sensors were able to be assigned, we also look in the previous zone to account for cases where the train unexpectedly reverses.
+When a sensor is hit, we attribute sensors to a train only if the train is currently in that sensor's zone.
+Due to how we split up zones, all adjacent sensors (i.e. they have no sensors separating them) are in the same zone.
+Thus, the 3 (or more) sensors around a brach are all in the same zone, which means we correctly attribute sensors even if the train goes down the wrong branch.
 
-This is currently the default attribution algorithm.
+Should we fail to find the sensor for a train, we also check sensors in the previous zone in case the train unexpectedly reversed.
 
 == Dijkstra attribution
 
-The next attribution algorithm runs dijkstra from the new sensors trigger to the locations of each train and chooses the closest node to give the sensor activation to.
+When a sensor is triggered, we run Dijkstra from it to each train, and attribute the sensor to the closest train.
+This method worked quite well but was costly to compute.
+We saw a much slower response times for sensors.
 
-This method worked quite well but was quite costly to compute, we saw much slower response times for sensors.
+
 
 = Track Reservation
 
 Our current algorithm reserves every zone on the train's path.
-Then, as the train exits each zone, the zone is freed.
+Then, as the train moves along the path, it frees zones as it exits them.
+
+Our pathfinding will try to find a path that avoids reserved zones.
+However, if this is impossible, we do a partial move.
+That is, we find the fastest path disregarding reservations, and move the train partway along this path, stopping one zone away from the reserved zone.
+It then waits for that zone to be unreserved before continuing.
+
+This method does not guarantee no deadlocks.
+
+
 
 = Zoning
 
-The track is divided into zones by using sensors as boundaries. This is perhaps the most fine grain sensor division possible, reducing many chances of deadlocks and allowing more chances for trains to move at the same time. This of course also introduces many challenges and increases the risk of collision.
-
-Zones are stored in a seperate data structure with the boundaries of the zone being pointers to the original track nodes. Pointers to switches in the zone are also kept.
-
-For track A, we have 26 zones, as shown below:
+Our zones are bounded by sensors, and every sensor is a zone boundary.
+For track A, this gives us 26 zones:
 #image("zones.png", width: 100%)
+
+This is as fine-grained as we can get with sensor-based division.
+Smaller zones reduce our chances of deadlock and give more potential for simultaneous train movement.
+However, there is increased collision potential since trains can end up much closer to each other.
+
+Zones are stored in a data structure with a list of pointers to the sensor nodes that bound the zone.
+There is also a list of pointers to the merge and branch nodes in the zone.
+
+
 
 = Pathfinding
 
-After a path request is submitted via the prompt or programatically, a new `Pather` task is spawned that coordinates the sequence of train commands, switch activations, and sensor waits that complete the desired path.
-
-== Zone reservation
-
-A walk is done through the entire path and each zone is attempted to be reserved. This means that the first train will reserve the entire path. This method is beneficial as future path requests will be mindful of the existing path and try to work around it, reducing the possibility of collisions, deadlocks, and waiting around.
-
-In the case that a zone reservation fails, the train will traverse down the *partial path* that has been allocated and then wait until the desired zone becomes free. This is done so that if a train's desired path is blocked, it will move as much as it can to reduce travel time once the zone is free again.
-
-== Zone freeing
-
-Upon entry of a new zone, the current zone is immediately freed. This is a safe operation as any trains that claim this zone will be waiting to enter from at least a distance of one zone away, and from rest, meaning that it will take substantial time to enter the newly freed zone after the original train has exited. The possibility of two trains being in a newly freed zone is very low, while also allowing other trains to claim the zone earlier.
+Each `path` request spawns a new `Pather` task, which coordinates the train commands, switch activations, and sensor waits for that path.
+To cancel a `path`, we use our new `Kill()` syscall to stop the `Pather`.
 
 == Switch activation
 
-Upon entry of a new zone, the switches in the zone after are set to the desired state. This ensures that there is one zone of buffer time before the train arrives as the zone with the switch. Through previous testing, if the switches were activated upon entry of the zone, there will be cases (especially at higher speeds), that the switches don't activate on time.
+We set all of the switches in a zone when the train enters the previous zone.
+This ensures that there is one zone of buffer before the train arrives at the switch.
+Without this buffer, switches sometimes activated too late, causing wrong turns and derailings.
 
 = Collision prevention
 
@@ -132,17 +162,32 @@ Upon entry of a new zone, the switches in the zone after are set to the desired 
 
 = Servers
 
-The following servers were introduced in TC2
+The following servers were introduced in TC2:
 
 == Trainstate server
 
-The train state server maintains the single source of truth in terms of state of each train. This includes current speed setting, orientation, and position. A train position notifier runs sensor attribution on each sensor trigger and updates train position as well. Any desired changes to train state (such as setting the speed of a train) must be done through this server. This guarentees mutual exclusion. Trainstate server is also what can be used for a task that wishes to block until a train changes position. This is incredibly helpful for pathfinding algorithms.
+This is the single source of truth for the state of each train.
+It stores the speed, orientation, and position of the trains.
+Any changes to train state must be done through this server, guaranteeing mutual exclusion.
+
+A notifier alerts the server whenever a sensor triggers, running the sensor attribution algorithm and determining the current position of the train.
+
+This server also allows a task to block until a train changes position.
+We use this functionality extensively in our pathfinding algorithms.
 
 == Reservation server
 
-The reservation server keeps track of all reserved zones, as well as which train has reserved the zone. It has a simple reserve/unreserve interface that is idempotent (a train is allowed to reserve a zone many times).
+This server tracks which trains have reserved which zones.
+It has a simple reserve/unreserve interface that is idempotent (allowing a train to reserve the same zone multiple times without error).
 
 == Trainterm (render) server
  
-Since in our UI, each window is it's own task that is able to render on demand, we have multiple tasks attempting to print to the console at once. This can result in many visual bugs where tasks get interrupted in the middle of rendering in some text, especially when ANSI control sequences are involved. Thus, the render server was introduced to guarentee mutual exclusion on the cursor. Each window maintains it's own output buffer and writes into it. The ouput buffer is only flushed upon calling `w_flush()`, where the entire buffer is sent to the render server to be rendered atomically. The render server processes theses requests in FIFO order.
+In our UI, each window is its own task.
+This means multiple tasks are trying to print to the console at once, which can lead to issues if the task is interrupted in the middle of a print.
+Cursor positioning gets messed up, and the resulting visual bugs can render the UI unreadable.
+We introduced the render server to guarentee mutual exclusion on the cursor.
 
+Each window maintains it's own output buffer and writes into it.
+The ouput buffer is only flushed upon calling `w_flush()`, where the entire buffer is sent to the render server to be rendered atomically.
+
+The render server processes theses requests in FIFO order.
