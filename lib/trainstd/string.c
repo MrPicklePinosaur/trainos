@@ -194,3 +194,15 @@ cstr_len(char* s)
     }
     return len;
 }
+
+bool
+cstr_cmp(char* a, char* b)
+{
+    usize a_len = cstr_len(a);
+    usize b_len = cstr_len(b);
+    if (a_len != b_len) return false;
+    for (u32 i = 0; i < a_len; ++i)
+        if (a[i] != b[i]) return false;
+
+    return true;
+}

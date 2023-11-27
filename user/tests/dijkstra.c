@@ -61,6 +61,9 @@ testDijkstra()
     runDijkstra(reserver_server, track, 2, "C10", "A1", true, false, tmp);
     zone_unreserve_all(reserver_server, 2);
 
+    runDijkstra(reserver_server, track, 2, "C12", "A5", true, false, tmp);
+    zone_unreserve_all(reserver_server, 2);
+
     // test pathfinding with multiple trains
     ULOG_INFO("test multiple trains pathfinding");
     runDijkstra(reserver_server, track, 2, "B1", "D14", true, true, tmp);

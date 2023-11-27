@@ -32,5 +32,6 @@ char* cstr_copy(Arena* arena, char* s);
 char* cstr_format(Arena* arena, char *fmt, ...);
 char* _cstr_format(Arena* arena, char *fmt, va_list va);
 usize cstr_len(char* s);
+bool cstr_cmp(char* a, char* b);
 
 #endif // __TRAINSTD_STRING_H__

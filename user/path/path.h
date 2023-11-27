@@ -19,7 +19,7 @@ typedef struct {
 Tid PlanPath(Path path);
 Tid PlanPathSeq(Path* path, usize len); // plan a sequential path
 
-void createPathRandomizer(usize train, usize speed);
+void createPathRandomizer(usize train, usize speed, char* start);
 
 // some helpers
 void setSwitchesInZone(Tid switch_server, Track* track, ZoneId zone, CBuf* desired_switches);

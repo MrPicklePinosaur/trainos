@@ -135,14 +135,13 @@ renderTrainStateWinTask()
 
         TrainState state = TrainstateGet(trainstate_server, train);
         usize speed = state.speed;
-        usize next_pos = track_next_node(switch_server, track, &track->nodes[new_pos]);
-        str8 next_sensor_name = sensor_id_to_name(next_pos, &tmp);
+        TrackNode* next_sensor = track_next_sensor(switch_server, track, &track->nodes[new_pos]);
         ZoneId zone = track->nodes[new_pos].reverse->zone;
         str8 dest_sensor_name = sensor_id_to_name(state.dest, &tmp);
 
-        w_puts_mv(&train_state_win, "     ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, "                           ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
-        w_puts_mv(&train_state_win, str8_to_cstr(next_sensor_name), TRAIN_STATE_TABLE_CURR_X+6, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, next_sensor->name, TRAIN_STATE_TABLE_CURR_X+6, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", zone), TRAIN_STATE_TABLE_CURR_X+12, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", speed), TRAIN_STATE_TABLE_CURR_X+18, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, str8_to_cstr(dest_sensor_name), TRAIN_STATE_TABLE_CURR_X+24, TRAIN_STATE_TABLE_Y+get_train_index(train));

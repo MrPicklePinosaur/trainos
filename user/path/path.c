@@ -419,6 +419,7 @@ patherTask()
 typedef struct {
     usize train;
     usize speed;
+    char* start;
 } RandomizerMsg;
 
 typedef struct {
@@ -426,9 +427,26 @@ typedef struct {
 } RandomizerResp;
 
 
-int
-pathRandomizer(void)
+char* BLACKLIST[] = { "A1", "A2", "A13", "A14", "A15", "A16", "A11", "A12", "B7", "B8", "B11", "B12", "B9", "B10", "A9", "A10", "A7", "A8", "A5", "A6", "C3", "C4", 0 };
+
+char*
+getRandomDest(Track* track)
 {
+    usize dest_ind = rand_int() % 80;
+    char* dest = track->nodes[dest_ind].name;
+    char** blacklist_node = BLACKLIST;
+    for (; *blacklist_node != 0; ++blacklist_node) {
+        if (cstr_cmp(*blacklist_node, dest) == 0) return 0;
+    }
+    return dest;
+}
+
+void
+pathRandomizer()
+{
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
+    Tid reserve_server = WhoIs(RESERVE_ADDRESS);
+
     int from_tid;
     RandomizerMsg msg_buf;
     RandomizerResp reply_buf;
@@ -442,38 +460,38 @@ pathRandomizer(void)
 
     usize train_num = msg_buf.train;
     usize train_speed = msg_buf.speed;
+    char* start = msg_buf.start;
 
     Track* track = get_track();
 
+    TrackNode* node = track_node_by_name(track, start);
+    TrainstateSetPos(trainstate_server, reserve_server, train_num, node);
     for (;;) {
 
-        usize dest = rand_int() % 80;
-        // There's a deadspot in this corner that will trap trains in it
-        if (dest == 0 || dest == 1 || dest == 12 || dest == 13 || dest == 14 || dest == 15) {
-            continue;
-        }
-        // We do not know the direction of the bar, so it may crash into the stopper if it goes to these sensors
-        if (dest == 10 || dest == 11 || dest == 22 || dest == 23 || dest == 24 || dest == 25 || dest == 26 || dest == 27) {
-            continue;
-        }
+        char* dest = getRandomDest(track);
+        if (dest == 0) continue;
 
-        Tid path_task = PlanPath((Path){train_num, train_speed, 0, track->nodes[dest].name, true});
-        if (path_task == 0) continue;
-        WaitTid(path_task);
+        // choose random target
+        ULOG_DEBUG(">>>>>>>>>>>>>>>> [RANDOM PATH] Train %d picking random dest %s", train_num, dest);
+        Path train_paths[] = {(Path){train_num, train_speed, 0, dest, false}, (Path){train_num, train_speed, 0, start, false}};
+        Tid train_pather = PlanPathSeq(train_paths, 2);
+        WaitTid(train_pather);
+        TrainstateReverseStatic(trainstate_server, train_num);
     }
 }
 
 
 void
-createPathRandomizer(usize train, usize speed)
+createPathRandomizer(usize train, usize speed, char* start)
 {
     RandomizerResp resp_buf;
     RandomizerMsg send_buf = (RandomizerMsg) {
         .train = train,
-        .speed = speed
+        .speed = speed,
+        .start = start 
     };
 
-    int task = Create(2, &pathRandomizer, "Path Randomizer Task");
+    int task = Create(5, &pathRandomizer, "Path Randomizer Task");
     int ret = Send(task, (const char*)&send_buf, sizeof(RandomizerMsg), (char*)&resp_buf, sizeof(RandomizerResp));
 }
 

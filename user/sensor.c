@@ -70,11 +70,6 @@ WaitForAnySensor(Tid sensor_server, Arena* arena)
     }
     *trigger_list = -1; // sentinel
 
-    trigger_list = trigger_list_base; 
-    for (; *trigger_list != -1; ++trigger_list) {
-        ULOG_DEBUG("got sensor trigger %d", *trigger_list);
-    }
-    
     return trigger_list_base;
 }
 
