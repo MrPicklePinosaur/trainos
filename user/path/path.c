@@ -399,6 +399,8 @@ patherTask()
                 }
 
                 // kill pather complex path
+                // TODO this may be bad, since we truncate the partial path. so if cancel and there was a switch / revere point on the path, we may not execute it
+                // it would be nice to figure out how much the path was completed after we kill the partial path
                 Kill(partial_path_task);
 
                 cbuf_clear(complex_path);

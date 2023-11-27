@@ -309,7 +309,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "D5", false}, (Path){TRAIN, SPEED, 0, "E9", false}, (Path){TRAIN, SPEED, 0, "E14", false}, (Path){TRAIN, SPEED, 0, "D16", false}};
                     Tid train1_pather = PlanPathSeq(train1_paths, 4);
 
-                    TRAIN = 77;
+                    TRAIN = 47;
                     SPEED = 5;
                     node = track_node_by_name(track, "C11");
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);

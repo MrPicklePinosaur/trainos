@@ -6,11 +6,12 @@
 #include <trainsys.h>
 
 #define SENSOR_ADDRESS "sensor"
+#define MAX_TRIGGERED 8
 
 void sensorServerTask();
 
-// passing sensor = -1 means we don't care which sensor
 int WaitForSensor(Tid sensor_server, isize sensor);
+usize* WaitForAnySensor(Tid sensor_server, Arena* arena);
 
 str8 sensor_id_to_name(u8 id, Arena* arena);
 

@@ -5,11 +5,11 @@
 
 #define UNIT_COUNT 5
 #define BYTE_COUNT 10
-#define MAX_TRIGGERED 8
 
 typedef enum {
     SENSOR_TRIGGERED,
-    SENSOR_WAIT
+    SENSOR_WAIT,
+    SENSOR_WAIT_ANY
 } SensorMsgType;
 
 typedef struct {
@@ -24,6 +24,7 @@ typedef struct {
     SensorMsgType type;
     union {
         usize wait; // the sensor that was triggered
+        usize wait_any[MAX_TRIGGERED+1];
     } data;
 } SensorResp;
 
@@ -44,6 +45,37 @@ WaitForSensor(Tid sensor_server, isize sensor)
         return -1;
     }
     return resp_buf.data.wait;
+}
+
+usize*
+WaitForAnySensor(Tid sensor_server, Arena* arena)
+{
+    SensorResp resp_buf;
+    SensorMsg send_buf = (SensorMsg) {
+        .type = SENSOR_WAIT_ANY,
+    };
+    int ret = Send(sensor_server, (const char*)&send_buf, sizeof(SensorMsg), (char*)&resp_buf, sizeof(SensorResp));
+    if (ret < 0) {
+        ULOG_WARN("WaitForAnySensor errored");
+        return 0;
+    }
+
+    usize* trigger_list_base = arena_alloc(arena, usize);
+    usize* trigger_list = trigger_list_base; 
+
+    usize* triggered = resp_buf.data.wait_any;
+    for (; *triggered != -1; ++triggered) {
+        *trigger_list = *triggered;
+        trigger_list = arena_alloc(arena, usize);
+    }
+    *trigger_list = -1; // sentinel
+
+    trigger_list = trigger_list_base; 
+    for (; *trigger_list != -1; ++trigger_list) {
+        ULOG_DEBUG("got sensor trigger %d", *trigger_list);
+    }
+    
+    return trigger_list_base;
 }
 
 // task for querying sensor states
@@ -80,7 +112,7 @@ sensorNotifierTask() {
 
             // send to server task
             if (triggered_list_len > 0) {
-                ULOG_INFO_M(LOG_MASK_SENSOR, "sending sensor data to sensor server");
+                //ULOG_INFO_M(LOG_MASK_SENSOR, "sending sensor data to sensor server");
                 triggered_list[triggered_list_len] = -1; // set element to be sentinel
 
                 triggered_list_len = 0;
@@ -118,6 +150,7 @@ sensorServerTask()
     Tid notifier = Create(2, &sensorNotifierTask, "Sensor Notifier");
 
     List* sensor_requests = list_init();
+    List* any_sensor_requests = list_init();
 
     SensorMsg msg_buf;
     SensorResp reply_buf;
@@ -134,7 +167,14 @@ sensorServerTask()
             // read sensor values and reply to anyone waiting
 
             usize* triggered = msg_buf.data.triggered;
+
+            SensorResp reply_buf = (SensorResp) {
+                .type = SENSOR_TRIGGERED
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(SensorResp));
+
             ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] got sensor batch", *triggered);
+
             for (; *triggered != -1; ++triggered) {
                 ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] triggered %d", *triggered);
                 // unblock all tasks that are waiting
@@ -143,7 +183,7 @@ sensorServerTask()
                 SensorRequest* request;
                 while (listiter_next(&it, (void**)&request)) {
 
-                    if (request->sensor_id == *triggered || request->sensor_id == -1) {
+                    if (request->sensor_id == *triggered) {
                         //ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] unblocking task %d", request->tid);
                         SensorResp reply_buf = (SensorResp) {
                             .type = SENSOR_WAIT,
@@ -156,14 +196,23 @@ sensorServerTask()
                     }
 
                 }
-
             }
 
-            SensorResp reply_buf = (SensorResp) {
-                .type = SENSOR_TRIGGERED
+            // also reply to people waiting for any sensor
+            reply_buf = (SensorResp) {
+                .type = SENSOR_WAIT_ANY,
+                .data = {
+                    .wait_any = {0}
+                }
             };
-            Reply(from_tid, (char*)&reply_buf, sizeof(SensorResp));
-            
+            memcpy(reply_buf.data.wait_any, msg_buf.data.triggered, sizeof(msg_buf.data.triggered));
+            ListIter it = list_iter(any_sensor_requests); 
+            SensorRequest* request;
+            while (listiter_next(&it, (void**)&request)) {
+                Reply(request->tid, (char*)&reply_buf, sizeof(SensorResp));
+            }
+            list_clear(any_sensor_requests);
+
         }
         else if (msg_buf.type == SENSOR_WAIT) {
             ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] task %d request wait for sensor %d", from_tid, msg_buf.data.wait);
@@ -174,6 +223,20 @@ sensorServerTask()
                 .sensor_id = msg_buf.data.wait
             };
             list_push_back(sensor_requests, request);
+
+            // Don't reply just yet
+
+        }
+        else if (msg_buf.type == SENSOR_WAIT_ANY) {
+
+            ULOG_INFO_M(LOG_MASK_SENSOR, "[SENSOR SERVER] task %d request wait for any sensord", from_tid);
+
+            SensorRequest* request = alloc(sizeof(SensorRequest));
+            *request = (SensorRequest) {
+                .tid = from_tid,
+                .sensor_id = -1 // dummy value
+            };
+            list_push_back(any_sensor_requests, request);
 
             // Don't reply just yet
 

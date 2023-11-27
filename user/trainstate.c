@@ -405,57 +405,61 @@ trainPosNotifierTask()
     for (;;) {
         Arena tmp = tmp_base;
 
-        int sensor_id = WaitForSensor(sensor_server, -1);
-        //ULOG_INFO("sensor id %d", sensor_id);
+        usize* sensor_ids = WaitForAnySensor(sensor_server, &tmp);
+        for (; *sensor_ids != -1; ++sensor_ids) {
+            usize sensor_id = *sensor_ids;
 
-        // ====== zone impl (checks to see if sensor is in zone of train)
-        for (usize i = 0; i < TRAIN_COUNT; ++i) {
+            ULOG_DEBUG("got sensor id %d", sensor_id);
 
-            usize train = trains[i];
+            // ====== zone impl (checks to see if sensor is in zone of train)
+            for (usize i = 0; i < TRAIN_COUNT; ++i) {
 
-            // train position not calibrated, skip checking
-            if (train_state[train].pos == TRAIN_POS_NULL) {
-                continue;
-            }
+                usize train = trains[i];
 
-            TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
+                // train position not calibrated, skip checking
+                if (train_state[train].pos == TRAIN_POS_NULL) {
+                    continue;
+                }
 
-            ZoneId train_zones[2] = {node->reverse->zone, node->zone};
-            for (usize zone_i = 0; zone_i < 2; ++zone_i) {
-                ZoneId train_zone = train_zones[zone_i];
+                TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
 
-                if (train_zone == -1) continue;
+                ZoneId train_zones[2] = {node->reverse->zone, node->zone};
+                for (usize zone_i = 0; zone_i < 2; ++zone_i) {
+                    ZoneId train_zone = train_zones[zone_i];
 
-                for (usize j = 0; ; ++j) {
-                    // TODO train positions MUST be sensors
-                    TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
-                    if (zone_sensor == 0) break;
-                    if (sensor_id == zone_sensor->num) {
+                    if (train_zone == -1) continue;
 
-                        ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+                    for (usize j = 0; ; ++j) {
+                        // TODO train positions MUST be sensors
+                        TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
+                        if (zone_sensor == 0) break;
+                        if (sensor_id == zone_sensor->num) {
 
-                        // notify server that train position changed
-                        TrainstateMsg send_buf = (TrainstateMsg) {
-                            .type = TRAINSTATE_POSITION_UPDATE,
-                            .data = {
-                                .position_update = {
-                                    .train = train,
-                                    .new_pos = sensor_id
+                            ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+
+                            // notify server that train position changed
+                            TrainstateMsg send_buf = (TrainstateMsg) {
+                                .type = TRAINSTATE_POSITION_UPDATE,
+                                .data = {
+                                    .position_update = {
+                                        .train = train,
+                                        .new_pos = sensor_id
+                                    }
                                 }
-                            }
-                        };
-                        TrainstateResp resp_buf;
-                        Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-                        goto loop_break;
+                            };
+                            TrainstateResp resp_buf;
+                            Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+                            goto loop_break;
 
+                        }
                     }
                 }
+
             }
 
+            ULOG_WARN("[TRAINSTATE NOTIF] superious sensor %s", track_node_by_sensor_id(track, sensor_id)->name);
+            loop_break: {}
         }
-
-        ULOG_WARN("[TRAINSTATE NOTIF] superious sensor %s", track_node_by_sensor_id(track, sensor_id)->name);
-        loop_break: {}
 
 #if 0
         // ====== dijkstra impl (should work well if dijkstra was more efficient)
