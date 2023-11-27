@@ -18,7 +18,7 @@ dijkstra(Track* track, usize train, u32 src, u32 dest, bool allow_reversal, bool
     TrackEdge* edges[TRACK_MAX];
     uint32_t visited[TRACK_MAX];
 
-    ULOG_INFO_M(LOG_MASK_PATH, "RUNNING dijkstra from %s to %s", track->nodes[src].name, track->nodes[dest].name);
+    /* ULOG_INFO_M(LOG_MASK_PATH, "RUNNING dijkstra from %s to %s", track->nodes[src].name, track->nodes[dest].name); */
     TrackNode* nodes = track->nodes;
 
     for (uint32_t i = 0; i < TRACK_MAX; i++) {

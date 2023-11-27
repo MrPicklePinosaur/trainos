@@ -456,7 +456,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
             Track* track = get_track();
             TrackNode* node = track_node_by_name(track, command._data.pos.pos);
 
-            char* msg = cstr_format(&tmp, "Sending train %s%d%s position to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
+            char* msg = cstr_format(&tmp, "Setting train %s%d%s position to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
             renderer_append_console(console_renderer_server, msg);
             TrainstateSetPos(trainstate_server, reserve_server, command._data.pos.train, node);
 

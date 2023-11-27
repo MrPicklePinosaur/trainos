@@ -557,7 +557,7 @@ planPathSeqTask()
     Reply(from_tid, (char*)&reply_buf, 0);
     
     for (usize i = 0; i < msg_buf.len; ++i) {
-        ULOG_DEBUG("Executing path index %d: train %d", i, msg_buf.path[i].train);
+        /* ULOG_DEBUG("Executing path index %d: train %d", i, msg_buf.path[i].train); */
         Tid path_task = PlanPath(msg_buf.path[i]);
         if (path_task == 0) continue;
         WaitTid(path_task);

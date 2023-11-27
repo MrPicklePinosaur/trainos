@@ -435,7 +435,7 @@ trainPosNotifierTask()
                         if (zone_sensor == 0) break;
                         if (sensor_id == zone_sensor->num) {
 
-                            ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name);
+                            /* ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name); */
 
                             // notify server that train position changed
                             TrainstateMsg send_buf = (TrainstateMsg) {
