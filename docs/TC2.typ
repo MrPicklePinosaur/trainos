@@ -135,7 +135,7 @@ Overall, we have no way to avoid deadlocks.
 = Zoning
 
 Our zones are bounded by sensors, and every sensor is a zone boundary.
-For track A, this gives us 26 zones:
+For track A, this gives us 30 zones:
 #image("zones.png", width: 100%)
 
 This is as fine-grained as we can get with sensor-based division.
