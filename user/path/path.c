@@ -209,12 +209,12 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
                 // NOTE: need reverse since zones are denoted by sensors that are leaving zone
                 ZoneId next_zone = next_sensor->reverse->zone;
-                ULOG_INFO_M(LOG_MASK_PATH, "at sensor %s in zone %d, next zone is %d", node->name, node->zone, next_zone);
+                /* ULOG_INFO_M(LOG_MASK_PATH, "at sensor %s in zone %d, next zone is %d", node->name, node->zone, next_zone); */
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
                 // can release previous zone now
                 if (node->zone != -1) {
-                    ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, node->zone);
+                    /* ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, node->zone); */
                     zone_unreserve(reserve_server, train, node->zone);
                 }
                 /*
