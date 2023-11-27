@@ -409,7 +409,7 @@ trainPosNotifierTask()
         for (; *sensor_ids != -1; ++sensor_ids) {
             usize sensor_id = *sensor_ids;
 
-            ULOG_DEBUG("got sensor id %d", sensor_id);
+            //ULOG_DEBUG("got sensor id %d", sensor_id);
 
             // ====== zone impl (checks to see if sensor is in zone of train)
             for (usize i = 0; i < TRAIN_COUNT; ++i) {

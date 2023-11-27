@@ -164,7 +164,7 @@ renderSensorWinTask()
     win_draw_border(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
 
-    Arena tmp_base = arena_new((MAX_TRIGGERED+1)*2);
+    Arena tmp_base = arena_new(512);
 
     for (;;) {
 
@@ -173,7 +173,7 @@ renderSensorWinTask()
         w_flush(&sensor_win);
 
         usize* sensor_ids = WaitForAnySensor(sensor_server, &tmp);
-        for (; *sensor_ids = -1; ++sensor_ids) {
+        for (; *sensor_ids != -1; ++sensor_ids) {
 
             usize next_sensor_id = *sensor_ids;
 
@@ -440,7 +440,7 @@ uiTask()
     Create(5, &renderPromptTask, "Render Prompt Window");
     Create(5, &renderConsoleTask, "Render Console Window");
     Create(5, &renderSwitchWinTask, "Render Switch Window");
-    /* Create(5, &renderSensorWinTask, "Render Sensor Window"); */
+    Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
     /* Create(5, &renderZoneWinTask, "Render Zone Window"); */

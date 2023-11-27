@@ -304,19 +304,63 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     usize TRAIN = 0;
 
                     TRAIN = 2;
-                    node = track_node_by_name(track, "E6");
+                    node = track_node_by_name(track, "C9");
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
-                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "D5", false}, (Path){TRAIN, SPEED, 0, "E9", false}, (Path){TRAIN, SPEED, 0, "E14", false}, (Path){TRAIN, SPEED, 0, "D16", false}};
-                    Tid train1_pather = PlanPathSeq(train1_paths, 4);
+                    Path train1_paths[] = {
+                        (Path){TRAIN, SPEED, 0, "B15", false},
+                        (Path){TRAIN, SPEED, 0, "C9", false},
+                        (Path){TRAIN, SPEED, 0, "B15", false},
+                        (Path){TRAIN, SPEED, 0, "C9", false},
+                        (Path){TRAIN, SPEED, 0, "B15", false},
+                        (Path){TRAIN, SPEED, 0, "C9", false}
+                    };
+                    Tid train1_pather = PlanPathSeq(train1_paths, 6);
 
                     TRAIN = 47;
                     SPEED = 5;
-                    node = track_node_by_name(track, "C11");
+                    node = track_node_by_name(track, "E14");
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
-                    Path train2_paths[] = {(Path){TRAIN, SPEED, 0, "A3", false}, (Path){TRAIN, SPEED, 0, "B15", false}, (Path){TRAIN, SPEED, 0, "C9", false}, (Path){TRAIN, SPEED, 0, "B4", false}};
-                    Tid train2_pather = PlanPathSeq(train2_paths, 4);
+                    Path train2_paths[] = {
+                        (Path){TRAIN, SPEED, 0, "E9", false},
+                        (Path){TRAIN, SPEED, 0, "E14", false},
+                        (Path){TRAIN, SPEED, 0, "E9", false},
+                        (Path){TRAIN, SPEED, 0, "E14", false},
+                        (Path){TRAIN, SPEED, 0, "E9", false},
+                        (Path){TRAIN, SPEED, 0, "E14", false}
+                    };
+                    Tid train2_pather = PlanPathSeq(train2_paths, 6);
 
                     break; 
+                }
+                case 8: {
+                    renderer_append_console(console_renderer_server, "Running benchmark 2: speed test with reversals");
+
+                    TrackNode* node = 0;
+                    usize SPEED = 5;
+                    
+                    usize start_time = Time(clock_server);
+
+                    // Train 2 B16 -> A5
+                    node = track_node_by_name(track, "B16");
+                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
+                    Path train1_paths[] = {(Path){2, SPEED, 0, "A5", true}, (Path){2, SPEED, 0, "D7", true}};
+                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
+
+                    // Train 47 D7 -> C3
+                    node = track_node_by_name(track, "D7");
+                    TrainstateSetPos(trainstate_server, reserve_server, 47, node);
+                    Path train2_paths[] = {(Path){47, SPEED, 0, "C3", true}, (Path){47, SPEED, 0, "B16", true}};
+                    Tid train2_pather = PlanPathSeq(train2_paths, 2);
+
+                    WaitTid(train1_pather);
+                    WaitTid(train2_pather);
+
+                    usize end_time = Time(clock_server);
+
+                    char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
+                    renderer_append_console(console_renderer_server, msg);
+
+                    break;
                 }
                 default:
                     renderer_append_console(console_renderer_server, "Invalid test");
