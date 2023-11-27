@@ -209,12 +209,12 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
                 // NOTE: need reverse since zones are denoted by sensors that are leaving zone
                 ZoneId next_zone = next_sensor->reverse->zone;
-                ULOG_INFO_M(LOG_MASK_PATH, "at sensor %s in zone %d, next zone is %d", node->name, node->zone, next_zone);
+                /* ULOG_INFO_M(LOG_MASK_PATH, "at sensor %s in zone %d, next zone is %d", node->name, node->zone, next_zone); */
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
                 // can release previous zone now
                 if (node->zone != -1) {
-                    ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, node->zone);
+                    /* ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, node->zone); */
                     zone_unreserve(reserve_server, train, node->zone);
                 }
                 /*
@@ -245,10 +245,12 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     }
 
     // free the path we took (but keep the place we stop at)
+    /* ZoneId prev_zone = ((TrackEdge*)cbuf_back(path))->dest->zone; */
+    /* zone_unreserve(reserve_server, train, prev_zone); */
     zone_unreserve_all(reserve_server, train);
     ZoneId dest_zone = ((TrackEdge*)cbuf_back(path))->dest->reverse->zone;
-    /* ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone); */
     zone_reserve(reserve_server, train, dest_zone);
+    /* ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone); */
 
 }
 
@@ -402,6 +404,7 @@ patherTask()
                 // TODO this may be bad, since we truncate the partial path. so if cancel and there was a switch / revere point on the path, we may not execute it
                 // it would be nice to figure out how much the path was completed after we kill the partial path
                 Kill(partial_path_task);
+                /* WaitTid(partial_path_task); */
 
                 cbuf_clear(complex_path);
             }
@@ -436,7 +439,7 @@ getRandomDest(Track* track)
     char* dest = track->nodes[dest_ind].name;
     char** blacklist_node = BLACKLIST;
     for (; *blacklist_node != 0; ++blacklist_node) {
-        if (cstr_cmp(*blacklist_node, dest) == 0) return 0;
+        if (strcmp(*blacklist_node, dest) == 0) return 0;
     }
     return dest;
 }
@@ -446,6 +449,7 @@ pathRandomizer()
 {
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid reserve_server = WhoIs(RESERVE_ADDRESS);
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
     int from_tid;
     RandomizerMsg msg_buf;
@@ -473,10 +477,11 @@ pathRandomizer()
 
         // choose random target
         ULOG_DEBUG(">>>>>>>>>>>>>>>> [RANDOM PATH] Train %d picking random dest %s", train_num, dest);
-        Path train_paths[] = {(Path){train_num, train_speed, 0, dest, false}, (Path){train_num, train_speed, 0, start, false}};
+        Path train_paths[] = {(Path){train_num, train_speed, 0, dest, true}, (Path){train_num, train_speed, 0, start, true}};
         Tid train_pather = PlanPathSeq(train_paths, 2);
         WaitTid(train_pather);
         TrainstateReverseStatic(trainstate_server, train_num);
+        Delay(clock_server, 10);
     }
 }
 
