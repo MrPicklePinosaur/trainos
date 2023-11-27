@@ -67,7 +67,7 @@ renderZoneWinTask()
     w_flush(&zone_win);
 
     Track* track = get_track();
-    Arena tmp_base = arena_new(64);
+    Arena tmp_base = arena_new(256);
 
     const Attr RESERVATION_COLORS[] = {ATTR_RED, ATTR_BLUE, ATTR_GREEN, ATTR_YELLOW, ATTR_MAGENTA};
     for (;;) {
@@ -441,8 +441,8 @@ uiTask()
     Create(5, &renderSwitchWinTask, "Render Switch Window");
     Create(5, &renderSensorWinTask, "Render Sensor Window");
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
-    Create(5, &renderTrainStateWinTask, "Render Train State Window");
-    /* Create(5, &renderZoneWinTask, "Render Zone Window"); */
+    /* Create(5, &renderTrainStateWinTask, "Render Train State Window"); */
+    Create(5, &renderZoneWinTask, "Render Zone Window");
 
     WaitTid(prompt_tid);
 
