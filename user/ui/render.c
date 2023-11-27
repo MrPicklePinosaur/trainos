@@ -141,7 +141,9 @@ renderTrainStateWinTask()
 
         w_puts_mv(&train_state_win, "                           ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, str8_to_cstr(sensor_name), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
-        w_puts_mv(&train_state_win, next_sensor->name, TRAIN_STATE_TABLE_CURR_X+6, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        if (next_sensor != NULL) {
+            w_puts_mv(&train_state_win, next_sensor->name, TRAIN_STATE_TABLE_CURR_X+6, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        }
         w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", zone), TRAIN_STATE_TABLE_CURR_X+12, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", speed), TRAIN_STATE_TABLE_CURR_X+18, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_puts_mv(&train_state_win, str8_to_cstr(dest_sensor_name), TRAIN_STATE_TABLE_CURR_X+24, TRAIN_STATE_TABLE_Y+get_train_index(train));
