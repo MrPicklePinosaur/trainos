@@ -69,6 +69,7 @@ promptTask()
 void
 executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_renderer_server, Tid switch_server, Tid trainstate_server, Tid reserve_server, ParserResult command)
 {
+    Track* track = get_track();
     switch (command._type) {
         case PARSER_RESULT_TRAIN_SPEED: {
             uint32_t train = command._data.train_speed.train;
@@ -160,7 +161,6 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
 			break;
         } 
         case PARSER_RESULT_TEST: {
-            Track* track = get_track();
             switch (command._data.test.num) {
                 case 1: {
                     renderer_append_console(console_renderer_server, "Running benchmark 1: speed test with two trains");
@@ -446,6 +446,43 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                 default:
                     renderer_append_console(console_renderer_server, "Invalid test");
             }
+
+            break;
+        }
+        case PARSER_RESULT_BENCH: {
+
+            char* dest1 = command._data.bench.dest1;
+            char* dest2 = command._data.bench.dest2;
+            char* bench_msg = cstr_format(&tmp, "Running benchmark: train 2 to %s, train 47 to %s", dest1, dest2);
+            renderer_append_console(console_renderer_server, bench_msg);
+
+            TrackNode* node = 0;
+            usize SPEED = 14;
+            
+            usize start_time = Time(clock_server);
+
+            // Train 2 A5/6 -> E7/8
+            node = track_node_by_name(track, "A5");
+            Path train1_paths[] = {(Path){2, SPEED, 0, dest1, true}, (Path){2, SPEED, 0, "A5", true}};
+            Tid train1_pather = PlanPathSeq(train1_paths, 2);
+
+            // Train 47 C3/4 -> A3/4
+            node = track_node_by_name(track, "C4");
+            Path train2_paths[] = {(Path){47, SPEED, 0, dest2, true}, (Path){47, SPEED, 0, "C4", true}};
+            Tid train2_pather = PlanPathSeq(train2_paths, 2);
+
+            WaitTid(train1_pather);
+            WaitTid(train2_pather);
+
+            usize end_time = Time(clock_server);
+
+            // reverse the two trains so we can run this test again
+
+            TrainstateReverseStatic(trainstate_server, 2);
+            TrainstateReverseStatic(trainstate_server, 47);
+
+            char* msg = cstr_format(&tmp, "benchmark took %d seconds", (end_time-start_time)/100);
+            renderer_append_console(console_renderer_server, msg);
 
             break;
         }
