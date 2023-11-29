@@ -17,6 +17,8 @@
 
 #define TRAINSTATE_ADDRESS "trainstate"
 
+typedef usize Cohort;
+
 typedef struct {
     u8 speed;
     bool lights;
@@ -24,6 +26,7 @@ typedef struct {
     usize pos;
     usize dest;
     isize offset;
+    Cohort cohort;
 } TrainState;
 
 typedef PAIR(usize, usize) Pair_usize_usize;
@@ -38,6 +41,7 @@ int TrainstateSetLights(Tid trainstate_server, usize train, bool lights);
 int TrainstateSetOffset(Tid trainstate_server, usize train, isize offset);
 int TrainstateSetDest(Tid trainstate_server, usize train, usize dest);
 int TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNode* node);
+int TrainstateSetCohort(Tid trainstate_server, usize train, Cohort cohort);
 TrainState TrainstateGet(Tid trainstate_server, usize train);
 
 void trainStateServer();

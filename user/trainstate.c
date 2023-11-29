@@ -21,6 +21,7 @@ typedef enum {
     TRAINSTATE_SET_OFFSET,
     TRAINSTATE_SET_DEST,  // Does not actually send the train to the destination. Simply a value used by the train state window
     TRAINSTATE_SET_POS,
+    TRAINSTATE_SET_COHORT,
     TRAINSTATE_REVERSE_STATIC, // special case of reverse, reverse from rest and right away
     TRAINSTATE_REVERSE,
     TRAINSTATE_REVERSE_REVERSE,
@@ -55,6 +56,10 @@ typedef struct {
             usize train;
             usize pos;
         } set_pos;
+        struct {
+            usize train;
+            Cohort cohort;
+        } set_cohort;
         struct {
             usize train;
         } reverse;
@@ -292,6 +297,32 @@ TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNo
 
 }
 
+int
+TrainstateSetCohort(Tid trainstate_server, usize train, Cohort cohort)
+{
+    if (!(1 <= train && train <= 100)) {
+        ULOG_WARN("invalid train number %d", train);
+        return -1;
+    }
+
+    TrainstateResp resp_buf;
+    TrainstateMsg send_buf = (TrainstateMsg) {
+        .type = TRAINSTATE_SET_COHORT,
+        .data = {
+            .set_cohort = {
+                .train = train,
+                .cohort = cohort,
+            }
+        }
+    };
+    int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    if (ret < 0) {
+        ULOG_WARN("TrainstateSetCohort errored");
+        return -1;
+    }
+    return 0;
+}
+
 TrainState
 TrainstateGet(Tid trainstate_server, usize train)
 {
@@ -460,49 +491,6 @@ trainPosNotifierTask()
             ULOG_WARN("[TRAINSTATE NOTIF] superious sensor %s", track_node_by_sensor_id(track, sensor_id)->name);
             loop_break: {}
         }
-
-#if 0
-        // ====== dijkstra impl (should work well if dijkstra was more efficient)
-        // TODO currently a bit buggy since there are reversals
-
-        // compute the next sensor each train is expecting
-        // for each train, find the distance of the new sensor trigger from the previous observed position of the train, and take the most likely to be attributed to that specific train
-        usize min_dist = 200000; //arbritrary large number
-        usize min_train = 0;
-        usize dest = sensor_id;
-        for (usize i = 0; i < TRAIN_COUNT; ++i) {
-            
-            usize train = trains[i];
-            usize src = train_state[train].pos; // TODO assumed that start node should always be sensor
-            
-            CBuf* path = dijkstra(track, train, src, dest, true, false, &tmp);
-
-            if (cbuf_len(path) < min_dist) {
-                min_dist = cbuf_len(path);
-                min_train = train;
-            }
-
-        }
-        
-        if (min_train == 0) {
-            PANIC("at least one train should have been found");
-        }
-
-        ULOG_INFO("train %d moves to sensor %s", min_train, track->nodes[sensor_id].name);
-
-        // notify server that train position changed
-        TrainstateMsg send_buf = (TrainstateMsg) {
-            .type = TRAINSTATE_POSITION_UPDATE,
-            .data = {
-                .position_update = {
-                    .train = min_train,
-                    .new_pos = sensor_id
-                }
-            }
-        };
-        TrainstateResp resp_buf;
-        Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-#endif
     }
 
     Exit();
@@ -768,6 +756,21 @@ trainStateServer()
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_POS,
+                .data = {}
+            };
+            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+        } else if (msg_buf.type == TRAINSTATE_SET_COHORT) {
+
+            usize train = msg_buf.data.set_cohort.train;
+            Cohort cohort = msg_buf.data.set_cohort.cohort;
+
+            train_state[train].cohort = cohort;
+
+            ULOG_INFO("Setting cohort for train %d: %s", train, cohort);
+
+            reply_buf = (TrainstateResp) {
+                .type = TRAINSTATE_SET_COHORT,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
