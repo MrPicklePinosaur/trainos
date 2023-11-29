@@ -20,3 +20,6 @@ new command: `co <train> <cohort-id>`
 
 train control commands (`tr`, `rv`, `path`) etc on single train in cohort will affect the entire cohort
 
+all trains have slightly different velocities, so each follower train should try to match the leader's velocity as close as possible (even if the speed setting ends up being different).
+- this means we would ideally like to gather velocity data for each speed setting
+- we can also oscillate between two speed settings to approximate an intermediate velocity

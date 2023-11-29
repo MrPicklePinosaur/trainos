@@ -591,7 +591,11 @@ trainStateServer()
             usize follower_train;
             // pair is (Tid of sending task , train that updated)
             while (listiter_next(&it, (void**)&follower_train)) {
+
+                // TODO find speed setting for this train that most closely matches leader train
+
                 ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, speed);
+                Delay(clock_server, 50); // TODO arbritrary propogation delay
                 train_state[follower_train].speed = speed;
                 marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
 

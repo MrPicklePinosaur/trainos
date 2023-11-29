@@ -22,6 +22,13 @@ uint32_t get_speed_index(uint32_t speed);
 static const uint32_t TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
 static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {2, 5, 8, 11, 14};
 static const uint32_t TRAIN_DATA_VEL[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
+    // train 2
+    // 06: 273645
+    // 07: 332686
+    // 09: 440777
+    // 10: 494988
+    // 12: 605942
+    // 13: 658203
     {73, 224, 387, 554, 650},  // 2
     {75, 239, 390, 537, 578},  // 47
     {17, 66, 190, 371, 579},  // 58

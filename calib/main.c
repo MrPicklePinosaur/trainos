@@ -91,74 +91,85 @@ void calibTrainSpeed() {
     marklin_switch_ctl(15, SWITCH_MODE_CURVED);
     marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
 
-    const uint32_t train_number = 2;
-    const uint32_t train_speed = 14;
-    uart_printf(CONSOLE, "Calculating train velocity for train %d speed %d\r\n", train_number, train_speed);
-    marklin_train_ctl(train_number, train_speed);
-
-    // Clear any previous sensor detections
-    marklin_dump_s88(5);
-    for (int i = 0; i < BYTE_COUNT; ++i) {
-        uart_getc(MARKLIN);
-    }
-
-    const uint32_t SAMPLES = 20;
-    uint32_t BANKS[] = {3, 2, 4, 5, 5, 4, 5, 4, 2, 3, 1, 2};
-    uint32_t SENSOR[] = {10, 1, 14, 14, 9, 5, 6, 4, 6, 12, 4, 16};
-    uint64_t DISTANCES[] = {128+231, 404, 239+43, 376, 239+155+239, 376, 50+239, 404, 231+120, 333+43, 437, 50+326};
-    size_t SENSOR_COUNT = 12;
-    uint64_t SPEEDS[SENSOR_COUNT];
-    for (int i = 0; i < SENSOR_COUNT; ++i) {
-        SPEEDS[i] = 0;
-    }
-
-    uint64_t prev_time = 0;
-    uint64_t current_time = 0;
-
-    for (int sample = 0; sample < SAMPLES+1; ++sample) {
-
-        size_t current_sensor = 0;
-
-        // uart_printf(CONSOLE, "expected group %d sensor %d next\r\n", BANKS[current_sensor], SENSOR[current_sensor]);
-        while (current_sensor < SENSOR_COUNT) {
-            size_t current_sensor_index = current_sensor % SENSOR_COUNT;
-
-            uint32_t expected_group = BANKS[current_sensor_index];
-            uint32_t expected_sensor = SENSOR[current_sensor_index];
-
-            uint32_t triggered = query_sensor(expected_group);
-            if (triggered == 0) continue;
-            char sensor_group = (triggered / 16);
-            uint8_t sensor_index = (triggered % 16)+1;
-            if (sensor_group == expected_group && sensor_index == expected_sensor) {
-
-                // uart_printf(CONSOLE, "triggered sensor: %d %d\r\n", sensor_group, sensor_index);
-
-                prev_time = current_time;
-                current_time = get_time();
-                if (!(current_sensor == 0 && sample == 0)) {
-                    uint32_t speed_index = (current_sensor - 1 + SENSOR_COUNT) % SENSOR_COUNT;
-                    uint64_t speed = DISTANCES[speed_index]*1000000000/(current_time-prev_time);
-                    SPEEDS[speed_index] += speed;
-                    uart_printf(CONSOLE, "Set speed %d to %d\r\n", speed_index, speed);
-                }
-
-                if (sample == SAMPLES) goto end_test;
-                ++current_sensor;
-                // uart_printf(CONSOLE, "expected group %d sensor %d next\r\n", BANKS[current_sensor_index], SENSOR[current_sensor_index]);
-            }
+    const uint32_t train_number = 47;
+    const uint32_t SPEEDS_TO_CALIB[] = { 6, 7, 9, 10, 12, 13, 0 };
+    int speed_index = 0;
+    for (;;) {
+        int train_speed = SPEEDS_TO_CALIB[speed_index];
+        if (train_speed == 0) {
+            uart_printf(CONSOLE, "All calibration completed\r\n");
+            break;
         }
 
-        uart_printf(CONSOLE, "sample %d complete\r\n", sample);
-    } end_test:
+        uart_printf(CONSOLE, "=========== Calculating train velocity for train %d speed %d\r\n", train_number, train_speed);
+        marklin_train_ctl(train_number, train_speed);
 
-    marklin_train_ctl(train_number, 0);
-    uint32_t total = 0;
-    for (int i = 0; i < SENSOR_COUNT; ++i) {
-        uart_printf(CONSOLE, "Average speed (section %d): %d\r\n", i, SPEEDS[i]/SAMPLES);
-        total += SPEEDS[i];
+        // Clear any previous sensor detections
+        marklin_dump_s88(5);
+        for (int i = 0; i < BYTE_COUNT; ++i) {
+            uart_getc(MARKLIN);
+        }
+
+        const uint32_t SAMPLES = 5;
+        uint32_t BANKS[] = {3, 2, 4, 5, 5, 4, 5, 4, 2, 3, 1, 2};
+        uint32_t SENSOR[] = {10, 1, 14, 14, 9, 5, 6, 4, 6, 12, 4, 16};
+        uint64_t DISTANCES[] = {128+231, 404, 239+43, 376, 239+155+239, 376, 50+239, 404, 231+120, 333+43, 437, 50+326};
+        size_t SENSOR_COUNT = 12;
+        uint64_t SPEEDS[SENSOR_COUNT];
+        for (int i = 0; i < SENSOR_COUNT; ++i) {
+            SPEEDS[i] = 0;
+        }
+
+        uint64_t prev_time = 0;
+        uint64_t current_time = 0;
+
+        for (int sample = 0; sample < SAMPLES+1; ++sample) {
+
+            size_t current_sensor = 0;
+
+            // uart_printf(CONSOLE, "expected group %d sensor %d next\r\n", BANKS[current_sensor], SENSOR[current_sensor]);
+            while (current_sensor < SENSOR_COUNT) {
+                size_t current_sensor_index = current_sensor % SENSOR_COUNT;
+
+                uint32_t expected_group = BANKS[current_sensor_index];
+                uint32_t expected_sensor = SENSOR[current_sensor_index];
+
+                uint32_t triggered = query_sensor(expected_group);
+                if (triggered == 0) continue;
+                char sensor_group = (triggered / 16);
+                uint8_t sensor_index = (triggered % 16)+1;
+                if (sensor_group == expected_group && sensor_index == expected_sensor) {
+
+                    // uart_printf(CONSOLE, "triggered sensor: %d %d\r\n", sensor_group, sensor_index);
+
+                    prev_time = current_time;
+                    current_time = get_time();
+                    if (!(current_sensor == 0 && sample == 0)) {
+                        uint32_t speed_index = (current_sensor - 1 + SENSOR_COUNT) % SENSOR_COUNT;
+                        uint64_t speed = DISTANCES[speed_index]*1000000000/(current_time-prev_time);
+                        SPEEDS[speed_index] += speed;
+                        //uart_printf(CONSOLE, "Set speed %d to %d\r\n", speed_index, speed);
+                    }
+
+                    if (sample == SAMPLES) goto end_test;
+                    ++current_sensor;
+                    // uart_printf(CONSOLE, "expected group %d sensor %d next\r\n", BANKS[current_sensor_index], SENSOR[current_sensor_index]);
+                }
+            }
+
+            //uart_printf(CONSOLE, "sample %d complete\r\n", sample);
+        } end_test:
+
+        marklin_train_ctl(train_number, 0);
+        uint32_t total = 0;
+        for (int i = 0; i < SENSOR_COUNT; ++i) {
+            uart_printf(CONSOLE, "Average speed (section %d): %d\r\n", i, SPEEDS[i]/SAMPLES);
+            total += SPEEDS[i];
+        }
+        uart_printf(CONSOLE, "Average speed (overall): %d\r\n", total/(SENSOR_COUNT*SAMPLES));
+
+        ++speed_index;
     }
-    uart_printf(CONSOLE, "Average speed (overall): %d\r\n", total/(SENSOR_COUNT*SAMPLES));
 }
 
 void
