@@ -27,6 +27,7 @@ typedef struct {
     usize dest;
     isize offset;
     Cohort cohort;
+    List* followers; // list of trains that following
 } TrainState;
 
 typedef PAIR(usize, usize) Pair_usize_usize;
