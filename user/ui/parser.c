@@ -230,32 +230,6 @@ parse_command(Arena arena, str8 command)
             }
         };
     }
-    else if (str8_cmp(cmd_name, str8("bench"))) {
-
-        eat_whitespace(command, &it);
-
-        str8 dest1 = get_word(command, &it);
-
-        eat_whitespace(command, &it);
-
-        str8 dest2 = get_word(command, &it);
-
-        ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed BENCH command: dest1 = %s, dest2 = %s", str8_to_cstr(dest1), str8_to_cstr(dest2));
-
-        str8 copied_dest1 = str8_copy(&arena, dest1);
-        str8 copied_dest2 = str8_copy(&arena, dest2);
-
-        return (ParserResult) {
-            ._type = PARSER_RESULT_BENCH,
-            ._data = {
-                .bench = {
-                    .dest1 = str8_to_cstr(copied_dest1),
-                    .dest2 = str8_to_cstr(copied_dest2)
-                }
-            }
-        };
-
-    }
     else if (str8_cmp(cmd_name, str8("help"))) {
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed HELP command");
         return (ParserResult) {
