@@ -371,7 +371,6 @@ TrainstateWaitForSensor(Tid trainstate_server, isize train)
     return (Pair_usize_usize){resp_buf.data.position_wait.train, resp_buf.data.position_wait.pos};
 }
 
-
 typedef struct {
     usize train;
     usize speed;
@@ -508,13 +507,14 @@ trainStateServer()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
-    for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
+    for (usize i = 1; i < NUMBER_OF_TRAINS; ++i) {
         train_state[i] = (TrainState) {
             .speed = 0,
             .lights = 0,
             .reversed = false,
             .pos = TRAIN_POS_NULL,
             .offset = 0,
+            .cohort = i,
         };
     }
 
@@ -572,16 +572,32 @@ trainStateServer()
 
             usize train = msg_buf.data.set_speed.train;
             usize speed = msg_buf.data.set_speed.speed;
-            train_state[train].speed = speed;
-
-            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d: %d", train, train_state[train].speed);
-            marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_SPEED,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+
+            // set speed for a trains in cohort
+            Cohort cohort = train;
+            for (usize i = 0; i < TRAIN_COUNT; ++i) {
+                usize train_id = trains[i];
+                if (train_state[train_id].cohort == cohort) {
+                    
+                    train_state[train_id].speed = speed;
+
+                    if (train == train_id) {
+                        ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train_id, speed);
+                    } else {
+                        ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", train_id, cohort, speed);
+
+                    }
+                    marklin_train_ctl(marklin_server, train_id, trainstate_serialize(train_state[train_id]));
+
+                }
+            }
+
 
         } else if (msg_buf.type == TRAINSTATE_REVERSE) {
 
@@ -767,7 +783,7 @@ trainStateServer()
 
             train_state[train].cohort = cohort;
 
-            ULOG_INFO("Setting cohort for train %d: %s", train, cohort);
+            ULOG_INFO("Setting cohort for train %d: %d", train, cohort);
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_COHORT,

@@ -160,6 +160,31 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
             }
 			break;
         } 
+        case PARSER_RESULT_POS: {
+            // TODO currently can only set position to a sensor
+
+            usize train = command._data.pos.train;
+            Track* track = get_track();
+            TrackNode* node = track_node_by_name(track, command._data.pos.pos);
+
+            char* msg = cstr_format(&tmp, "Setting train %s%d%s position to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
+            renderer_append_console(console_renderer_server, msg);
+            TrainstateSetPos(trainstate_server, reserve_server, command._data.pos.train, node);
+
+            break;
+        }
+        case PARSER_RESULT_CO: {
+
+            u32 train = command._data.co.train;
+            u32 cohort = command._data.co.cohort;
+
+            char* msg = cstr_format(&tmp, "Assigning train %s%d%s to cohort %s%d%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, cohort, ANSI_RESET);
+            renderer_append_console(console_renderer_server, msg);
+
+            TrainstateSetCohort(trainstate_server, train, cohort);
+            
+            break;
+        }
         case PARSER_RESULT_TEST: {
             switch (command._data.test.num) {
                 case 1: {
@@ -447,30 +472,6 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     renderer_append_console(console_renderer_server, "Invalid test");
             }
 
-            break;
-        }
-        case PARSER_RESULT_POS: {
-            // TODO currently can only set position to a sensor
-
-            usize train = command._data.pos.train;
-            Track* track = get_track();
-            TrackNode* node = track_node_by_name(track, command._data.pos.pos);
-
-            char* msg = cstr_format(&tmp, "Setting train %s%d%s position to %s%s%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, node->name, ANSI_RESET);
-            renderer_append_console(console_renderer_server, msg);
-            TrainstateSetPos(trainstate_server, reserve_server, command._data.pos.train, node);
-
-            break;
-        }
-        case PARSER_RESULT_CO: {
-
-            u32 train = command._data.co.train;
-            u32 cohort = command._data.co.cohort;
-
-            char* msg = cstr_format(&tmp, "Assigning train %s%d%s to cohort %s%d%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, cohort, ANSI_RESET);
-            renderer_append_console(console_renderer_server, msg);
-
-            
             break;
         }
         case PARSER_RESULT_HELP: {
