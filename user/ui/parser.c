@@ -230,6 +230,26 @@ parse_command(Arena arena, str8 command)
             }
         };
     }
+    else if (str8_cmp(cmd_name, str8("co"))) {
+
+        eat_whitespace(command, &it);
+
+        u32 train = get_number(command, &it);
+
+        eat_whitespace(command, &it);
+
+        u32 cohort = get_number(command, &it);
+
+        return (ParserResult) {
+            ._type = PARSER_RESULT_CO,
+            ._data = {
+                .co = {
+                    .train = train,
+                    .cohort = cohort
+                }
+            }
+        };
+    }
     else if (str8_cmp(cmd_name, str8("help"))) {
         ULOG_DEBUG_M(LOG_MASK_PARSER, "Parsed HELP command");
         return (ParserResult) {

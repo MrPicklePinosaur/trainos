@@ -462,6 +462,17 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
 
             break;
         }
+        case PARSER_RESULT_CO: {
+
+            u32 train = command._data.co.train;
+            u32 cohort = command._data.co.cohort;
+
+            char* msg = cstr_format(&tmp, "Assigning train %s%d%s to cohort %s%d%s", ANSI_CYAN, train, ANSI_RESET, ANSI_GREEN, cohort, ANSI_RESET);
+            renderer_append_console(console_renderer_server, msg);
+
+            
+            break;
+        }
         case PARSER_RESULT_HELP: {
             renderer_append_console(console_renderer_server, (char*)"MarklinCTL help =======");
             renderer_append_console(console_renderer_server, (char*)"tr <train> <speed>           set speed of train");
@@ -474,6 +485,7 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
             renderer_append_console(console_renderer_server, (char*)"path <train> <node> <speed>  pathfind to destination");
             renderer_append_console(console_renderer_server, (char*)"test <testnum>               run a predefined test");
             renderer_append_console(console_renderer_server, (char*)"pos <train> <node>           set the position of train");
+            renderer_append_console(console_renderer_server, (char*)"co <train> <cohort-id>       assign a train to a cohort");
             renderer_append_console(console_renderer_server, (char*)"help                         print this message");
 
             break;
