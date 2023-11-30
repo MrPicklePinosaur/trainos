@@ -66,6 +66,13 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     TrainState state = TrainstateGet(trainstate_server, train);
 
+    u32 distance_to_dest = 0;
+    for (usize i = 0; i < cbuf_len(path); ++i) {
+        TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
+        distance_to_dest += edge->dist;
+    }
+
+    u32 distance_to_waiting_sensor;
     i32 stopping_distance;
     i32 train_vel;
 
@@ -75,6 +82,8 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     const u32 STOPPING_DISTANCES[] = {14, 11, 8, 5};
     usize original_train_speed = train_speed;
 
+    bool is_short_move = true;
+
     for (u32 speed_i = 0; speed_i < 4; ++speed_i) {
         train_speed = STOPPING_DISTANCES[speed_i];
         if (train_speed > original_train_speed) continue;
@@ -83,9 +92,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         train_vel = train_data_vel(train, train_speed);
 
         waiting_sensor = 0;
+        distance_to_waiting_sensor = distance_to_dest;
         for (usize i = usize_sub(cbuf_len(path), 1); ; --i) {
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
             stopping_distance -= edge->dist;
+            distance_to_waiting_sensor -= edge->dist;
             if (stopping_distance <= 0 && edge->src->type == NODE_SENSOR) {
                 waiting_sensor = edge->src; // sensor that we should wait to trip
                 break;
@@ -93,7 +104,12 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
             if (i == 0) break;
         }
 
-        if (!(waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor)) {
+        if (!(
+            waiting_sensor == 0
+            || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor
+            || distance_to_waiting_sensor < train_data_acceleration_dist(train, train_speed)
+        )) {
+            is_short_move = false;
             break;
         }
     }
@@ -152,14 +168,8 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     }
 
 
-    if (waiting_sensor == 0 || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor) {
+    if (is_short_move) {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
-
-        u32 distance_to_dest = 0;
-        for (usize i = 0; i < cbuf_len(path); ++i) {
-            TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
-            distance_to_dest += edge->dist;
-        }
 
 #if 0
         TrainState state = TrainstateGet(trainstate_server, train);
