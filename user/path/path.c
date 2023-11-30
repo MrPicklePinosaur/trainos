@@ -66,13 +66,16 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
     TrainState state = TrainstateGet(trainstate_server, train);
 
-    u32 distance_to_dest = 0;
+    i32 distance_to_dest = offset - state.offset;
     for (usize i = 0; i < cbuf_len(path); ++i) {
         TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
         distance_to_dest += edge->dist;
     }
+    if (distance_to_dest < 0) {
+        ULOG_WARN("offsets cause destination to be behind direction of travel");
+    }
 
-    u32 distance_to_waiting_sensor;
+    i32 distance_to_waiting_sensor;
     i32 stopping_distance;
     i32 train_vel;
 
@@ -92,7 +95,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         train_vel = train_data_vel(train, train_speed);
 
         waiting_sensor = 0;
-        distance_to_waiting_sensor = distance_to_dest;
+        distance_to_waiting_sensor = distance_to_dest-offset;
         for (usize i = usize_sub(cbuf_len(path), 1); ; --i) {
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
             stopping_distance -= edge->dist;
@@ -268,6 +271,8 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     TrackNode* dest = ((TrackEdge*)cbuf_back(path))->dest;
     TrainstateSetPos(trainstate_server, reserve_server, train, dest);
     /* ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone); */
+
+    TrainstateSetOffset(trainstate_server, train, offset);
 
 }
 
