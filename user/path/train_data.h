@@ -21,6 +21,7 @@
 static const u32 TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
 static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {2, 5, 8, 11, 14};
 static const u32 TRAIN_DATA_VEL[TRAIN_DATA_TRAIN_COUNT][SPEED_SETTINGS] = {
+    //{0, 0, 0, 0, 0, 69, 109, 157, 210, 270, 331, 394, 461, 527, 602},  // 1
     {0, 0, 73, 0, 0, 224, 277, 333, 387, 441, 495, 554, 595, 642, 654},  // 2
     //{0, 0, 0, 0, 0, 78, 122, 168, 221, 282, 345, 411, 484, 550, 625}, // 24
     {0, 0, 75, 0, 0, 238, 294, 354, 391, 441, 484, 541, 587, 602, 608},  // 47
