@@ -169,6 +169,7 @@ void calibTrainSpeed() {
         uart_printf(CONSOLE, "Average speed (overall): %d\r\n", total/(SENSOR_COUNT*SAMPLES));
 
         ++speed_index;
+        delay(10000000);  // 10 second delay to let the train stop
     }
 }
 
