@@ -1,7 +1,9 @@
 #ifndef __TRAINDATA_H__
 #define __TRAIN_DATA_H__
 
-#include <stdint.h>
+#include <traindef.h>
+
+#define SPEED_SETTINGS 15
 
 #define TRAIN_DATA_TRAIN_COUNT 4
 #define TRAIN_DATA_SPEED_COUNT 5
@@ -16,81 +18,37 @@
 #define TRAIN_SPEED_MED    11
 #define TRAIN_SPEED_HIGH   14
 
-uint32_t get_train_index(uint32_t train);
-uint32_t get_speed_index(uint32_t speed);
-
-static const uint32_t TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
-static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-static const uint32_t TRAIN_DATA_VEL[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
-    // train 47
-    // 06: 293618
-    // 07: 353577
-    // 09: 438913
-    // 10: 484289
-    // 12: 589263
-    // 13: 608478
-    // train 58
-    // 06: 104087
-    // 07: 147414
-    // 09: 252497
-    // 10: 309060
-    // 12: 444868
-    // 13: 512472
-    // train 77
-    // 06: 133583
-    // 07: 183828
-    // 09: 286086
-    // 10: 343801
-    // 12: 473016
-    // 13: 546183
-    
-    // train 24
-    // 05: 078162
-    // 06: 121579
-    // 07: 167820
-    // 08: 220899
-    // 09: 282418
-    // 10: 345455
-    // 11: 411170
-    // 12: 483713
-    // 13: 549650
-    // 14: 624702
-
-    // train 2
-    // 06: 277
-    // 07: 333
-    // 09: 441
-    // 10: 495
-    // 12: 606
-    // 13: 658
-
-    {73, 224, 277, 333, 387, 441, 495, 554, 606, 658, 0},  // 2
-    {75, 239, 390, 537, 578},  // 47
-    {17, 66, 190, 371, 579},  // 58
-    {25, 99, 232, 408, 612},  // 77
+static const u32 TRAIN_DATA_TRAINS[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
+static const uint32_t TRAIN_DATA_SPEEDS[TRAIN_DATA_SPEED_COUNT] = {2, 5, 8, 11, 14};
+static const u32 TRAIN_DATA_VEL[TRAIN_DATA_TRAIN_COUNT][SPEED_SETTINGS] = {
+    {0, 0, 73, 0, 0, 224, 277, 333, 387, 441, 495, 554, 595, 642, 654},  // 2
+    //{0, 0, 0, 0, 0, 78, 122, 168, 221, 282, 345, 411, 484, 550, 625}, // 24
+    {0, 0, 75, 0, 0, 239, 294, 354, 390, 439, 484, 537, 589, 608, 0},  // 47
+    {0, 0, 17, 0, 0, 66, 104, 147, 190, 252, 309, 371, 445, 512, 579},  // 58
+    {0, 0, 25, 0, 0, 99, 134, 184, 232, 286, 344, 408, 473, 546, 612},  // 77
 };
-static const uint32_t TRAIN_DATA_STOP_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
-    {60, 275, 525, 770, 971},  // 2
-    {56, 284, 521, 709, 828},  // 47
-    {14, 115, 348, 716, 1254},  // 58
-    {20, 173, 447, 929, 1588},  // 77
+static const u32 TRAIN_DATA_STOP_DIST[TRAIN_DATA_TRAIN_COUNT][SPEED_SETTINGS] = {
+    {0, 0, 60, 0, 0, 275, 0, 0, 525, 0, 0, 770, 0, 0, 971},  // 2
+    {0, 0, 56, 0, 0, 284, 0, 0, 521, 0, 0, 709, 0, 0, 828},  // 47
+    {0, 0, 14, 0, 0, 115, 0, 0, 348, 0, 0, 716, 0, 0, 1254},  // 58
+    {0, 0, 20, 0, 0, 173, 0, 0, 447, 0, 0, 929, 0, 0, 1588},  // 77
 };
-static const uint32_t TRAIN_DATA_STOP_TIME[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SPEED_COUNT] = {
-    {1642, 2455, 2713, 2780, 2988},  // 2
-    {1493, 2377, 2672, 2641, 2865},  // 47
-    {1647, 3485, 3663, 3860, 4332},  // 58
-    {1600, 3495, 3853, 4543, 5190},  // 77
+static const u32 TRAIN_DATA_STOP_TIME[TRAIN_DATA_TRAIN_COUNT][SPEED_SETTINGS] = {
+    {0, 0, 1642, 0, 0, 2455, 0, 0, 2713, 0, 0, 2780, 0, 0, 2988},  // 2
+    {0, 0, 1493, 0, 0, 2377, 0, 0, 2672, 0, 0, 2641, 0, 0, 2865},  // 47
+    {0, 0, 1647, 0, 0, 3485, 0, 0, 3663, 0, 0, 3860, 0, 0, 4332},  // 58
+    {0, 0, 1600, 0, 0, 3495, 0, 0, 3853, 0, 0, 4543, 0, 0, 5190},  // 77
 };
-static const uint32_t TRAIN_DATA_SHORT_MOVE_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SHORT_MOVE_DIST_COUNT] = {
+static const u32 TRAIN_DATA_SHORT_MOVE_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SHORT_MOVE_DIST_COUNT] = {
     {0, 10, 17, 33, 66, 97, 132, 186, 235, 305, 376, 475, 601, 725, 890, 992, 1118},  // 2
     {0, 8, 24, 39, 73, 105, 152, 203, 269, 334, 435, 555, 730, 873, 1002, 1110, 1175},  // 47
     {0, 10, 25, 72, 118, 192, 245, 290, 330, 384, 446, 477, 540, 575, 639, 672, 714},  // 58
     {0, 17, 58, 97, 154, 209, 300, 351, 405, 458, 515, 570, 634, 690, 745, 805, 849},  // 77
 };
 
-uint32_t train_data_vel(uint32_t train, uint32_t speed);
-uint32_t train_data_stop_dist(uint32_t train, uint32_t speed);
-uint32_t train_data_stop_time(uint32_t train, uint32_t speed);
-uint32_t train_data_short_move_time(uint32_t train, uint32_t dist);
+u32 train_data_vel(u32 train, u32 speed);
+u32 train_data_stop_dist(u32 train, u32 speed);
+u32 train_data_stop_time(u32 train, u32 speed);
+u32 train_data_short_move_time(u32 train, u32 dist);
 
 #endif // __TRAIN_DATA_H__

@@ -91,8 +91,8 @@ void calibTrainSpeed() {
     marklin_switch_ctl(15, SWITCH_MODE_CURVED);
     marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
 
-    const uint32_t train_number = 2;
-    const uint32_t SPEEDS_TO_CALIB[] = { 12, 13, 14, 0 };
+    const uint32_t train_number = 47;
+    const uint32_t SPEEDS_TO_CALIB[] = { 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0 };
     int speed_index = 0;
     for (;;) {
         int train_speed = SPEEDS_TO_CALIB[speed_index];
