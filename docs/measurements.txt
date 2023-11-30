@@ -215,3 +215,81 @@ Train 77 short moves:
 3500:  745
 3750:  805
 4000:  849
+
+
+
+=== ACCELERATION DISTANCE/TIME ===
+
+All of these are distance 1797.
+
+Train 2 total times:
+ 2: 24119550
+ 5:  9444793
+ 8:  6891331
+11:  5999117
+14:  5845299
+
+Train 24 total times:
+ 2: 98662676
+ 5: 22673700
+ 8:  8860405
+11:  5814603
+14:  5168415
+
+Train 47 total times:
+ 2: 23165769
+ 5:  8860282
+ 8:  6737611
+11:  6183657
+14:  5906810
+
+Train 58 total times:
+ 2: 101646905
+ 5:  25227280
+ 8:  10029336
+11:   6337551
+14:   5568513
+
+Train 77 total times:
+ 2: 68544054
+ 5: 18305069
+ 8:  9290914
+11:  6563711
+14:  5643770
+
+Acceleration distance = final speed * total time - distance travelled
+Acceleration time = 2 * (total time - distance travelled/final speed)
+
+
+
+= Acceleration distance =
+
+All of these are in millimeters.
+
+Train 2 acceleration distances:
+ 2:   10 (guess since measurements are too inaccurate for calculation)
+ 5:  318
+ 8:  870
+11: 1527
+14: 2002
+
+Train 47 acceleration distances:
+ 2:   10 (guess since measurements are too inaccurate for calculation)
+ 5:  320
+ 8:  830
+11: 1524
+14: 1617
+
+Train 58 acceleration distances:
+ 2:   10 (guess since measurements are too inaccurate for calculation)
+ 5:   30 (guess since measurements are too inaccurate for calculation)
+ 8:  108
+11:  554
+14: 1427
+
+Train 77 acceleration distances:
+ 2:   10 (guess since measurements are too inaccurate for calculation)
+ 5:   15
+ 8:  358
+11:  880
+14: 1656
