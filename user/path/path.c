@@ -73,8 +73,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     // TODO it is possible to run out of path
     TrackNode* waiting_sensor;
     const u32 STOPPING_DISTANCES[] = {14, 11, 8, 5};
+    usize original_train_speed = train_speed;
+
     for (u32 speed_i = 0; speed_i < 4; ++speed_i) {
         train_speed = STOPPING_DISTANCES[speed_i];
+        if (train_speed > original_train_speed) continue;
 
         stopping_distance = train_data_stop_dist(train, train_speed)-offset;
         train_vel = train_data_vel(train, train_speed);
