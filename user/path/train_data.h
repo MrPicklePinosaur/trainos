@@ -52,5 +52,6 @@ u32 train_data_stop_time(u32 train, u32 speed);
 u32 train_data_short_move_time(u32 train, u32 dist);
 
 u32 get_train_index(u32 train);
+u32 get_safe_speed(u32 train, u32 velocity); // get a speed setting that is lower than given velocity
 
 #endif // __TRAIN_DATA_H__
