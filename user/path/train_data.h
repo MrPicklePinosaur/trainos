@@ -45,11 +45,18 @@ static const u32 TRAIN_DATA_SHORT_MOVE_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_S
     {0, 10, 25, 72, 118, 192, 245, 290, 330, 384, 446, 477, 540, 575, 639, 672, 714},  // 58
     {0, 17, 58, 97, 154, 209, 300, 351, 405, 458, 515, 570, 634, 690, 745, 805, 849},  // 77
 };
+static const u32 TRAIN_DATA_ACCELERATION_DIST[TRAIN_DATA_TRAIN_COUNT][TRAIN_DATA_SHORT_MOVE_DIST_COUNT] = {
+    {0, 0, 10, 0, 0, 318, 0, 0, 870, 0, 0, 1527, 0, 0, 2002},  // 2
+    {0, 0, 10, 0, 0, 320, 0, 0, 830, 0, 0, 1524, 0, 0, 1617},  // 47
+    {0, 0, 10, 0, 0, 30, 0, 0, 108, 0, 0, 554, 0, 0, 1427},  // 58
+    {0, 0, 10, 0, 0, 15, 0, 0, 358, 0, 0, 880, 0, 0, 1656},  // 77
+};
 
 u32 train_data_vel(u32 train, u32 speed);
 u32 train_data_stop_dist(u32 train, u32 speed);
 u32 train_data_stop_time(u32 train, u32 speed);
 u32 train_data_short_move_time(u32 train, u32 dist);
+u32 train_data_acceleration_dist(u32 train, u32 speed);
 
 u32 get_train_index(u32 train);
 u32 get_safe_speed(u32 train, u32 velocity); // get a speed setting that is lower than given velocity

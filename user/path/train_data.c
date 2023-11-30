@@ -72,6 +72,14 @@ train_data_short_move_time(u32 train, u32 dist)
 }
 
 u32
+train_data_acceleration_dist(u32 train, u32 speed)
+{
+    _speed_bounds_check(speed);
+    u32 train_index = get_train_index(train);
+    return TRAIN_DATA_ACCELERATION_DIST[train_index][speed];
+}
+
+u32
 get_safe_speed(u32 train, u32 velocity)
 {
     for (usize speed = 14; speed >= 5; --speed) {
