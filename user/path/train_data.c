@@ -68,4 +68,17 @@ train_data_short_move_time(u32 train, u32 dist)
     u32 last_time = TRAIN_DATA_SHORT_MOVE_TIME_INCREMENT*(TRAIN_DATA_SHORT_MOVE_DIST_COUNT-1);
 
     return last_time + TRAIN_DATA_SHORT_MOVE_TIME_INCREMENT*(dist-last_dist)/(last_dist-penultimate_dist);
+
+}
+
+u32
+get_safe_speed(u32 train, u32 velocity)
+{
+    for (usize speed = 14; speed >= 5; --speed) {
+        usize follower_vel = train_data_vel(train, speed); 
+        if (follower_vel <= velocity) {
+            return speed;
+        }
+    }
+    return 0;
 }

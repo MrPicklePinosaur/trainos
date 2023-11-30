@@ -586,6 +586,8 @@ trainStateServer()
             train_state[train].speed = speed;
             marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
+            usize next_train_vel = train_data_vel(train, speed); // speed of the train thats ahead
+
             Cohort cohort = train;
             ListIter it = list_iter(train_state[train].followers); 
             usize follower_train;
@@ -594,9 +596,19 @@ trainStateServer()
 
                 // TODO find speed setting for this train that most closely matches leader train
 
-                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, speed);
-                Delay(clock_server, 50); // TODO arbritrary propogation delay
-                train_state[follower_train].speed = speed;
+                Delay(clock_server, 30); // TODO arbritrary propogation delay
+
+                // search for the speed that is lower than the train ahead
+                u32 follower_speed = get_safe_speed(follower_train, next_train_vel);
+                if (follower_speed == 0) {
+                    ULOG_WARN("NO VALID SPEED FOUND");
+                }
+
+                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, follower_speed);
+
+                next_train_vel = train_data_vel(follower_train, follower_speed);
+
+                train_state[follower_train].speed = follower_speed;
                 marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
 
             }
