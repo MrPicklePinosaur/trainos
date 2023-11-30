@@ -36,14 +36,14 @@ void
 marklin_dump_s88(uint32_t count)
 {
     Putc(128+count);
-    delay(100000);
+    // No delay; keeps the polling loop lean. You probably want to getc right afterwards anyway
 }
 
 void
 marklin_pick_s88(size_t index)
 {
     Putc(192+index);
-    delay(100000);
+    // No delay; keeps the polling loop lean. You probably want to getc right afterwards anyway
 }
 
 void
