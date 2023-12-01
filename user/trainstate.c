@@ -582,35 +582,52 @@ trainStateServer()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
-            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train, speed);
-            train_state[train].speed = speed;
-            marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
+            if (train_state[train].cohort == train) {
+                // if leader, also modify speeds of followers
 
-            usize next_train_vel = train_data_vel(train, speed); // speed of the train thats ahead
+                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train, speed);
+                train_state[train].speed = speed;
+                marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
-            Cohort cohort = train;
-            ListIter it = list_iter(train_state[train].followers); 
-            usize follower_train;
-            // pair is (Tid of sending task , train that updated)
-            while (listiter_next(&it, (void**)&follower_train)) {
+                usize next_train_vel = train_data_vel(train, speed); // speed of the train thats ahead
 
-                // TODO find speed setting for this train that most closely matches leader train
+                Cohort cohort = train;
+                ListIter it = list_iter(train_state[train].followers); 
+                usize follower_train;
+                // pair is (Tid of sending task , train that updated)
+                while (listiter_next(&it, (void**)&follower_train)) {
 
-                Delay(clock_server, 30); // TODO arbritrary propogation delay
+                    // TODO find speed setting for this train that most closely matches leader train
 
-                // search for the speed that is lower than the train ahead
-                u32 follower_speed = get_safe_speed(follower_train, next_train_vel);
-                if (follower_speed == 0) {
-                    ULOG_WARN("NO VALID SPEED FOUND");
+                    Delay(clock_server, 30); // TODO arbritrary propogation delay
+
+                    // search for the speed that is lower than the train ahead
+                    u32 follower_speed = get_safe_speed(follower_train, next_train_vel);
+                    if (follower_speed == 0) {
+                        ULOG_WARN("NO VALID SPEED FOUND");
+                    }
+
+                    ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, follower_speed);
+
+                    next_train_vel = train_data_vel(follower_train, follower_speed);
+
+                    train_state[follower_train].speed = follower_speed;
+                    marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
+
+                    // now spawn a task that will monitor train to adjust speed of train based on train in front
+
+                    // TODO also need to keep track of this task and delete previously existing tasks that manage speed
+                    // pass the train ahead to task, as well as self
+                    //Create();
+
                 }
+            } else {
 
-                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, follower_speed);
+                // if not leader, just set the speed explicitly
 
-                next_train_vel = train_data_vel(follower_train, follower_speed);
-
-                train_state[follower_train].speed = follower_speed;
-                marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
-
+                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed explicitly for follower train %d: %d", train, speed);
+                train_state[train].speed = speed;
+                marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
             }
 
 
