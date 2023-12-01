@@ -174,18 +174,6 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     if (is_short_move) {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
 
-#if 0
-        TrainState state = TrainstateGet(trainstate_server, train);
-        // short move is impossible
-        if (state.offset > distance_to_dest) {
-            ULOG_WARN("short move not possible");
-        } else {
-            ULOG_INFO("short move with saved offset %d, new offset %d", state.offset, offset);
-            TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
-            Delay(clock_server, train_data_short_move_time(train, distance_to_dest-state.offset) / 10);
-            TrainstateSetSpeed(trainstate_server, train, 0);
-        }
-#endif
         TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
         Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
 
