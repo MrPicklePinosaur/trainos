@@ -468,6 +468,16 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
 
                     break;
                 }
+                case 0: {
+
+                    TrainstateSetPos(trainstate_server, reserve_server, 2, track_node_by_name(track, "C12"));
+                    Delay(clock_server, 50);
+                    TrainstateSetPos(trainstate_server, reserve_server, 47, track_node_by_name(track, "B6"));
+                    Delay(clock_server, 50);
+                    TrainstateSetCohort(trainstate_server, 47, 2);
+
+                    break;
+                }
                 default:
                     renderer_append_console(console_renderer_server, "Invalid test");
             }
