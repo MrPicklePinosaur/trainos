@@ -285,8 +285,8 @@ patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* p
             // no need to move if we are only running a reversal
             if (cbuf_len(simple_path) > 1) {
                 /* TrainState state = TrainstateGet(trainstate_server, train); */
-                /* reverse_offset = TRAIN_LENGTH; */
-                patherSimplePath(track, simple_path, train, train_speed, offset, arena);
+                u32 reverse_offset = TRAIN_LENGTH;
+                patherSimplePath(track, simple_path, train, train_speed, reverse_offset, arena);
             }
             ULOG_INFO_M(LOG_MASK_PATH, "Reversing train %d...", train);
             TrainstateReverseStatic(trainstate_server, train);
