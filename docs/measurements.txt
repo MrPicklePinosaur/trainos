@@ -40,8 +40,14 @@ The test is run between C10 and E14, which is a distance of 1045, unless otherwi
 Train 2 wait before stop
  2: 4091719 (total distance 359 instead of 1045, from C10 to B1)
  5: 3437504
+ 6: 2565917
+ 7: 1855925
  8: 1344469, 1335055
+ 9: 1132964
+10:  843962
 11:  497003
+12:  413969
+13:  240629
 14:  114534
 
 (got two measurements for speed 8)
@@ -49,8 +55,14 @@ Train 2 wait before stop
 Train 47 wait before stop:
  2: 4043959 (total distance 359 instead of 1045, from C10 to B1)
  5: 3186181
+ 6: 2436675
+ 7: 1773222
  8: 1343748
+ 9: 1149748
+10:  928405
 11:  625165
+12:  507750
+13:  382140
 14:  375001
 
 Train 58 wait before stop:
