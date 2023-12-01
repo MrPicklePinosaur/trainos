@@ -41,25 +41,33 @@ cohort_follower_regulate()
     }
 
     u32 expected_time = dist_to_next_train/ahead_train_vel;
-    ULOG_DEBUG("Expect %d time between trains", expected_time);
+    ULOG_INFO("Expect %d time between trains", expected_time);
 
     // wait for ahead train to get to projected next sensor
     TrackNode* ahead_current_sensor = track_node_by_sensor_id(track, state.pos);
     TrackNode* ahead_next_sensor = track_next_sensor(switch_server, track, ahead_current_sensor);
+    ULOG_DEBUG("Expect sensor %s", ahead_next_sensor->name);
 
     // wait for current train to get to same snesor
+    for (;;) {
+        Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, ahead_train);
+        if (res.second == ahead_next_sensor->num) {
+            break;
+        }
+        ULOG_WARN("Unexpected sensor for ahead train %d, wanted %s, got %s", ahead_train, ahead_next_sensor->name, track_node_by_sensor_id(track, res.second)->name);
+    }
+    ULOG_DEBUG("hit sensor for ahead");
     u32 time_between_sensor = Time(clock_server);
-    Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, ahead_train);
-    if (res.second != ahead_next_sensor->num) {
-        ULOG_WARN("Unexpected sensor for ahead train, wanted %s, got %s", ahead_next_sensor->name, track_node_by_sensor_id(track, res.second)->name);
-        Exit();
-    }
 
-    res = TrainstateWaitForSensor(trainstate_server, follower_train);
-    if (res.second != ahead_next_sensor->num) {
-        ULOG_WARN("Unexpected sensor for follower train, wanted %s, got %s", ahead_next_sensor->name, track_node_by_sensor_id(track, res.second)->name);
-        Exit();
+    for (;;) {
+        Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, follower_train);
+        if (res.second == ahead_next_sensor->num) {
+            break;
+        }
+        ULOG_WARN("Unexpected sensor for follower train %d, wanted %s, got %s", follower_train, ahead_next_sensor->name, track_node_by_sensor_id(track, res.second)->name);
+
     }
+    ULOG_DEBUG("hit sensor for follower");
     time_between_sensor = Time(clock_server) - time_between_sensor;
 
     ULOG_DEBUG("Took %d time between sensors", time_between_sensor);

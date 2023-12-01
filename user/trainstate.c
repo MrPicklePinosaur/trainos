@@ -276,6 +276,7 @@ TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNo
     // TODO not sure if reserve server should be coupled here
     if (node->zone != -1 && !zone_reserve(reserve_server, train, node->zone)) {
         ULOG_WARN("Failed to reserve zone %d when setting position", node->zone);
+        // TODO not sure if should break here if not allowed
         return -1;
     }
 
@@ -291,7 +292,7 @@ TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNo
     };
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (ret < 0) {
-        ULOG_WARN("TrainstateSetOffset errored");
+        ULOG_WARN("TrainstateSetPos errored");
         return -1;
     }
     return 0;
