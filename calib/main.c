@@ -181,15 +181,11 @@ calibTrainStop()
     marklin_switch_ctl(15, SWITCH_MODE_CURVED);
     marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
 
-    const uint32_t granularity = 20; // how many binary search cycles to perform
+    const uint32_t granularity = 15; // how many binary search cycles to perform
     const uint32_t timeout = 6000000; // timeout before we asssume that train did not make it to second sensor
     const uint32_t train_number = 2;
-    const uint32_t train_speed = 14;
 
-    uart_printf(CONSOLE, "Calculating stop time for train %d speed %d\r\n", train_number, train_speed);
-
-    uint32_t lower_bound_time = 0;
-    uint32_t upper_bound_time = 5000000;
+    uart_printf(CONSOLE, "Calculating stop time for train %d\r\n", train_number);
 
     const int SENSOR_1_GROUP = 3;
     const int SENSOR_1_INDEX = 10;
@@ -202,71 +198,83 @@ calibTrainStop()
 
     uint32_t wait_time = 0;
 
-    for (int i = 0; i < granularity; ++i) {
-
-        // set train to max speed
-        marklin_train_ctl(train_number, 14);
-
-        // wait for sensor C12, then slow down to desired speed
-        for (;;) {
-            uint32_t triggered = query_sensor(SPEEDUP_END_GROUP);
-            if (triggered == 0) continue;
-            char sensor_group = (triggered / 16);
-            uint8_t sensor_index = (triggered % 16)+1;
-            if (sensor_group == SPEEDUP_END_GROUP && sensor_index == SPEEDUP_END_INDEX) {
-                break;
-            }
-        }
-        marklin_train_ctl(train_number, train_speed);
-
-        // how long to wait after first sensor is triggered before issuing stop commanad
-        wait_time = (upper_bound_time+lower_bound_time)/2;
+    const uint32_t SPEEDS_TO_CALIB[] = { 10, 12, 13, 0 };
+    int speed_index = 0;
+    for (;;) {
         
-        // wait for sensor C10
-        for (;;) {
-            uint32_t triggered = query_sensor(SENSOR_1_GROUP);
-            if (triggered == 0) continue;
-            char sensor_group = (triggered / 16);
-            uint8_t sensor_index = (triggered % 16)+1;
-            if (sensor_group == SENSOR_1_GROUP && sensor_index == SENSOR_1_INDEX) {
-                break;
-            }
+        uint32_t lower_bound_time = 0;
+        uint32_t upper_bound_time = 5000000;  // MAY CAUSE ISSUES: If upper bound is larger than twice the time the train takes to travel from sensor 1 to sensor 2, it will miss the sensor
+
+        uint32_t train_speed = SPEEDS_TO_CALIB[speed_index];
+        if (train_speed == 0) {
+            break;
         }
 
-        // delay for wait time
-        uint32_t trigger_time = get_time();
-        while (get_time()-trigger_time < wait_time) { }
+        for (int i = 0; i < granularity; ++i) {
 
-        // issue stop
-        marklin_train_ctl(train_number, 0);
+            // set train to max speed
+            marklin_train_ctl(train_number, 14);
 
-        trigger_time = get_time();
-        // wait for sensor E14 (or timeout)
-        for (;;) {
-
-            if (get_time()-trigger_time > timeout) {
-                // if we did not reach the second sensor before timeout, then time was too short
-                lower_bound_time = wait_time;
-                uart_printf(CONSOLE, "adjusting time bound to [%d, %d]\r\n", lower_bound_time, upper_bound_time);
-                break;
+            // wait for sensor C12, then slow down to desired speed
+            for (;;) {
+                uint32_t triggered = query_sensor(SPEEDUP_END_GROUP);
+                if (triggered == 0) continue;
+                char sensor_group = (triggered / 16);
+                uint8_t sensor_index = (triggered % 16)+1;
+                if (sensor_group == SPEEDUP_END_GROUP && sensor_index == SPEEDUP_END_INDEX) {
+                    break;
+                }
             }
-            // TODO lot of duplicate code
-            uint32_t triggered = query_sensor(SENSOR_2_GROUP);
-            if (triggered == 0) continue;
-            char sensor_group = (triggered / 16);
-            uint8_t sensor_index = (triggered % 16)+1;
-            if (sensor_group == SENSOR_2_GROUP && sensor_index == SENSOR_2_INDEX) {
-                // if triggered, then time was too long
-                upper_bound_time = wait_time;
-                uart_printf(CONSOLE, "adjusting time bound to [%d, %d]\r\n", lower_bound_time, upper_bound_time);
-                break;
+            marklin_train_ctl(train_number, train_speed);
+
+            // how long to wait after first sensor is triggered before issuing stop commanad
+            wait_time = (upper_bound_time+lower_bound_time)/2;
+
+            // wait for sensor C10
+            for (;;) {
+                uint32_t triggered = query_sensor(SENSOR_1_GROUP);
+                if (triggered == 0) continue;
+                char sensor_group = (triggered / 16);
+                uint8_t sensor_index = (triggered % 16)+1;
+                if (sensor_group == SENSOR_1_GROUP && sensor_index == SENSOR_1_INDEX) {
+                    break;
+                }
             }
 
+            // delay for wait time
+            uint32_t trigger_time = get_time();
+            while (get_time()-trigger_time < wait_time) { }
 
+            // issue stop
+            marklin_train_ctl(train_number, 0);
+
+            trigger_time = get_time();
+            // wait for sensor E14 (or timeout)
+            for (;;) {
+
+                if (get_time()-trigger_time > timeout) {
+                    // if we did not reach the second sensor before timeout, then time was too short
+                    lower_bound_time = wait_time;
+                    uart_printf(CONSOLE, "adjusting time bound to [%d, %d]\r\n", lower_bound_time, upper_bound_time);
+                    break;
+                }
+                // TODO lot of duplicate code
+                uint32_t triggered = query_sensor(SENSOR_2_GROUP);
+                if (triggered == 0) continue;
+                char sensor_group = (triggered / 16);
+                uint8_t sensor_index = (triggered % 16)+1;
+                if (sensor_group == SENSOR_2_GROUP && sensor_index == SENSOR_2_INDEX) {
+                    // if triggered, then time was too long
+                    upper_bound_time = wait_time;
+                    uart_printf(CONSOLE, "adjusting time bound to [%d, %d]\r\n", lower_bound_time, upper_bound_time);
+                    break;
+                }
+            }
         }
+        uart_printf(CONSOLE, "Speed %d wait time %d\r\n", train_speed, wait_time);
+
+        ++speed_index;
     }
-    uart_printf(CONSOLE, "calibrated wait time %d\r\n", wait_time);
-
 }
 
 void
