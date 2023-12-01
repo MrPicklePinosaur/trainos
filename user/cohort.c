@@ -9,7 +9,8 @@
 #include "user/trainstate.h"
 
 // if distance deviates this much from expected, then adjust speed up or down
-#define ADJUST_TOLERANCE 0
+#define ACCEL_ADJUST_TOLERANCE 50
+#define DECCEL_ADJUST_TOLERANCE 0
 
 void
 cohort_follower_regulate()
@@ -33,6 +34,8 @@ cohort_follower_regulate()
 
     usize ahead_train = msg_buf.ahead_train; 
     usize follower_train = msg_buf.follower_train; 
+
+    Delay(clock_server, 150); // wait a bit for acceleration
 
     for (;;) {
         TrainState state = TrainstateGet(trainstate_server, ahead_train);
@@ -67,14 +70,14 @@ cohort_follower_regulate()
         ULOG_DEBUG("Took %d time between sensors", actual_time);
 
         // compare time and see if we should speed up / slow down / maintain speed
-        if (actual_time <= expected_time && expected_time-actual_time > ADJUST_TOLERANCE) {
+        if (actual_time <= expected_time && expected_time-actual_time > DECCEL_ADJUST_TOLERANCE) {
             // too fast, bump down one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
             u8 new_speed = u8_max(u8_sub(follower_state.speed, 1), 1);
             ULOG_DEBUG("Bump down follower speed to %d", new_speed);
             TrainstateSetSpeed(trainstate_server, follower_train, new_speed);
         }
-        else if (expected_time <= actual_time && actual_time-expected_time > ADJUST_TOLERANCE) {
+        else if (expected_time <= actual_time && actual_time-expected_time > ACCEL_ADJUST_TOLERANCE) {
             // too slow, bump up one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
             u8 new_speed = u8_min(follower_state.speed+1, 14);
