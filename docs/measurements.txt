@@ -80,7 +80,7 @@ Train 77 wait before stop:
 If v is the measured velocity in mm/s and t is the wait time before stopping in microseconds, the stopping distance is:
 d = 1045 - (v*10^(-6)*t)
 As well, assuming constant decceleration, stopping time is:
-t = 2*d/v
+t = 2*d*10^3/v
 
 
 
