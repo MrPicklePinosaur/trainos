@@ -4,6 +4,7 @@
 #include "user/sensor.h"
 #include "user/switch.h"
 #include "user/marklin.h"
+#include "user/cohort.h"
 #include "user/path/reserve.h"
 #include "user/path/dijkstra.h"
 #include "user/path/track_data.h"
@@ -618,7 +619,16 @@ trainStateServer()
 
                     // TODO also need to keep track of this task and delete previously existing tasks that manage speed
                     // pass the train ahead to task, as well as self
-                    //Create();
+
+                    CohortFollowerRegulate send_buf = (CohortFollowerRegulate) {
+                        .ahead_train = train,
+                        .follower_train = follower_train,
+                    };
+                    struct {} resp_buf;
+
+                    Tid follower_regulate_task = Create(5, &cohort_follower_regulate, "Cohort follower regulate");
+                    
+                    Send(follower_regulate_task, (const char*)&send_buf, sizeof(CohortFollowerRegulate), (char*)&resp_buf, 0);
 
                 }
             } else {
