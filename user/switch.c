@@ -54,7 +54,7 @@ const PAIR(u32, SwitchMode) track_a_init_switch_state[SWITCH_COUNT] = {
     { 12, SWITCH_MODE_CURVED },
     { 13, SWITCH_MODE_STRAIGHT },
     { 14, SWITCH_MODE_CURVED },
-    { 15, SWITCH_MODE_STRAIGHT },
+    { 15, SWITCH_MODE_CURVED },
     { 16, SWITCH_MODE_STRAIGHT },
     { 17, SWITCH_MODE_STRAIGHT },
     { 18, SWITCH_MODE_CURVED },

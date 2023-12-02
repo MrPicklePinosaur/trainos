@@ -36,8 +36,8 @@ cohort_follower_regulate()
     usize follower_train = msg_buf.follower_train; 
 
     TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
-    u8 follower_min_speed = u8_max(u8_sub(follower_state.speed, 2), 1);
-    u8 follower_max_speed = u8_min(follower_state.speed+2, 14);
+    u8 follower_min_speed = u8_max(u8_sub(follower_state.speed, 1), 1);
+    u8 follower_max_speed = u8_min(follower_state.speed+1, 14);
 
     Delay(clock_server, 300); // wait a bit for acceleration
 
