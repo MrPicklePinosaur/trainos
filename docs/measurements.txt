@@ -67,14 +67,26 @@ Train 47 wait before stop:
 
 Train 58 wait before stop:
  5: 3704121 (total distance 359 instead of 1045, from C10 to B1)
+ 6: 2318571 (total distance 359 instead of 1045, from C10 to B1)
+ 7: 1308134 (total distance 359 instead of 1045, from C10 to B1)
  8: 3667663
-11: 886166
-14: 937523 (total distance 1797 instead of 1045, from B16 to E9)
+ 9: 2630736
+10: 1812377
+11:  886166
+12:  510375
+13: 1439575 (total distance 1797 instead of 1045, from B16 to E9)
+14:  937523 (total distance 1797 instead of 1045, from B16 to E9)
 
 Train 77 wait before stop:
  5: 1874765 (total distance 359 instead of 1045, from C10 to B1)
+ 6: 1156127 (total distance 359 instead of 1045, from C10 to B1)
+ 7:  520141 (total distance 359 instead of 1045, from C10 to B1)
  8: 2578129
+ 9: 1759765
+10: 1024535
 11:  285465
+12: 1218872 (total distance 1797 instead of 1045, from B16 to E9)
+13:  481566 (total distance 1797 instead of 1045, from B16 to E9)
 14:  341439, 375008 (total distance 1797 instead of 1045, from B16 to E9)
 
 If v is the measured velocity in mm/s and t is the wait time before stopping in microseconds, the stopping distance is:
