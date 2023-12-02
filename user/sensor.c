@@ -83,6 +83,8 @@ sensorNotifierTask() {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid sensor_server = MyParentTid();
 
+    usize ticks = Time(clock_server);
+
     for (;;) {
 
         marklin_dump_s88(marklin_server, UNIT_COUNT);
@@ -124,7 +126,8 @@ sensorNotifierTask() {
         }
 
         // TODO maybe should use DelayUntil to guarentee uniform fetches
-        Delay(clock_server, 20);
+        ticks += 10; // every 100ms
+        DelayUntil(clock_server, ticks);
 
     }
 

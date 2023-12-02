@@ -469,7 +469,7 @@ trainPosNotifierTask()
                         if (zone_sensor == 0) break;
                         if (sensor_id == zone_sensor->num) {
 
-                            ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s", train, track->nodes[sensor_id].name);
+                            ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
                             train_state[train].pos = sensor_id; // update train position right away here
 
 

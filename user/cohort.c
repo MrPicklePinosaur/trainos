@@ -36,8 +36,8 @@ cohort_follower_regulate()
     usize follower_train = msg_buf.follower_train; 
 
     TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
-    u8 follower_min_speed = u8_max(u8_sub(follower_state.speed, 1), 1);
-    u8 follower_max_speed = u8_min(follower_state.speed+1, 14);
+    u8 follower_min_speed = u8_max(u8_sub(follower_state.speed, 2), 1);
+    u8 follower_max_speed = u8_min(follower_state.speed+2, 14);
 
     Delay(clock_server, 300); // wait a bit for acceleration
 
@@ -64,13 +64,13 @@ cohort_follower_regulate()
         // wait for current train to get to same snesor
         // TODO not sure if good to not use sensor attribution for this
         WaitForSensor(sensor_server, ahead_next_sensor->num);
-        ULOG_DEBUG("hit sensor for ahead");
+        //ULOG_DEBUG("hit sensor for ahead");
         i32 actual_time = Time(clock_server);
 
         // TODO we can drop sensors in this time
 
         WaitForSensor(sensor_server, ahead_next_sensor->num);
-        ULOG_DEBUG("hit sensor for follower");
+        //ULOG_DEBUG("hit sensor for follower");
         actual_time = Time(clock_server) - actual_time;
 
         ULOG_DEBUG("Took %d time between sensors", actual_time);
