@@ -35,6 +35,10 @@ cohort_follower_regulate()
     usize ahead_train = msg_buf.ahead_train; 
     usize follower_train = msg_buf.follower_train; 
 
+    TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
+    u8 follower_min_speed = u8_max(u8_sub(follower_state.speed, 1), 1);
+    u8 follower_max_speed = u8_min(follower_state.speed+1, 14);
+
     Delay(clock_server, 300); // wait a bit for acceleration
 
     for (;;) {
@@ -77,14 +81,14 @@ cohort_follower_regulate()
         if (actual_time <= expected_time && expected_time-actual_time > DECCEL_ADJUST_TOLERANCE) {
             // too fast, bump down one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
-            u8 new_speed = u8_max(u8_sub(follower_state.speed, 1), 1);
+            u8 new_speed = u8_max(u8_sub(follower_state.speed, 1), follower_min_speed);
             ULOG_DEBUG("Bump down follower speed to %d", new_speed);
             TrainstateSetSpeed(trainstate_server, follower_train, new_speed);
         }
         else if (expected_time <= actual_time && actual_time-expected_time > ACCEL_ADJUST_TOLERANCE) {
             // too slow, bump up one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
-            u8 new_speed = u8_min(follower_state.speed+1, 14);
+            u8 new_speed = u8_min(follower_state.speed+1, follower_max_speed);
             ULOG_DEBUG("Bump up follower speed to %d", new_speed);
             TrainstateSetSpeed(trainstate_server, follower_train, new_speed);
         }

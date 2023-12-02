@@ -456,8 +456,9 @@ trainPosNotifierTask()
 
                 TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
 
-                ZoneId train_zones[2] = {node->reverse->zone, node->zone};
-                for (usize zone_i = 0; zone_i < 2; ++zone_i) {
+                /* ZoneId train_zones[2] = {node->reverse->zone, node->zone}; */
+                ZoneId train_zones[1] = {node->reverse->zone};
+                for (usize zone_i = 0; zone_i < 1; ++zone_i) {
                     ZoneId train_zone = train_zones[zone_i];
 
                     if (train_zone == -1) continue;
