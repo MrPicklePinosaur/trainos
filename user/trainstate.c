@@ -450,6 +450,7 @@ trainPosNotifierTask()
 
                 // train position not calibrated, skip checking
                 if (train_state[train].pos == TRAIN_POS_NULL) {
+                    /* ULOG_WARN("train %d has null position, could not attribute sensor", train); */
                     continue;
                 }
 
@@ -467,7 +468,9 @@ trainPosNotifierTask()
                         if (zone_sensor == 0) break;
                         if (sensor_id == zone_sensor->num) {
 
-                            /* ULOG_INFO("train %d moves to sensor %s", train, track->nodes[sensor_id].name); */
+                            ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s", train, track->nodes[sensor_id].name);
+                            train_state[train].pos = sensor_id; // update train position right away here
+
 
                             // notify server that train position changed
                             TrainstateMsg send_buf = (TrainstateMsg) {
@@ -627,7 +630,7 @@ trainStateServer()
                     };
                     struct {} resp_buf;
 
-                    Tid follower_regulate_task = Create(5, &cohort_follower_regulate, "Cohort follower regulate");
+                    Tid follower_regulate_task = Create(2, &cohort_follower_regulate, "Cohort follower regulate");
                     
                     Send(follower_regulate_task, (const char*)&send_buf, sizeof(CohortFollowerRegulate), (char*)&resp_buf, 0);
 
@@ -840,8 +843,6 @@ trainStateServer()
 
 
         } else if (msg_buf.type == TRAINSTATE_POSITION_UPDATE) {
-
-            train_state[msg_buf.data.position_update.train].pos = msg_buf.data.position_update.new_pos;
 
             TrainstateResp reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_POSITION_UPDATE

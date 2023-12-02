@@ -5,7 +5,7 @@
 
 // cohort follower self regulate speed
 
-#define FOLLOW_DISTANCE 150
+#define FOLLOW_DISTANCE 200
 
 typedef struct {
     usize ahead_train;

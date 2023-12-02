@@ -35,13 +35,13 @@ cohort_follower_regulate()
     usize ahead_train = msg_buf.ahead_train; 
     usize follower_train = msg_buf.follower_train; 
 
-    Delay(clock_server, 150); // wait a bit for acceleration
+    Delay(clock_server, 300); // wait a bit for acceleration
 
     for (;;) {
         TrainState state = TrainstateGet(trainstate_server, ahead_train);
 
         // compute expected time until next trigger
-        u32 dist_to_next_train = (FOLLOW_DISTANCE + TRAIN_LENGTH)*100; // multiply to add a bit more percision
+        u32 dist_to_next_train = (FOLLOW_DISTANCE + TRAIN_LENGTH);
         u32 ahead_train_vel = train_data_vel(ahead_train, state.speed);
 
         if (ahead_train_vel == 0) {
@@ -49,7 +49,7 @@ cohort_follower_regulate()
             Exit();
         }
 
-        i32 expected_time = dist_to_next_train/ahead_train_vel;
+        i32 expected_time = dist_to_next_train*100/ahead_train_vel; // multiply to add a bit more percision
         ULOG_INFO("Expect %d time between trains", expected_time);
 
         // wait for ahead train to get to projected next sensor
@@ -63,11 +63,15 @@ cohort_follower_regulate()
         ULOG_DEBUG("hit sensor for ahead");
         i32 actual_time = Time(clock_server);
 
+        // TODO we can drop sensors in this time
+
         WaitForSensor(sensor_server, ahead_next_sensor->num);
         ULOG_DEBUG("hit sensor for follower");
         actual_time = Time(clock_server) - actual_time;
 
         ULOG_DEBUG("Took %d time between sensors", actual_time);
+
+        // TODO scale speed based on deviation between real and expected?
 
         // compare time and see if we should speed up / slow down / maintain speed
         if (actual_time <= expected_time && expected_time-actual_time > DECCEL_ADJUST_TOLERANCE) {
