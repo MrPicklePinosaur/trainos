@@ -610,6 +610,7 @@ trainStateServer()
 
                 Cohort cohort = train;
                 ListIter it = list_iter(train_state[train].followers); 
+                usize next_train = train;
                 usize follower_train;
                 // pair is (Tid of sending task , train that updated)
                 while (listiter_next(&it, (void**)&follower_train)) {
@@ -643,7 +644,7 @@ trainStateServer()
                     }
 
                     CohortFollowerRegulate send_buf = (CohortFollowerRegulate) {
-                        .ahead_train = train,
+                        .ahead_train = next_train,
                         .follower_train = follower_train,
                     };
                     struct {} resp_buf;
@@ -652,6 +653,8 @@ trainStateServer()
                     train_state[follower_train].cohort_regulate_task = follower_regulate_task;
                     
                     Send(follower_regulate_task, (const char*)&send_buf, sizeof(CohortFollowerRegulate), (char*)&resp_buf, 0);
+
+                    next_train = follower_train;
 
                 }
             } else {
