@@ -469,9 +469,8 @@ trainPosNotifierTask()
                         if (zone_sensor == 0) break;
                         if (sensor_id == zone_sensor->num) {
 
-                            ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
+                            //ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
                             train_state[train].pos = sensor_id; // update train position right away here
-
 
                             // notify server that train position changed
                             TrainstateMsg send_buf = (TrainstateMsg) {
@@ -524,6 +523,7 @@ trainStateServer()
             .offset = 0,
             .cohort = i,
             .followers = list_init(),
+            .cohort_regulate_task = 0
         };
     }
 
@@ -595,6 +595,17 @@ trainStateServer()
                 train_state[train].speed = speed;
                 marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
+                // if speed zero just set all followers to speed zero
+                if (speed == 0) {
+                    ListIter it = list_iter(train_state[train].followers); 
+                    usize follower_train;
+                    while (listiter_next(&it, (void**)&follower_train)) {
+                        train_state[follower_train].speed = 0;
+                        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
+                    }
+                    continue;
+                }
+
                 usize next_train_vel = train_data_vel(train, speed); // speed of the train thats ahead
 
                 Cohort cohort = train;
@@ -625,6 +636,12 @@ trainStateServer()
                     // TODO also need to keep track of this task and delete previously existing tasks that manage speed
                     // pass the train ahead to task, as well as self
 
+                    // kill old regulate task
+                    if (train_state[follower_train].cohort_regulate_task != 0) {
+                        Kill(train_state[follower_train].cohort_regulate_task);
+                        train_state[follower_train].cohort_regulate_task = 0;
+                    }
+
                     CohortFollowerRegulate send_buf = (CohortFollowerRegulate) {
                         .ahead_train = train,
                         .follower_train = follower_train,
@@ -632,6 +649,7 @@ trainStateServer()
                     struct {} resp_buf;
 
                     Tid follower_regulate_task = Create(2, &cohort_follower_regulate, "Cohort follower regulate");
+                    train_state[follower_train].cohort_regulate_task = follower_regulate_task;
                     
                     Send(follower_regulate_task, (const char*)&send_buf, sizeof(CohortFollowerRegulate), (char*)&resp_buf, 0);
 

@@ -10,7 +10,7 @@
 
 // if distance deviates this much from expected, then adjust speed up or down
 #define ACCEL_ADJUST_TOLERANCE 50
-#define DECCEL_ADJUST_TOLERANCE 0
+#define DECCEL_ADJUST_TOLERANCE 10
 
 void
 cohort_follower_regulate()
@@ -45,8 +45,9 @@ cohort_follower_regulate()
         TrainState state = TrainstateGet(trainstate_server, ahead_train);
 
         // compute expected time until next trigger
-        u32 dist_to_next_train = (FOLLOW_DISTANCE + TRAIN_LENGTH);
         u32 ahead_train_vel = train_data_vel(ahead_train, state.speed);
+        u32 follow_distance = ahead_train_vel / 2; // maintain half a second of distance between trains
+        u32 dist_to_next_train = (follow_distance + TRAIN_LENGTH);
 
         if (ahead_train_vel == 0) {
             ULOG_WARN("ahead train is at speed zero");
@@ -54,12 +55,12 @@ cohort_follower_regulate()
         }
 
         i32 expected_time = dist_to_next_train*100/ahead_train_vel; // multiply to add a bit more percision
-        ULOG_INFO("Expect %d time between trains", expected_time);
+        //ULOG_INFO("Expect %d time between trains", expected_time);
 
         // wait for ahead train to get to projected next sensor
         TrackNode* ahead_current_sensor = track_node_by_sensor_id(track, state.pos);
         TrackNode* ahead_next_sensor = track_next_sensor(switch_server, track, ahead_current_sensor);
-        ULOG_DEBUG("Expect sensor %s", ahead_next_sensor->name);
+        //ULOG_DEBUG("Expect sensor %s", ahead_next_sensor->name);
 
         // wait for current train to get to same snesor
         // TODO not sure if good to not use sensor attribution for this
@@ -73,7 +74,7 @@ cohort_follower_regulate()
         //ULOG_DEBUG("hit sensor for follower");
         actual_time = Time(clock_server) - actual_time;
 
-        ULOG_DEBUG("Took %d time between sensors", actual_time);
+        ULOG_DEBUG("Took %d time between sensors, expected %d", actual_time, expected_time);
 
         // TODO scale speed based on deviation between real and expected?
 

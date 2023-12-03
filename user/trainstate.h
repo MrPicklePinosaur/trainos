@@ -28,6 +28,7 @@ typedef struct {
     isize offset;
     Cohort cohort;
     List* followers; // list of trains that following
+    Tid cohort_regulate_task; // task use to regulate speed when in cohort
 } TrainState;
 
 typedef PAIR(usize, usize) Pair_usize_usize;
