@@ -25,8 +25,6 @@ typedef enum {
     TRAINSTATE_SET_COHORT,
     TRAINSTATE_REVERSE_STATIC, // special case of reverse, reverse from rest and right away
     TRAINSTATE_REVERSE,
-    TRAINSTATE_REVERSE_REVERSE,
-    TRAINSTATE_REVERSE_RESTART,
     TRAINSTATE_POSITION_WAIT,   // used to wait for position changes
     TRAINSTATE_POSITION_UPDATE, // used by notifier to update current position
 } TrainstateMsgType;
@@ -91,6 +89,7 @@ typedef struct {
 
 usize trains[TRAIN_COUNT] = {2, 47, 58, 77};
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
+Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
 // serialize trainstate o binary form for marklin
 u8
@@ -387,6 +386,7 @@ void
 reverseTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
 
     int from_tid;
     ReverseMsg msg_buf;
@@ -399,28 +399,27 @@ reverseTask()
     reply_buf = (ReverseResp){};
     Reply(from_tid, (char*)&reply_buf, sizeof(ReverseResp));
 
-    TrainstateResp resp_buf;
-    TrainstateMsg send_buf;
+    usize train = msg_buf.train;
+    usize speed = msg_buf.speed;
 
-    Delay(clock_server, train_data_stop_time(msg_buf.train, msg_buf.speed) / 10 + 100);
-    send_buf = (TrainstateMsg) {
-        .type = TRAINSTATE_REVERSE_REVERSE,
-    };
-    Send(MyParentTid(), (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+    Delay(clock_server, train_data_stop_time(train, speed) / 10 + 100);
+
+    // reverse train
+    TrainState temp_state = train_state[train];
+    temp_state.speed = 15;
+    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+
+    // set the train state to reversed
+    Track* track = get_track(); // TODO really ugly how this is here
+    train_state[train].reversed = !train_state[train].reversed;
 
     Delay(clock_server, 10); // TODO arbitrary delay
-    send_buf = (TrainstateMsg) {
-        .type = TRAINSTATE_REVERSE_RESTART,
-    };
-    Send(MyParentTid(), (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+
+    // start train again
+    marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
+    reverse_tasks[train] = 0;
 
     Exit();
-}
-
-void
-trainstateCallibration()
-{
-
 }
 
 void
@@ -548,7 +547,6 @@ trainStateServer()
 
     ULOG_INFO("completed train calibration");
 
-    Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
     List* trainpos_requests = list_init(); // list of tasks waiting for train position to update
 
     Create(2, &trainPosNotifierTask, "train position notifier task");
@@ -602,6 +600,11 @@ trainStateServer()
                     while (listiter_next(&it, (void**)&follower_train)) {
                         train_state[follower_train].speed = 0;
                         marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
+                        // also kill cohort task
+                        if (train_state[follower_train].cohort_regulate_task != 0) {
+                            Kill(train_state[follower_train].cohort_regulate_task);
+                            train_state[follower_train].cohort_regulate_task = 0;
+                        }
                     }
                     continue;
                 }
@@ -614,8 +617,6 @@ trainStateServer()
                 usize follower_train;
                 // pair is (Tid of sending task , train that updated)
                 while (listiter_next(&it, (void**)&follower_train)) {
-
-                    // TODO find speed setting for this train that most closely matches leader train
 
                     Delay(clock_server, 30); // TODO arbritrary propogation delay
 
@@ -632,17 +633,13 @@ trainStateServer()
                     train_state[follower_train].speed = follower_speed;
                     marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
 
-                    // now spawn a task that will monitor train to adjust speed of train based on train in front
-
-                    // TODO also need to keep track of this task and delete previously existing tasks that manage speed
-                    // pass the train ahead to task, as well as self
-
                     // kill old regulate task
                     if (train_state[follower_train].cohort_regulate_task != 0) {
                         Kill(train_state[follower_train].cohort_regulate_task);
                         train_state[follower_train].cohort_regulate_task = 0;
                     }
 
+                    // now spawn a task that will monitor train to adjust speed of train based on train in front
                     CohortFollowerRegulate send_buf = (CohortFollowerRegulate) {
                         .ahead_train = next_train,
                         .follower_train = follower_train,
@@ -672,36 +669,42 @@ trainStateServer()
             usize train = msg_buf.data.reverse.train;
             usize speed = train_state[train].speed;
 
-            bool was_already_reversing;
             if (reverse_tasks[train] != 0) {
-                was_already_reversing = true;
+                reply_buf = (TrainstateResp) {
+                    .type = TRAINSTATE_REVERSE,
+                    .data = {
+                        .reverse = {
+                            .was_already_reversing = true
+                        }
+                    }
+                };
+                Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
+                continue;
             }
-            else {
-                was_already_reversing = false;
-                if (speed == 0) {
-                    TrainState temp_state = train_state[train];
-                    temp_state.speed = 15;
-                    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-                } else {
-                    TrainState temp_state = train_state[train];
-                    temp_state.speed = 0;
-                    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-                    reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
 
-                    ReverseResp resp_buf;
-                    ReverseMsg send_buf = (ReverseMsg) {
-                        .train = train,
-                        .speed = speed
-                    };
-                    int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
-                }
+            if (speed == 0) {
+                TrainState temp_state = train_state[train];
+                temp_state.speed = 15;
+                marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+            } else {
+                TrainState temp_state = train_state[train];
+                temp_state.speed = 0;
+                marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+                reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
+
+                ReverseResp resp_buf;
+                ReverseMsg send_buf = (ReverseMsg) {
+                    .train = train,
+                    .speed = speed
+                };
+                int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
             }
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE,
                 .data = {
                     .reverse = {
-                        .was_already_reversing = was_already_reversing
+                        .was_already_reversing = false
                     }
                 }
             };
@@ -729,59 +732,6 @@ trainStateServer()
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE_STATIC,
-                .data = {}
-            };
-            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
-
-        } else if (msg_buf.type == TRAINSTATE_REVERSE_REVERSE) {
-
-            usize train = NUMBER_OF_TRAINS;
-            for (usize i = 0; i < NUMBER_OF_TRAINS; i++) {
-                if (reverse_tasks[i] == from_tid) {
-                    train = i;
-                    break;
-                }
-            }
-            if (train == NUMBER_OF_TRAINS) {
-                PANIC("Couldn't find train associated with reverse task");
-            }
-
-
-            TrainState temp_state = train_state[train];
-            temp_state.speed = 15;
-            marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-
-            // set the train state to reversed
-            Track* track = get_track(); // TODO really ugly how this is here
-            train_state[train].reversed = !train_state[train].reversed;
-            //train_state[train].offset = -train_state[train].offset; // flip offset if reversing
-            // TODO this might be race condition with notifier server
-            /* train_state[train].pos = track->nodes[train_state[train].pos].reverse - track->nodes; // TODO this is ugly calculation */
-
-            reply_buf = (TrainstateResp) {
-                .type = TRAINSTATE_REVERSE_REVERSE,
-                .data = {}
-            };
-            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
-
-        } else if (msg_buf.type == TRAINSTATE_REVERSE_RESTART) {
-
-            usize train = NUMBER_OF_TRAINS;
-            for (usize i = 0; i < NUMBER_OF_TRAINS; i++) {
-                if (reverse_tasks[i] == from_tid) {
-                    train = i;
-                    break;
-                }
-            }
-            if (train == NUMBER_OF_TRAINS) {
-                PANIC("Couldn't find train associated with reverse task");
-            }
-
-            marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
-            reverse_tasks[train] = 0;
-
-            reply_buf = (TrainstateResp) {
-                .type = TRAINSTATE_REVERSE_RESTART,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
