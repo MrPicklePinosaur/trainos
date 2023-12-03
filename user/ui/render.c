@@ -55,6 +55,17 @@ renderTrackWinTask()
         w_flush(&track_win);
     }
 
+    const u32 CELL_W = 8;
+    const u32 CELL_H = 4;
+    for (usize i = 0; i < DIAGRAM_NODE_COUNT; i++) {
+        w_putc_mv(&track_win, diagram_pos[i].sensor/16+'A', diagram_pos[i].x*CELL_W+10, diagram_pos[i].y*CELL_H+5);
+        w_putc_mv(&track_win, (diagram_pos[i].sensor%16+1)/10+'0', diagram_pos[i].x*CELL_W+8, diagram_pos[i].y*CELL_H+7);
+        w_putc_mv(&track_win, (diagram_pos[i].sensor%16+1)%10+'0', diagram_pos[i].x*CELL_W+9, diagram_pos[i].y*CELL_H+7);
+        w_putc_mv(&track_win, ((diagram_pos[i].sensor+1)%16+1)/10+'0', diagram_pos[i].x*CELL_W+11, diagram_pos[i].y*CELL_H+7);
+        w_putc_mv(&track_win, ((diagram_pos[i].sensor+1)%16+1)%10+'0', diagram_pos[i].x*CELL_W+12, diagram_pos[i].y*CELL_H+7);
+        w_flush(&track_win);
+    }
+
     Exit();
 }
 
