@@ -68,7 +68,7 @@ renderZoneWinTask()
     const usize ZONE_ANCHOR_X = 6;
     const usize ZONE_ANCHOR_Y = 1;
     const usize ZONE_COL_SPACING = 9;
-    Window zone_win = win_init(84, 24, 38, 17);
+    Window zone_win = win_init(102, 24, 20, 17);
     win_draw_border(&zone_win);
     w_puts_mv(&zone_win, "[zones]", 2, 0);
     w_puts_mv(&zone_win, "[00]     [15]     ", 1, 1);
@@ -134,9 +134,9 @@ renderTrainStateWinTask()
 
     Track* track = get_track();
 
-    Window train_state_win = win_init(84, 7, 38, 17);
+    Window train_state_win = win_init(102, 7, 20, 17);
     win_draw_border(&train_state_win);
-    w_puts_mv(&train_state_win, "[train state]", 2, 0);
+    w_puts_mv(&train_state_win, "[trains]", 2, 0);
 
     w_puts_mv(&train_state_win, "train  curr  next  zone  spd   dest", 1, 2);
     w_puts_mv(&train_state_win, "2                                  ", 1, 3);
@@ -183,7 +183,7 @@ renderSensorWinTask()
     const usize SENSOR_LIST_ANCHOR_Y = 2;
     const usize MAX_SENSORS = 14;
     CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
-    Window sensor_win = win_init(63, 11, 20, 17);
+    Window sensor_win = win_init(2, 11, 20, 17);
     win_draw_border(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
 
@@ -242,7 +242,7 @@ renderSwitchWinTask()
 
     const usize SWITCH_ANCHOR_X = 1;
     const usize SWITCH_ANCHOR_Y = 1;
-    Window switch_win = win_init(63, 28, 20, 13);
+    Window switch_win = win_init(2, 28, 20, 13);
     win_draw_border(&switch_win);
     w_puts_mv(&switch_win, "[switches]", 2, 0);
     w_puts_mv(&switch_win, "01 .     12 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+0);
@@ -298,7 +298,7 @@ renderDiagnosticWinTask()
 
     const usize DIAGNOSTIC_ANCHOR_X = 1;
     const usize DIAGNOSTIC_ANCHOR_Y = 1;
-    Window diagnostic_win = win_init(63, 7, 20, 4);
+    Window diagnostic_win = win_init(2, 7, 20, 4);
     win_draw_border(&diagnostic_win);
     w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
 
@@ -343,7 +343,7 @@ renderPromptTask()
     const usize PROMPT_ANCHOR_Y = 1;
     const usize PROMPT_MAX_LEN = 56;
     usize prompt_length = 0;
-    Window prompt_win = win_init(2, 38, 60, 3);
+    Window prompt_win = win_init(23, 38, 78, 3);
     win_draw_border(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
@@ -392,7 +392,7 @@ renderConsoleTask()
     RegisterAs(CONSOLE_ADDRESS);
 
     // CONSOLE
-    const usize CONSOLE_ANCHOR_X = 1;
+    const usize CONSOLE_ANCHOR_X = 2;
     const usize CONSOLE_ANCHOR_Y = 29;
     const usize CONSOLE_MAX_LINES = 29;
     const usize CONSOLE_INNER_WIDTH = 58;
@@ -400,7 +400,7 @@ renderConsoleTask()
     // currently can only hold 4 times the size of the console, should free old strings when we scroll past
     Arena console_arena = arena_new(CONSOLE_MAX_LINES*4*(CONSOLE_INNER_WIDTH+1));
     CBuf* console_lines = cbuf_new(CONSOLE_MAX_LINES);
-    Window console_win = win_init(2, 7, 60, 31);
+    Window console_win = win_init(23, 7, 78, 31);
     win_draw_border(&console_win);
     w_puts_mv(&console_win, "[console]", 2, 0);
     w_flush(&console_win);
