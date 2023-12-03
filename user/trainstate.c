@@ -732,13 +732,14 @@ trainStateServer()
                     for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
                         usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
 
-                        train_state[follower_train].speed = 0;
-                        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
                         // also kill cohort task
                         if (train_state[follower_train].cohort_regulate_task != 0) {
                             Kill(train_state[follower_train].cohort_regulate_task);
                             train_state[follower_train].cohort_regulate_task = 0;
                         }
+
+                        train_state[follower_train].speed = 0;
+                        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
                     }
                     continue;
                 }
