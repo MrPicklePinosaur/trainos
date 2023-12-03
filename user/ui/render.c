@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "render.h"
 #include "prompt.h"
+#include "diagram.h"
 #include "user/path/track_data.h"
 #include "user/path/train_data.h"
 #include "user/sensor.h"
@@ -34,6 +35,30 @@ renderer_prompt(Tid prompt_renderer_server, char ch)
     char send_buf = ch;
 
     return Send(prompt_renderer_server, (const char*)&send_buf, sizeof(char), (char*)&resp_buf, 0);
+}
+
+void
+renderTrackWinTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Delay(clock_server, 50);
+
+    Window track_win = win_init(2, 41, 120, 37);
+    win_draw_border(&track_win);
+    w_puts_mv(&track_win, "[track]", 2, 0);
+    w_flush(&track_win);
+
+    char** track_diagram_line = TRACK_DIAGRAM;
+    for (usize i = 0; *track_diagram_line != 0; ++track_diagram_line, ++i) {
+        w_puts_mv(&track_win, *track_diagram_line, 5, 7+i);
+        w_flush(&track_win);
+    }
+
+    for (;;) {
+
+    }
+
+    Exit();
 }
 
 void
@@ -445,6 +470,7 @@ uiTask()
     Create(5, &renderDiagnosticWinTask, "Render Diagnostic Window");
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
     Create(5, &renderZoneWinTask, "Render Zone Window");
+    Create(5, &renderTrackWinTask, "Track Window");
 
     WaitTid(prompt_tid);
 
