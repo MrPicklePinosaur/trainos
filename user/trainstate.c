@@ -372,6 +372,15 @@ TrainstateWaitForSensor(Tid trainstate_server, isize train)
     return (Pair_usize_usize){resp_buf.data.position_wait.train, resp_buf.data.position_wait.pos};
 }
 
+void
+train_join_cohort(usize train, Cohort cohort)
+{
+    if (train_state[train].cohort != cohort) {
+        train_state[train].cohort = cohort;
+        cbuf_push_back(train_state[cohort].followers, (void*)train);
+    }
+}
+
 // make a train leave cohort
 void
 train_leave_cohort(usize train)
@@ -446,7 +455,7 @@ reverseTask()
     Exit();
 }
 
-void
+Tid
 train_reverse(Tid marklin_server, usize train)
 {
     usize speed = train_state[train].speed;
@@ -455,19 +464,96 @@ train_reverse(Tid marklin_server, usize train)
         TrainState temp_state = train_state[train];
         temp_state.speed = 15;
         marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+        return 0;
     } else {
         TrainState temp_state = train_state[train];
         temp_state.speed = 0;
         marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-        reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
+        Tid reverse_task = Create(2, &reverseTask, "Trainstate Reverse Task");
+        reverse_tasks[train] = reverse_task;
 
         ReverseResp resp_buf;
         ReverseMsg send_buf = (ReverseMsg) {
             .train = train,
             .speed = speed
         };
-        int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
+        int ret = Send(reverse_task, (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
+        return reverse_task;
     }
+}
+
+typedef struct {
+    usize train; // leader of the cohort to disband and reverse
+} CohortReverseMsg;
+
+typedef struct {
+} CohortReverseResp;
+
+void
+cohortReverseTask()
+{
+    Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
+
+    int from_tid;
+    CohortReverseMsg msg_buf;
+    CohortReverseResp reply_buf;
+    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(CohortReverseMsg));
+    if (msg_len < 0) {
+        ULOG_WARN("[COHORT REVERSE] Error when receiving");
+        Exit();
+    }
+    reply_buf = (CohortReverseResp){};
+    Reply(from_tid, (char*)&reply_buf, sizeof(CohortReverseResp));
+
+    usize train = msg_buf.train;
+
+    CBuf* reverse_tasks = cbuf_new(12);
+
+    Tid leader_reverse_task = train_reverse(marklin_server, train);
+    if (leader_reverse_task != 0) {
+        cbuf_push_back(reverse_tasks, (void*)leader_reverse_task);
+    }
+
+    // TODO this should be safe since cohort leave only removes from back of cbuf
+    usize follower_len = cbuf_len(train_state[train].followers);
+    if (follower_len == 0) {
+        PANIC("followers len is zero");
+    }
+
+    for (usize i = 0; i < follower_len; ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
+        Tid reverse_task = train_reverse(marklin_server, follower_train);
+        if (reverse_task != 0) {
+            cbuf_push_back(reverse_tasks, (void*)reverse_task);
+        }
+    }
+
+    // spawn task that blocks until all trains are done reversing, then disbands and reforms cohort in reverse
+
+    // block until all reverse tasks complete
+    for (usize i = 0; i < cbuf_len(reverse_tasks); ++i) {
+        Tid reverse_task = (Tid)cbuf_get(reverse_tasks, i);
+        WaitTid(reverse_task);
+    }
+    ULOG_DEBUG("All reverse tasks finished");
+
+    // disband and reform the original cohort 
+    usize old_leader = train;
+    usize new_leader = (usize)cbuf_back(train_state[train].followers); // NOTE safe since we asserted that follower_len > 0
+
+    for (usize i = 0; i < follower_len; ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[train].followers, follower_len-1-i);
+        
+        // leave old cohort
+        train_leave_cohort(follower_train);
+
+        // join new cohort
+        train_join_cohort(follower_train, new_leader);
+    }
+
+    train_join_cohort(old_leader, new_leader);
+
+    Exit();
 }
 
 void
@@ -730,21 +816,22 @@ trainStateServer()
                 continue;
             }
 
-            train_reverse(marklin_server, train);
             // TODO reverse all trains in cohort
 
             // disband cohort and reverse trains
             usize follower_len = cbuf_len(train_state[train].followers);
-            // TODO this should be safe since cohort leave only removes from back of cbuf
-            for (usize i = 0; i < follower_len; ++i) {
-                usize follower_train = (usize)cbuf_get(train_state[train].followers, follower_len-1-i);
-                train_leave_cohort(follower_train);
-                
-                train_reverse(marklin_server, follower_train);
+            if (follower_len == 0) {
+                train_reverse(marklin_server, train);
+            } else {
+                Tid cohort_reverse_task = Create(5, &cohortReverseTask, "Cohort reverse task"); 
+
+                CohortReverseResp resp_buf;
+                CohortReverseMsg send_buf = (CohortReverseMsg) {
+                    .train = train,
+                };
+                int ret = Send(cohort_reverse_task, (const char*)&send_buf, sizeof(CohortReverseMsg), (char*)&resp_buf, sizeof(CohortReverseResp));
+
             }
-
-            // recreate cohort
-
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE,
                 .data = {
@@ -849,8 +936,7 @@ trainStateServer()
 
                 train_leave_cohort(train);
 
-                train_state[train].cohort = cohort;
-                cbuf_push_back(train_state[cohort].followers, (void*)train);
+                train_join_cohort(train, cohort);
 
                 ULOG_INFO("Setting cohort for train %d: %d", train, cohort);
             }
