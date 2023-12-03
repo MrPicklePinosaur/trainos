@@ -372,9 +372,17 @@ TrainstateWaitForSensor(Tid trainstate_server, isize train)
     return (Pair_usize_usize){resp_buf.data.position_wait.train, resp_buf.data.position_wait.pos};
 }
 
+// make a train leave cohort
 void
-cohort_remove_train(usize train, Cohort cohort)
+train_leave_cohort(usize train)
 {
+    Cohort cohort = train_state[train].cohort;
+
+    if (cohort == train) {
+        // already not in cohort
+        return;
+    }
+
     // remove train from previous cohort
     if (train_state[train].cohort_regulate_task != 0) {
         Kill(train_state[train].cohort_regulate_task);
@@ -382,8 +390,8 @@ cohort_remove_train(usize train, Cohort cohort)
     }
 
     TrainState old_leader_state = train_state[cohort];
-    if (list_len(old_leader_state.followers) > 0 && list_peek_back(old_leader_state.followers) == (void*)train) {
-        list_pop_back(old_leader_state.followers);
+    if (cbuf_len(old_leader_state.followers) > 0 && cbuf_back(old_leader_state.followers) == (void*)train) {
+        cbuf_pop_back(old_leader_state.followers);
     } else {
         ULOG_WARN("train %d not at back of cohort %d, can't remove", train, cohort);
     }
@@ -397,7 +405,6 @@ typedef struct {
 typedef struct {
 
 } ReverseResp;
-
 
 void
 reverseTask()
@@ -437,6 +444,30 @@ reverseTask()
     reverse_tasks[train] = 0;
 
     Exit();
+}
+
+void
+train_reverse(Tid marklin_server, usize train)
+{
+    usize speed = train_state[train].speed;
+
+    if (speed == 0) {
+        TrainState temp_state = train_state[train];
+        temp_state.speed = 15;
+        marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+    } else {
+        TrainState temp_state = train_state[train];
+        temp_state.speed = 0;
+        marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+        reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
+
+        ReverseResp resp_buf;
+        ReverseMsg send_buf = (ReverseMsg) {
+            .train = train,
+            .speed = speed
+        };
+        int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
+    }
 }
 
 void
@@ -538,7 +569,7 @@ trainStateServer()
             .pos = TRAIN_POS_NULL,
             .offset = 0,
             .cohort = i,
-            .followers = list_init(),
+            .followers = cbuf_new(12),
             .cohort_regulate_task = 0
         };
     }
@@ -612,9 +643,9 @@ trainStateServer()
 
                 // if speed zero just set all followers to speed zero
                 if (speed == 0) {
-                    ListIter it = list_iter(train_state[train].followers); 
-                    usize follower_train;
-                    while (listiter_next(&it, (void**)&follower_train)) {
+                    for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
+                        usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
+
                         train_state[follower_train].speed = 0;
                         marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
                         // also kill cohort task
@@ -629,11 +660,11 @@ trainStateServer()
                 usize next_train_vel = train_data_vel(train, speed); // speed of the train thats ahead
 
                 Cohort cohort = train;
-                ListIter it = list_iter(train_state[train].followers); 
                 usize next_train = train;
-                usize follower_train;
+
                 // pair is (Tid of sending task , train that updated)
-                while (listiter_next(&it, (void**)&follower_train)) {
+                for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
+                    usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
 
                     Delay(clock_server, 30); // TODO arbritrary propogation delay
 
@@ -699,25 +730,20 @@ trainStateServer()
                 continue;
             }
 
+            train_reverse(marklin_server, train);
             // TODO reverse all trains in cohort
 
-            if (speed == 0) {
-                TrainState temp_state = train_state[train];
-                temp_state.speed = 15;
-                marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-            } else {
-                TrainState temp_state = train_state[train];
-                temp_state.speed = 0;
-                marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-                reverse_tasks[train] = Create(2, &reverseTask, "Trainstate Reverse Task");
-
-                ReverseResp resp_buf;
-                ReverseMsg send_buf = (ReverseMsg) {
-                    .train = train,
-                    .speed = speed
-                };
-                int ret = Send(reverse_tasks[train], (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
+            // disband cohort and reverse trains
+            usize follower_len = cbuf_len(train_state[train].followers);
+            // TODO this should be safe since cohort leave only removes from back of cbuf
+            for (usize i = 0; i < follower_len; ++i) {
+                usize follower_train = (usize)cbuf_get(train_state[train].followers, follower_len-1-i);
+                train_leave_cohort(follower_train);
+                
+                train_reverse(marklin_server, follower_train);
             }
+
+            // recreate cohort
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE,
@@ -821,10 +847,10 @@ trainStateServer()
             Cohort old_cohort = train_state[train].cohort;
             if (old_cohort != cohort) {
 
-                cohort_remove_train(train, old_cohort);
+                train_leave_cohort(train);
 
                 train_state[train].cohort = cohort;
-                list_push_back(train_state[cohort].followers, (void*)train);
+                cbuf_push_back(train_state[cohort].followers, (void*)train);
 
                 ULOG_INFO("Setting cohort for train %d: %d", train, cohort);
             }

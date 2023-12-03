@@ -27,7 +27,7 @@ typedef struct {
     usize dest;
     isize offset;
     Cohort cohort;
-    List* followers; // list of trains that following
+    CBuf* followers; // list of trains that following
     Tid cohort_regulate_task; // task use to regulate speed when in cohort
 } TrainState;
 
