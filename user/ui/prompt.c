@@ -478,10 +478,10 @@ executeCommand(Arena tmp, Tid marklin_server, Tid clock_server, Tid console_rend
                     Delay(clock_server, 50);
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "B6"));
                     Delay(clock_server, 50);
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "D4"));
-                    Delay(clock_server, 50);
+                    /* TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "D4")); */
+                    /* Delay(clock_server, 50); */
                     TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
-                    TrainstateSetCohort(trainstate_server, TRAIN3, TRAIN1);
+                    /* TrainstateSetCohort(trainstate_server, TRAIN3, TRAIN1); */
 
                     break;
                 }

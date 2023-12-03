@@ -372,6 +372,23 @@ TrainstateWaitForSensor(Tid trainstate_server, isize train)
     return (Pair_usize_usize){resp_buf.data.position_wait.train, resp_buf.data.position_wait.pos};
 }
 
+void
+cohort_remove_train(usize train, Cohort cohort)
+{
+    // remove train from previous cohort
+    if (train_state[train].cohort_regulate_task != 0) {
+        Kill(train_state[train].cohort_regulate_task);
+        train_state[train].cohort_regulate_task = 0;
+    }
+
+    TrainState old_leader_state = train_state[cohort];
+    if (list_len(old_leader_state.followers) > 0 && list_peek_back(old_leader_state.followers) == (void*)train) {
+        list_pop_back(old_leader_state.followers);
+    } else {
+        ULOG_WARN("train %d not at back of cohort %d, can't remove", train, cohort);
+    }
+}
+
 typedef struct {
     usize train;
     usize speed;
@@ -682,6 +699,8 @@ trainStateServer()
                 continue;
             }
 
+            // TODO reverse all trains in cohort
+
             if (speed == 0) {
                 TrainState temp_state = train_state[train];
                 temp_state.speed = 15;
@@ -799,20 +818,22 @@ trainStateServer()
             usize train = msg_buf.data.set_cohort.train;
             Cohort cohort = msg_buf.data.set_cohort.cohort;
 
+            Cohort old_cohort = train_state[train].cohort;
+            if (old_cohort != cohort) {
+
+                cohort_remove_train(train, old_cohort);
+
+                train_state[train].cohort = cohort;
+                list_push_back(train_state[cohort].followers, (void*)train);
+
+                ULOG_INFO("Setting cohort for train %d: %d", train, cohort);
+            }
+
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_COHORT,
                 .data = {}
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
-
-            // no need to set cohort if already set
-            if (train_state[train].cohort != cohort) {
-                train_state[train].cohort = cohort;
-                list_push_back(train_state[cohort].followers, train);
-
-                ULOG_INFO("Setting cohort for train %d: %d", train, cohort);
-            }
-
 
         } else if (msg_buf.type == TRAINSTATE_POSITION_UPDATE) {
 
