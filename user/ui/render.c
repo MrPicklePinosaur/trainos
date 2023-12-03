@@ -48,14 +48,11 @@ renderTrackWinTask()
     w_puts_mv(&track_win, "[track]", 2, 0);
     w_flush(&track_win);
 
-    char** track_diagram_line = TRACK_DIAGRAM;
+    char** track_diagram_line = TRACK_DIAGRAM_TALL_SPACE;
     for (usize i = 0; *track_diagram_line != 0; ++track_diagram_line, ++i) {
-        w_puts_mv(&track_win, *track_diagram_line, 5, 7+i);
+        /* w_puts_mv(&track_win, *track_diagram_line, 5, 7+i); */
+        w_puts_mv(&track_win, *track_diagram_line, 5, 5+i);
         w_flush(&track_win);
-    }
-
-    for (;;) {
-
     }
 
     Exit();
