@@ -8,13 +8,15 @@
 #include "user/sensor.h"
 #include "user/trainstate.h"
 
-// if distance deviates this much from expected, then adjust speed up or down
-#define ACCEL_ADJUST_TOLERANCE 50
-#define DECCEL_ADJUST_TOLERANCE 10
-
 void
 cohort_follower_regulate()
 {
+
+    // PARAMETERS =======
+    // if distance deviates this much from expected, then adjust speed up or down
+    const u32 ACCEL_ADJUST_TOLERANCE  = 10;
+    const u32 DECCEL_ADJUST_TOLERANCE = 10;
+
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
