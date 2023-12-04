@@ -17,8 +17,8 @@
 #include "kern/dev/uart.h"
 #include "kern/perf.h"
 
-const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
-const Attr RESERVATION_COLORS[5] = {ATTR_RED, ATTR_BLUE, ATTR_GREEN, ATTR_YELLOW, ATTR_MAGENTA};
+const Attr SENSOR_COLORS[TRAIN_DATA_TRAIN_COUNT] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
+const Attr RESERVATION_COLORS[TRAIN_DATA_TRAIN_COUNT] = {ATTR_RED, ATTR_BLUE, ATTR_GREEN, ATTR_YELLOW, ATTR_MAGENTA};
 
 int
 renderer_append_console(Tid console_renderer_server, char* line)
@@ -219,6 +219,7 @@ renderTrainStateWinTask()
 
     w_puts_mv(&train_state_win, "train  curr  next  zone  spd   dest", 1, 2);
     w_puts_mv(&train_state_win, "2                                  ", 1, 3);
+    w_puts_mv(&train_state_win, "24                                 ", 1, 3);
     w_puts_mv(&train_state_win, "47                                 ", 1, 4);
     w_puts_mv(&train_state_win, "58                                 ", 1, 5);
     w_puts_mv(&train_state_win, "77                                 ", 1, 6);

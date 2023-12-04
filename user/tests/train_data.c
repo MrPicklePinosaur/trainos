@@ -14,7 +14,7 @@ testSpeedSearch()
     const usize TRAIN2 = 47;
     const usize TRAIN3 = 58;
 
-    const u32 SPEED_RANGE = 50;
+    const u32 SPEED_RANGE = 40;
 
     usize leader_vel = train_data_vel(TRAIN1, 8);
 
