@@ -98,55 +98,64 @@ const char* TRACK_DIAGRAM_TALL_SPACE[] = {
 0
 };
 
+typedef enum {
+    LEFT = 0,
+    UP,
+    RIGHT,
+    DOWN
+} Direction;
+
 typedef struct {
     u32 sensor;
     u32 x;
     u32 y;
-} DiagramPos;
+    Direction direction1;  // Direction of lower sensor number
+    Direction direction2;  // Direction of higher sensor number
+} DiagramData;
 
 #define DIAGRAM_NODE_COUNT 40
 
-static const DiagramPos diagram_pos[DIAGRAM_NODE_COUNT] = {
-    {0, 1, 0},  // A1
-    {2, 3, 2},  // A3
-    {4, 1, 6},  // A5
-    {6, 1, 5},  // A7
-    {8, 1, 4},  // A9
-    {10, 0, 3},  // A11
-    {12, 1, 1},  // A13
-    {14, 1, 2},  // A15
-    {16, 7, 4},  // B1
-    {18, 6, 3},  // B3
-    {20, 7, 1},  // B5
-    {22, 0, 4},  // B7
-    {24, 0, 6},  // B9
-    {26, 0, 5},  // B11
-    {28, 9, 3},  // B13
-    {30, 3, 3},  // B15
-    {32, 7, 3},  // C1
-    {34, 11, 6},  // C3
-    {36, 5, 5},  // C5
-    {38, 5, 6},  // C7
-    {40, 5, 4},  // C9
-    {42, 5, 1},  // C11
-    {44, 5, 0},  // C13
-    {46, 7, 5},  // C15
-    {48, 9, 2},  // D1
-    {50, 9, 1},  // D3
-    {52, 12, 1},  // D5
-    {54, 12, 0},  // D7
-    {56, 12, 5},  // D9
-    {58, 9, 5},  // D11
-    {60, 9, 4},  // D13
-    {62, 10, 3},  // D15
-    {64, 7, 2},  // E1
-    {66, 10, 2},  // E3
-    {68, 11, 1},  // E5
-    {70, 11, 0},  // E7
-    {72, 12, 4},  // E9
-    {74, 11, 5},  // E11
-    {76, 11, 4},  // E13
-    {78, 6, 2},  // E15
+static const DiagramData diagram_data[DIAGRAM_NODE_COUNT] = {
+    {0, 1, 0, RIGHT, LEFT},  // A1
+    {2, 3, 2, UP, DOWN},  // A3
+    {4, 1, 6, RIGHT, LEFT},  // A5
+    {6, 1, 5, LEFT, RIGHT},  // A7
+    {8, 1, 4, LEFT, RIGHT},  // A9
+    {10, 0, 3, RIGHT, LEFT},  // A11
+    {12, 1, 1, RIGHT, LEFT},  // A13
+    {14, 1, 2, LEFT, RIGHT},  // A15
+    {16, 7, 4, RIGHT, LEFT},  // B1
+    {18, 6, 3, RIGHT, DOWN},  // B3
+    {20, 7, 1, RIGHT, LEFT},  // B5
+    {22, 0, 4, RIGHT, LEFT},  // B7
+    {24, 0, 6, RIGHT, LEFT},  // B9
+    {26, 0, 5, RIGHT, LEFT},  // B11
+    {28, 9, 3, LEFT, RIGHT},  // B13
+    {30, 3, 3, UP, DOWN},  // B15
+    {32, 7, 3, LEFT, RIGHT},  // C1
+    {34, 11, 6, RIGHT, LEFT},  // C3
+    {36, 5, 5, RIGHT, LEFT},  // C5
+    {38, 5, 6, RIGHT, LEFT},  // C7
+    {40, 5, 4, LEFT, RIGHT},  // C9
+    {42, 5, 1, RIGHT, LEFT},  // C11
+    {44, 5, 0, RIGHT, LEFT},  // C13
+    {46, 7, 5, RIGHT, LEFT},  // C15
+    {48, 9, 2, LEFT, RIGHT},  // D1
+    {50, 9, 1, RIGHT, LEFT},  // D3
+    {52, 12, 1, LEFT, RIGHT},  // D5
+    {54, 12, 0, RIGHT, LEFT},  // D7
+    {56, 12, 5, LEFT, RIGHT},  // D9
+    {58, 9, 5, LEFT, RIGHT},  // D11
+    {60, 9, 4, LEFT, RIGHT},  // D13
+    {62, 10, 3, LEFT, DOWN},  // D15
+    {64, 7, 2, RIGHT, LEFT},  // E1
+    {66, 10, 2, LEFT, UP},  // E3
+    {68, 11, 1, RIGHT, LEFT},  // E5
+    {70, 11, 0, RIGHT, LEFT},  // E7
+    {72, 12, 4, RIGHT, LEFT},  // E9
+    {74, 11, 5, RIGHT, LEFT},  // E11
+    {76, 11, 4, LEFT, RIGHT},  // E13
+    {78, 6, 2, UP, RIGHT},  // E15
 };
 
 #endif // __UI_DIAGRAM_H__

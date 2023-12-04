@@ -18,6 +18,7 @@
 #include "kern/perf.h"
 
 const Attr SENSOR_COLORS[5] = {ATTR_RED, ATTR_YELLOW, ATTR_GREEN, ATTR_CYAN, ATTR_MAGENTA};
+const Attr RESERVATION_COLORS[5] = {ATTR_RED, ATTR_BLUE, ATTR_GREEN, ATTR_YELLOW, ATTR_MAGENTA};
 
 int
 renderer_append_console(Tid console_renderer_server, char* line)
@@ -35,6 +36,50 @@ renderer_prompt(Tid prompt_renderer_server, char ch)
     char send_buf = ch;
 
     return Send(prompt_renderer_server, (const char*)&send_buf, sizeof(char), (char*)&resp_buf, 0);
+}
+
+
+#define NODE_W 8
+#define NODE_H 4
+#define NODE_X_OFFSET 7
+#define NODE_Y_OFFSET 5
+#define DRAW_NODE_NO_TRAIN NUMBER_OF_TRAINS
+void
+draw_node(Window* track_win, u32 train_num, DiagramData data)
+{
+    u32 x = data.x*NODE_W+NODE_X_OFFSET;
+    u32 y = data.y*NODE_H+NODE_Y_OFFSET;
+    u32 sensor = data.sensor;
+    Direction dir1 = data.direction1;
+    Direction dir2 = data.direction2;
+    w_puts_mv(track_win, "╭─────╮", x, y);
+    w_puts_mv(track_win, "│     │", x, y+1);
+    w_puts_mv(track_win, "╰─────╯", x, y+2);
+    if (dir1 == LEFT || dir2 == LEFT) {
+        w_puts_mv(track_win, "┤", x, y+1);
+    }
+    if (dir1 == RIGHT || dir2 == RIGHT) {
+        w_puts_mv(track_win, "├", x+6, y+1);
+    }
+    if (dir1 == UP || dir2 == UP) {
+        w_puts_mv(track_win, "┴", x+3, y);
+    }
+    if (dir1 == DOWN || dir2 == DOWN) {
+        w_puts_mv(track_win, "┬", x+3, y+2);
+    }
+    w_putc_mv(track_win, sensor/16+'A', x+3, y);
+    w_putc_mv(track_win, (sensor%16+1)/10+'0', x+1, y+2);
+    w_putc_mv(track_win, (sensor%16+1)%10+'0', x+2, y+2);
+    w_putc_mv(track_win, ((sensor+1)%16+1)/10+'0', x+4, y+2);
+    w_putc_mv(track_win, ((sensor+1)%16+1)%10+'0', x+5, y+2);
+    if (train_num == DRAW_NODE_NO_TRAIN) {
+        w_putc_mv(track_win, ' ', x+2, y+1);
+        w_putc_mv(track_win, ' ', x+4, y+1);
+    }
+    else {
+        w_putc_mv(track_win, train_num/10 + '0', x+2, y+1);
+        w_putc_mv(track_win, train_num%10 + '0', x+4, y+1);
+    }
 }
 
 void
@@ -58,19 +103,17 @@ renderTrackWinTask()
 
     const u32 CELL_W = 8;
     const u32 CELL_H = 4;
-    for (usize i = 0; i < DIAGRAM_NODE_COUNT; i++) {
-        w_putc_mv(&track_win, diagram_pos[i].sensor/16+'A', diagram_pos[i].x*CELL_W+10, diagram_pos[i].y*CELL_H+5);
-        w_putc_mv(&track_win, (diagram_pos[i].sensor%16+1)/10+'0', diagram_pos[i].x*CELL_W+8, diagram_pos[i].y*CELL_H+7);
-        w_putc_mv(&track_win, (diagram_pos[i].sensor%16+1)%10+'0', diagram_pos[i].x*CELL_W+9, diagram_pos[i].y*CELL_H+7);
-        w_putc_mv(&track_win, ((diagram_pos[i].sensor+1)%16+1)/10+'0', diagram_pos[i].x*CELL_W+11, diagram_pos[i].y*CELL_H+7);
-        w_putc_mv(&track_win, ((diagram_pos[i].sensor+1)%16+1)%10+'0', diagram_pos[i].x*CELL_W+12, diagram_pos[i].y*CELL_H+7);
+    const u32 CELL_X_OFFSET = 7;
+    const u32 CELL_Y_OFFSET = 5;
+    for (usize i = 0; i < DIAGRAM_NODE_COUNT; i++) {;
+        draw_node(&track_win, DRAW_NODE_NO_TRAIN, diagram_data[i]);
         w_flush(&track_win);
     }
 
     static const u32 NO_NODE = DIAGRAM_NODE_COUNT;
-    usize diagram_node[TRAIN_COUNT];  // Stores the train's current node
+    usize train_node[TRAIN_COUNT];  // Stores the train's current node
     for (u32 i = 0; i < TRAIN_COUNT; ++i) {
-        diagram_node[i] = NO_NODE;
+        train_node[i] = NO_NODE;
     }
 
     for (;;) {
@@ -78,22 +121,17 @@ renderTrackWinTask()
         usize train = res.first;
         usize new_pos = res.second;
 
-        // Overwrite old nodes
-        for (u32 i = 0; i < TRAIN_COUNT; i++) {
-            if (diagram_node[i] != NO_NODE) {
-                w_putc_mv(&track_win, ' ', diagram_pos[diagram_node[i]].x*CELL_W+9, diagram_pos[diagram_node[i]].y*CELL_H+6);
-                w_putc_mv(&track_win, ' ', diagram_pos[diagram_node[i]].x*CELL_W+11, diagram_pos[diagram_node[i]].y*CELL_H+6);
-            }
-        }
-        // Write new nodes
+        // Overwrite old node
         usize train_index = get_train_index(train);
-        diagram_node[train_index] = new_pos/2;
-        for (u32 i = 0; i < TRAIN_COUNT; i++) {
-            if (diagram_node[i] != NO_NODE) {
-                w_putc_mv(&track_win, TRAIN_DATA_TRAINS[i]/10 + '0', diagram_pos[diagram_node[i]].x*CELL_W+9, diagram_pos[diagram_node[i]].y*CELL_H+6);
-                w_putc_mv(&track_win, TRAIN_DATA_TRAINS[i]%10 + '0', diagram_pos[diagram_node[i]].x*CELL_W+11, diagram_pos[diagram_node[i]].y*CELL_H+6);
-            }
+        if (train_node[train_index] != NO_NODE) {
+            draw_node(&track_win, DRAW_NODE_NO_TRAIN, diagram_data[train_node[train_index]]);
+            w_flush(&track_win);
         }
+        // Write new node
+        train_node[train_index] = new_pos/2;
+        w_attr(&track_win, RESERVATION_COLORS[train_index]);
+        draw_node(&track_win, TRAIN_DATA_TRAINS[train_index], diagram_data[train_node[train_index]]);
+        w_attr_reset(&track_win);
         w_flush(&track_win);
     }
 
@@ -133,7 +171,6 @@ renderZoneWinTask()
     Track* track = get_track();
     Arena tmp_base = arena_new(256);
 
-    const Attr RESERVATION_COLORS[] = {ATTR_RED, ATTR_BLUE, ATTR_GREEN, ATTR_YELLOW, ATTR_MAGENTA};
     for (;;) {
         Arena tmp = tmp_base;
 
