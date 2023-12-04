@@ -87,7 +87,6 @@ typedef struct {
     } data;
 } TrainstateResp;
 
-usize trains[TRAIN_DATA_TRAIN_COUNT] = {2, 24, 47, 58, 77}; // TODO we don't need two train arrays
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
@@ -579,7 +578,7 @@ trainPosNotifierTask()
             // ====== zone impl (checks to see if sensor is in zone of train)
             for (usize i = 0; i < TRAIN_DATA_TRAIN_COUNT; ++i) {
 
-                usize train = trains[i];
+                usize train = TRAIN_DATA_TRAINS[i];
 
                 // train position not calibrated, skip checking
                 if (train_state[train].pos == TRAIN_POS_NULL) {
@@ -642,7 +641,7 @@ trainStateServer()
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
     for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
-        usize train_id = trains[i];
+        usize train_id = TRAIN_DATA_TRAINS[i];
 
         train_state[i] = (TrainState) {
             .speed = 0,

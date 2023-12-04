@@ -475,15 +475,15 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                 }
                 case 0: {
 
-                    const usize TRAIN1 = 2;
-                    const usize TRAIN2 = 24;
-                    const usize TRAIN3 = 47;
+                    const usize TRAIN1 = 1;
+                    const usize TRAIN2 = 2;
+                    const usize TRAIN3 = 24;
 
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "E14"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "C12"));
                     Delay(clock_server, 50);
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "D14"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "B6"));
                     Delay(clock_server, 50);
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "B1"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "D4"));
                     Delay(clock_server, 50);
                     TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
                     TrainstateSetCohort(trainstate_server, TRAIN3, TRAIN1);

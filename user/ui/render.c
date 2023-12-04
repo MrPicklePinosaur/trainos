@@ -218,11 +218,12 @@ renderTrainStateWinTask()
     w_puts_mv(&train_state_win, "[trains]", 2, 0);
 
     w_puts_mv(&train_state_win, "train  curr  next  zone  spd   dest", 1, 2);
-    w_puts_mv(&train_state_win, "2                                  ", 1, 3);
-    w_puts_mv(&train_state_win, "24                                 ", 1, 4);
-    w_puts_mv(&train_state_win, "47                                 ", 1, 5);
-    w_puts_mv(&train_state_win, "58                                 ", 1, 6);
-    w_puts_mv(&train_state_win, "77                                 ", 1, 7);
+    w_puts_mv(&train_state_win, "1                                  ", 1, 3);
+    w_puts_mv(&train_state_win, "2                                  ", 1, 4);
+    w_puts_mv(&train_state_win, "24                                 ", 1, 5);
+    w_puts_mv(&train_state_win, "47                                 ", 1, 6);
+    w_puts_mv(&train_state_win, "58                                 ", 1, 7);
+    w_puts_mv(&train_state_win, "77                                 ", 1, 8);
 
     w_flush(&train_state_win);
 
