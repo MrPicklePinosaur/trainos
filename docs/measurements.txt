@@ -52,6 +52,19 @@ Train 2 wait before stop
 
 (got two measurements for speed 8)
 
+Train 24 wait before stop:
+ 4: 4257508 (total distance 359 instead of 1045, from C10 to B1)
+ 5: 2968750 (total distance 359 instead of 1045, from C10 to B1)
+ 6: 6382812
+ 7: 4367187
+ 8: 3070312
+ 9: 2082031
+10: 1410156
+11:  761718
+12:  339843
+13: 1152343 (total distance 1797 instead of 1045, from B16 to E9)
+14:  933593 (total distance 1797 instead of 1045, from B16 to E9)
+
 Train 47 wait before stop:
  2: 4043959 (total distance 359 instead of 1045, from C10 to B1)
  5: 3186181
