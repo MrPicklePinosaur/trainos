@@ -169,7 +169,7 @@ TrainstateReverse(Tid trainstate_server, usize train)
     };
     int ret = Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
     if (resp_buf.data.reverse.was_already_reversing) {
-        ULOG_WARN("Train was already reversing");
+        ULOG_WARN("Train %d was already reversing", train);
         return -1;
     }
     if (ret < 0) {
@@ -506,11 +506,11 @@ cohortReverseTask()
 
     usize train = msg_buf.train;
 
-    CBuf* reverse_tasks = cbuf_new(12);
+    CBuf* _reverse_tasks = cbuf_new(12);
 
     Tid leader_reverse_task = train_reverse(marklin_server, train);
     if (leader_reverse_task != 0) {
-        cbuf_push_back(reverse_tasks, (void*)leader_reverse_task);
+        cbuf_push_back(_reverse_tasks, (void*)leader_reverse_task);
     }
 
     // TODO this should be safe since cohort leave only removes from back of cbuf
@@ -523,15 +523,15 @@ cohortReverseTask()
         usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
         Tid reverse_task = train_reverse(marklin_server, follower_train);
         if (reverse_task != 0) {
-            cbuf_push_back(reverse_tasks, (void*)reverse_task);
+            cbuf_push_back(_reverse_tasks, (void*)reverse_task);
         }
     }
 
     // spawn task that blocks until all trains are done reversing, then disbands and reforms cohort in reverse
 
     // block until all reverse tasks complete
-    for (usize i = 0; i < cbuf_len(reverse_tasks); ++i) {
-        Tid reverse_task = (Tid)cbuf_get(reverse_tasks, i);
+    for (usize i = 0; i < cbuf_len(_reverse_tasks); ++i) {
+        Tid reverse_task = (Tid)cbuf_get(_reverse_tasks, i);
         WaitTid(reverse_task);
     }
     ULOG_DEBUG("All reverse tasks finished");
@@ -653,6 +653,9 @@ trainStateServer()
             .followers = cbuf_new(12),
             .cohort_regulate_task = 0
         };
+    }
+    for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
+        reverse_tasks[i] = 0;
     }
 
     // temp disabling calibration
@@ -802,6 +805,7 @@ trainStateServer()
             usize speed = train_state[train].speed;
 
             if (reverse_tasks[train] != 0) {
+
                 reply_buf = (TrainstateResp) {
                     .type = TRAINSTATE_REVERSE,
                     .data = {
