@@ -67,11 +67,10 @@ renderTrackWinTask()
         w_flush(&track_win);
     }
 
-    static const u32 NO_POS = DIAGRAM_NODE_COUNT;
-
-    usize sensor_index[TRAIN_COUNT];
+    static const u32 NO_NODE = DIAGRAM_NODE_COUNT;
+    usize diagram_node[TRAIN_COUNT];  // Stores the train's current node
     for (u32 i = 0; i < TRAIN_COUNT; ++i) {
-        sensor_index[i] = NO_POS;
+        diagram_node[i] = NO_NODE;
     }
 
     for (;;) {
@@ -79,16 +78,22 @@ renderTrackWinTask()
         usize train = res.first;
         usize new_pos = res.second;
 
-        usize train_index = get_train_index(train);
-        // Overwrite previous pos
-        if (sensor_index[train_index] != NO_POS) {
-            w_putc_mv(&track_win, ' ', diagram_pos[sensor_index[train_index]].x*CELL_W+9, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
-            w_putc_mv(&track_win, ' ', diagram_pos[sensor_index[train_index]].x*CELL_W+11, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
+        // Overwrite old nodes
+        for (u32 i = 0; i < TRAIN_COUNT; i++) {
+            if (diagram_node[i] != NO_NODE) {
+                w_putc_mv(&track_win, ' ', diagram_pos[diagram_node[i]].x*CELL_W+9, diagram_pos[diagram_node[i]].y*CELL_H+6);
+                w_putc_mv(&track_win, ' ', diagram_pos[diagram_node[i]].x*CELL_W+11, diagram_pos[diagram_node[i]].y*CELL_H+6);
+            }
         }
-        // Write new pos
-        sensor_index[train_index] = new_pos/2;
-        w_putc_mv(&track_win, train/10 + '0', diagram_pos[sensor_index[train_index]].x*CELL_W+9, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
-        w_putc_mv(&track_win, train%10 + '0', diagram_pos[sensor_index[train_index]].x*CELL_W+11, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
+        // Write new nodes
+        usize train_index = get_train_index(train);
+        diagram_node[train_index] = new_pos/2;
+        for (u32 i = 0; i < TRAIN_COUNT; i++) {
+            if (diagram_node[i] != NO_NODE) {
+                w_putc_mv(&track_win, TRAIN_DATA_TRAINS[i]/10 + '0', diagram_pos[diagram_node[i]].x*CELL_W+9, diagram_pos[diagram_node[i]].y*CELL_H+6);
+                w_putc_mv(&track_win, TRAIN_DATA_TRAINS[i]%10 + '0', diagram_pos[diagram_node[i]].x*CELL_W+11, diagram_pos[diagram_node[i]].y*CELL_H+6);
+            }
+        }
         w_flush(&track_win);
     }
 
