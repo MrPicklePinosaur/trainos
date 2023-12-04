@@ -91,8 +91,8 @@ void calibTrainSpeed() {
     marklin_switch_ctl(15, SWITCH_MODE_CURVED);
     marklin_switch_ctl(16, SWITCH_MODE_STRAIGHT);
 
-    const uint32_t train_number = 24;
-    const uint32_t SPEEDS_TO_CALIB[] = { 2, 3, 4 };
+    const uint32_t train_number = 58;
+    const uint32_t SPEEDS_TO_CALIB[] = { 7, 8, 9, 10, 11, 12, 13, 14 };
     int speed_index = 0;
     for (;;) {
         int train_speed = SPEEDS_TO_CALIB[speed_index];
@@ -110,7 +110,7 @@ void calibTrainSpeed() {
             uart_getc(MARKLIN);
         }
 
-        const uint32_t SAMPLES = 1;
+        const uint32_t SAMPLES = 5;
         uint32_t BANKS[] = {3, 2, 4, 5, 5, 4, 5, 4, 2, 3, 1, 2};
         uint32_t SENSOR[] = {10, 1, 14, 14, 9, 5, 6, 4, 6, 12, 4, 16};
         uint64_t DISTANCES[] = {128+231, 404, 239+43, 376, 239+155+239, 376, 50+239, 404, 231+120, 333+43, 437, 50+326};

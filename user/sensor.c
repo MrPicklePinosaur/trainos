@@ -126,7 +126,7 @@ sensorNotifierTask() {
         }
 
         // TODO maybe should use DelayUntil to guarentee uniform fetches
-        ticks += 10; // every 100ms
+        ticks += 20; // every 200ms
         DelayUntil(clock_server, ticks);
 
     }

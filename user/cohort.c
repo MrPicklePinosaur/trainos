@@ -68,7 +68,7 @@ cohort_follower_regulate()
 
         // compute expected time until next trigger
         u32 ahead_train_vel = train_data_vel(ahead_train, state.speed);
-        u32 follow_distance = ahead_train_vel / 2; // maintain half a second of distance between trains
+        u32 follow_distance = ahead_train_vel; // maintain half a second of distance between trains
         u32 dist_to_next_train = (follow_distance + TRAIN_LENGTH);
 
         if (ahead_train_vel == 0) {
@@ -96,7 +96,7 @@ cohort_follower_regulate()
         //ULOG_DEBUG("hit sensor for follower");
         actual_time = Time(clock_server) - actual_time;
 
-        ULOG_DEBUG("Took %d time between sensors, expected %d", actual_time, expected_time);
+        ULOG_DEBUG("[train %d] Took %d time between sensors, expected %d", follower_train, actual_time, expected_time);
 
         // TODO scale speed based on deviation between real and expected?
 

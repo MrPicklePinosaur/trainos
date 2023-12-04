@@ -87,7 +87,7 @@ typedef struct {
     } data;
 } TrainstateResp;
 
-usize trains[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
+usize trains[TRAIN_DATA_TRAIN_COUNT] = {2, 24, 47, 58, 77}; // TODO we don't need two train arrays
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
@@ -589,37 +589,33 @@ trainPosNotifierTask()
 
                 TrackNode* node = track_node_by_sensor_id(track, train_state[train].pos);
 
-                /* ZoneId train_zones[2] = {node->reverse->zone, node->zone}; */
-                ZoneId train_zones[1] = {node->reverse->zone};
-                for (usize zone_i = 0; zone_i < 1; ++zone_i) {
-                    ZoneId train_zone = train_zones[zone_i];
+                ZoneId train_zone = node->reverse->zone;
 
-                    if (train_zone == -1) continue;
+                if (train_zone == -1) continue;
 
-                    for (usize j = 0; ; ++j) {
-                        // TODO train positions MUST be sensors
-                        TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
-                        if (zone_sensor == 0) break;
-                        if (sensor_id == zone_sensor->num) {
+                for (usize j = 0; ; ++j) {
+                    // TODO train positions MUST be sensors
+                    TrackNode* zone_sensor = track->zones[train_zone].sensors[j];
+                    if (zone_sensor == 0) break;
+                    if (sensor_id == zone_sensor->num) {
 
-                            //ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
-                            train_state[train].pos = sensor_id; // update train position right away here
+                        //ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
+                        train_state[train].pos = sensor_id; // update train position right away here
 
-                            // notify server that train position changed
-                            TrainstateMsg send_buf = (TrainstateMsg) {
-                                .type = TRAINSTATE_POSITION_UPDATE,
-                                .data = {
-                                    .position_update = {
-                                        .train = train,
-                                        .new_pos = sensor_id
-                                    }
+                        // notify server that train position changed
+                        TrainstateMsg send_buf = (TrainstateMsg) {
+                            .type = TRAINSTATE_POSITION_UPDATE,
+                            .data = {
+                                .position_update = {
+                                    .train = train,
+                                    .new_pos = sensor_id
                                 }
-                            };
-                            TrainstateResp resp_buf;
-                            Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
-                            goto loop_break;
+                            }
+                        };
+                        TrainstateResp resp_buf;
+                        Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+                        goto loop_break;
 
-                        }
                     }
                 }
 
@@ -753,8 +749,9 @@ trainStateServer()
                 for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
                     usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
 
-                    // TODO scale this by acceleration time of next train
-                    Delay(clock_server, 30); // TODO arbritrary propogation delay
+                    // Give train ahead time proportional to target velocity to accelerte
+                    usize wait_time = next_train_vel/10;
+                    Delay(clock_server, wait_time/2); // TODO arbritrary propogation delay
 
                     // search for the speed that is lower than the train ahead
                     u32 follower_speed = get_safe_speed(follower_train, next_train_vel);
