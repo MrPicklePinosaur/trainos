@@ -37,6 +37,17 @@ Train 77 velocities:
 Wait before stops are the microseconds before issuing stop command.
 The test is run between C10 and E14, which is a distance of 1045, unless otherwise mentioned
 
+Train 1 wait before stop
+ 6: 7314452
+ 7: 4951171
+ 8: 3503906
+ 9: 2308593
+10: 1628906
+11:  949218
+12:  472656
+13: 1136718 (total distance 1797 instead of 1045, from B16 to E9)
+14:  816406 (total distance 1797 instead of 1045, from B16 to E9)
+
 Train 2 wait before stop
  2: 4091719 (total distance 359 instead of 1045, from C10 to B1)
  5: 3437504
