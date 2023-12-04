@@ -41,6 +41,7 @@ void
 renderTrackWinTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Delay(clock_server, 50);
 
     Window track_win = win_init(2, 41, 120, 37);
@@ -63,6 +64,31 @@ renderTrackWinTask()
         w_putc_mv(&track_win, (diagram_pos[i].sensor%16+1)%10+'0', diagram_pos[i].x*CELL_W+9, diagram_pos[i].y*CELL_H+7);
         w_putc_mv(&track_win, ((diagram_pos[i].sensor+1)%16+1)/10+'0', diagram_pos[i].x*CELL_W+11, diagram_pos[i].y*CELL_H+7);
         w_putc_mv(&track_win, ((diagram_pos[i].sensor+1)%16+1)%10+'0', diagram_pos[i].x*CELL_W+12, diagram_pos[i].y*CELL_H+7);
+        w_flush(&track_win);
+    }
+
+    static const u32 NO_POS = DIAGRAM_NODE_COUNT;
+
+    usize sensor_index[TRAIN_COUNT];
+    for (u32 i = 0; i < TRAIN_COUNT; ++i) {
+        sensor_index[i] = NO_POS;
+    }
+
+    for (;;) {
+        Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, -1);
+        usize train = res.first;
+        usize new_pos = res.second;
+
+        usize train_index = get_train_index(train);
+        // Overwrite previous pos
+        if (sensor_index[train_index] != NO_POS) {
+            w_putc_mv(&track_win, ' ', diagram_pos[sensor_index[train_index]].x*CELL_W+9, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
+            w_putc_mv(&track_win, ' ', diagram_pos[sensor_index[train_index]].x*CELL_W+11, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
+        }
+        // Write new pos
+        sensor_index[train_index] = new_pos/2;
+        w_putc_mv(&track_win, train/10 + '0', diagram_pos[sensor_index[train_index]].x*CELL_W+9, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
+        w_putc_mv(&track_win, train%10 + '0', diagram_pos[sensor_index[train_index]].x*CELL_W+11, diagram_pos[sensor_index[train_index]].y*CELL_H+6);
         w_flush(&track_win);
     }
 
