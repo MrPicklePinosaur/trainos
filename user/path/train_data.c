@@ -40,7 +40,10 @@ train_data_stop_time(u32 train, u32 speed)
 {
     _speed_bounds_check(speed);
     u32 train_index = get_train_index(train);
-    return TRAIN_DATA_STOP_TIME[train_index][speed];
+    if (TRAIN_DATA_VEL[train_index][speed] == 0) {
+        return 0;
+    }
+    return TRAIN_DATA_STOP_DIST[train_index][speed]*2000/TRAIN_DATA_VEL[train_index][speed];
 }
 
 u32
