@@ -87,7 +87,7 @@ typedef struct {
     } data;
 } TrainstateResp;
 
-usize trains[TRAIN_COUNT] = {2, 47, 58, 77};
+usize trains[TRAIN_DATA_TRAIN_COUNT] = {2, 47, 58, 77};
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
@@ -577,7 +577,7 @@ trainPosNotifierTask()
             //ULOG_DEBUG("got sensor id %d", sensor_id);
 
             // ====== zone impl (checks to see if sensor is in zone of train)
-            for (usize i = 0; i < TRAIN_COUNT; ++i) {
+            for (usize i = 0; i < TRAIN_DATA_TRAIN_COUNT; ++i) {
 
                 usize train = trains[i];
 

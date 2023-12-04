@@ -111,8 +111,8 @@ renderTrackWinTask()
     }
 
     static const u32 NO_NODE = DIAGRAM_NODE_COUNT;
-    usize train_node[TRAIN_COUNT];  // Stores the train's current node
-    for (u32 i = 0; i < TRAIN_COUNT; ++i) {
+    usize train_node[TRAIN_DATA_TRAIN_COUNT];  // Stores the train's current node
+    for (u32 i = 0; i < TRAIN_DATA_TRAIN_COUNT; ++i) {
         train_node[i] = NO_NODE;
     }
 

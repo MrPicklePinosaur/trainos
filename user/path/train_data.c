@@ -113,7 +113,7 @@ get_speed_downstep(u32 train, u32 velocity, i32 bound)
 {
     i32 target_vel = i32_max(velocity-bound, 0);
 
-    for (usize speed = 5; speed < 15; ++speed) {
+    for (usize speed = 2; speed < 15; ++speed) {
         i32 follower_vel = train_data_vel(train, speed); 
         if (follower_vel >= target_vel) {
             // now check if we are closer to lower speed or current speed
