@@ -23,4 +23,6 @@ void testNameserver();
 void testSensor();
 
 void testTraindata();
+void testSpeedSearch();
+
 #endif // __USER_TESTER_H__

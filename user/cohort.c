@@ -16,6 +16,7 @@ cohort_follower_regulate()
     // if distance deviates this much from expected, then adjust speed up or down
     const u32 ACCEL_ADJUST_TOLERANCE  = 10;
     const u32 DECCEL_ADJUST_TOLERANCE = 10;
+    const u32 SPEED_RANGE = 50; // +- this value of velocities to use
 
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
@@ -46,10 +47,17 @@ cohort_follower_regulate()
     TrainState leader_state = TrainstateGet(trainstate_server, leader_train);
 
     usize leader_vel  = train_data_vel(leader_train, leader_state.speed);
-    u32 follower_speed = get_safe_speed(follower_train, leader_vel);
 
-    u8 follower_min_speed = u8_max(u8_sub(follower_speed, 1), 1);
-    u8 follower_max_speed = u8_min(follower_speed+1, 14);
+    u8 follower_min_speed = get_speed_downstep(follower_train, leader_vel, SPEED_RANGE);
+    if (follower_min_speed == 0) {
+        ULOG_WARN("invalid downstep speed for train %d", follower_train);
+        Exit();
+    }
+    u8 follower_max_speed = get_speed_upstep(follower_train, leader_vel, SPEED_RANGE);
+    if (follower_max_speed == 0) {
+        ULOG_WARN("invalid upstep speed for train %d", follower_train);
+        Exit();
+    }
 
     for (;;) {
 

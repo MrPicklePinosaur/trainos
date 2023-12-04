@@ -61,5 +61,7 @@ u32 train_data_acceleration_dist(u32 train, u32 speed);
 
 u32 get_train_index(u32 train);
 u32 get_safe_speed(u32 train, u32 velocity); // get a speed setting that is lower than given velocity
+u32 get_speed_upstep(u32 train, u32 velocity, i32 bound);
+u32 get_speed_downstep(u32 train, u32 velocity, i32 bound);
 
 #endif // __TRAIN_DATA_H__

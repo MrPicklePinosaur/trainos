@@ -90,3 +90,38 @@ get_safe_speed(u32 train, u32 velocity)
     }
     return 0;
 }
+
+u32
+get_speed_upstep(u32 train, u32 velocity, i32 bound)
+{
+    i32 target_vel = velocity+bound;
+    for (usize speed = 14; speed >= 5; --speed) {
+        i32 follower_vel = train_data_vel(train, speed); 
+        if (follower_vel <= target_vel) {
+            // now check if we are closer to next speed or current speed
+            u32 down_diff = i32_abs(target_vel-follower_vel);
+            u8 next_speed = u8_min(speed+1, 14);
+            u32 up_diff = i32_abs(target_vel-train_data_vel(train, next_speed));
+            return (down_diff <= up_diff) ? speed : next_speed;
+        }
+    }
+    return 0;
+}
+
+u32
+get_speed_downstep(u32 train, u32 velocity, i32 bound)
+{
+    i32 target_vel = i32_max(velocity-bound, 0);
+
+    for (usize speed = 5; speed < 15; ++speed) {
+        i32 follower_vel = train_data_vel(train, speed); 
+        if (follower_vel >= target_vel) {
+            // now check if we are closer to lower speed or current speed
+            u32 up_diff = i32_abs(target_vel-follower_vel);
+            u8 prev_speed = u8_max(speed-1, 5);
+            u32 down_diff = i32_abs(target_vel-train_data_vel(train, prev_speed));
+            return (down_diff <= up_diff) ? prev_speed : speed;
+        }
+    }
+    return 0;
+}
