@@ -82,7 +82,7 @@ train_data_acceleration_dist(u32 train, u32 speed)
 u32
 get_safe_speed(u32 train, u32 velocity)
 {
-    for (usize speed = 14; speed >= 5; --speed) {
+    for (usize speed = 14; speed >= 2; --speed) {
         usize follower_vel = train_data_vel(train, speed); 
         if (follower_vel <= velocity) {
             return speed;
@@ -95,7 +95,7 @@ u32
 get_speed_upstep(u32 train, u32 velocity, i32 bound)
 {
     i32 target_vel = velocity+bound;
-    for (usize speed = 14; speed >= 5; --speed) {
+    for (usize speed = 14; speed >= 2; --speed) {
         i32 follower_vel = train_data_vel(train, speed); 
         if (follower_vel <= target_vel) {
             // now check if we are closer to next speed or current speed

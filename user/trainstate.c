@@ -753,6 +753,7 @@ trainStateServer()
                 for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
                     usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
 
+                    // TODO scale this by acceleration time of next train
                     Delay(clock_server, 30); // TODO arbritrary propogation delay
 
                     // search for the speed that is lower than the train ahead
