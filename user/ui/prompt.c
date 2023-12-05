@@ -316,23 +316,54 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     break;
                 }
                 case 4: {
-                    renderer_append_console(console_renderer_server, "Running benchmark 4: random train destinations");
 
-                    createPathRandomizer(2, 5, "A5");
-                    createPathRandomizer(47, 5, "C4");
+                    renderer_append_console(console_renderer_server, "Running benchmark 4: two cohorts");
+                    // TODO due to the set pos appending to zone_fifo, this test is not re-runnable
+
+                    const usize SPEED = 8;
+
+                    const usize TRAIN1 = 2;
+                    const usize TRAIN2 = 47;
+
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "C7"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "A5"));
+                    TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
+
+                    // need to offset since we switched the cohort leader on reverse
+                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "D4", true}, (Path){TRAIN2, SPEED, TRAIN_LENGTH, "A5", true}};
+                    Tid cohort1_pather = PlanPathSeq(cohort1_paths, 2);
+
+                    const usize TRAIN3 = 54;
+                    const usize TRAIN4 = 58;
+
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "C6"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN4, track_node_by_name(track, "C6"));
+                    TrainstateSetCohort(trainstate_server, TRAIN4, TRAIN3);
+
+                    Path cohort2_paths[] = {(Path){TRAIN3, SPEED, 0, "C11", true}};
+                    Tid cohort2_pather = PlanPathSeq(cohort2_paths, 1);
+
+                    WaitTid(cohort1_pather);
+                    WaitTid(cohort2_pather);
+                    TrainstateReverse(trainstate_server, TRAIN1);
+                    TrainstateReverse(trainstate_server, TRAIN3);
 
                     break;
                 }
                 case 5: {
-                    renderer_append_console(console_renderer_server, "Running benchmark 5: single train reverse on switch");
+                    renderer_append_console(console_renderer_server, "Running benchmark 5: long cohort");
 
-                    usize SPEED = 5;
+                    const usize SPEED = 8;
 
-                    TrackNode* node = track_node_by_name(track, "A5");
-                    TrainstateSetPos(trainstate_server, reserve_server, 2, node);
-                    Tid pather_task = PlanPath((Path){2, SPEED, 0, "A3", true});
+                    const usize TRAIN1 = 2;
+                    const usize TRAIN2 = 47;
+                    const usize TRAIN3 = 54;
 
-                    WaitTid(pather_task);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "E9"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "E14"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "D14"));
+                    TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
+                    TrainstateSetCohort(trainstate_server, TRAIN3, TRAIN1);
 
                     break;
                 }
@@ -476,37 +507,10 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     break;
                 }
                 case 0: {
+                    renderer_append_console(console_renderer_server, "Running benchmark 4: random train destinations");
 
-                    // TODO due to the set pos appending to zone_fifo, this test is not re-runnable
-
-                    const usize SPEED = 8;
-
-                    const usize TRAIN1 = 2;
-                    const usize TRAIN2 = 47;
-
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "C7"));
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "A5"));
-                    TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
-
-                    // need to offset since we switched the cohort leader on reverse
-                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "D4", true}, (Path){TRAIN2, SPEED, TRAIN_LENGTH, "A5", true}};
-                    Tid cohort1_pather = PlanPathSeq(cohort1_paths, 2);
-
-                    const usize TRAIN3 = 54;
-                    const usize TRAIN4 = 58;
-
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "C6"));
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN4, track_node_by_name(track, "C4"));
-                    TrainstateSetCohort(trainstate_server, TRAIN4, TRAIN3);
-
-                    Path cohort2_paths[] = {(Path){TRAIN3, SPEED, 0, "C11", true}, (Path){TRAIN4, SPEED, TRAIN_LENGTH*2, "C4", true}};
-                    Tid cohort2_pather = PlanPathSeq(cohort2_paths, 2);
-
-                    WaitTid(cohort1_pather);
-                    WaitTid(cohort2_pather);
-                    TrainstateReverse(trainstate_server, TRAIN1);
-                    TrainstateReverse(trainstate_server, TRAIN3);
-
+                    createPathRandomizer(2, 5, "A5");
+                    createPathRandomizer(47, 5, "C4");
 
                     break;
                 }
