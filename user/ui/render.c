@@ -83,6 +83,115 @@ draw_node(Window* track_win, u32 train_num, DiagramData data)
 }
 
 void
+draw_switch(Window* switch_window, isize switch_id, SwitchMode mode)
+{
+    if (switch_id == 153 || switch_id == 154) {
+        u32 x = 8*NODE_W+NODE_X_OFFSET+3;
+        u32 y = 3*NODE_H+NODE_Y_OFFSET+1;
+        if ((switch_id == 153 && mode == SWITCH_MODE_STRAIGHT) || (switch_id == 154 && mode == SWITCH_MODE_CURVED)) {
+            w_puts_mv(switch_window, "╰", x, y);
+        }
+        else {
+            w_puts_mv(switch_window, "╯", x, y);
+        }
+        return;
+    }
+    else if (switch_id == 155 || switch_id == 156) {
+        u32 x = 8*NODE_W+NODE_X_OFFSET+3;
+        u32 y = 2*NODE_H+NODE_Y_OFFSET+1;
+        if ((switch_id == 155 && mode == SWITCH_MODE_STRAIGHT) || (switch_id == 156 && mode == SWITCH_MODE_CURVED)) {
+            w_puts_mv(switch_window, "╮", x, y);
+        }
+        else {
+            w_puts_mv(switch_window, "╭", x, y);
+        }
+        return;
+    }
+
+    DiagramSwitchData data = diagram_switch_data[switch_id];
+    u32 x = data.x*NODE_W+NODE_X_OFFSET+3;
+    u32 y = data.y*NODE_H+NODE_Y_OFFSET+1;
+    u32 dir_major = data.major;
+    u32 dir_minor = data.minor;
+
+    char* c;
+    if ((dir_major == LEFT || dir_minor == LEFT) && (dir_major == UP || dir_minor == UP)) {
+        c = "╯";
+    }
+    else if ((dir_major == RIGHT || dir_minor == RIGHT) && (dir_major == UP || dir_minor == UP)) {
+        c = "╰";
+    }
+    else if ((dir_major == LEFT || dir_minor == LEFT) && (dir_major == DOWN || dir_minor == DOWN)) {
+        c = "╮";
+    }
+    else {
+        c = "╭";
+    }
+
+    u32 x2 = x;
+    u32 y2 = y;
+    if (dir_minor == LEFT) {
+        x2 = x-1;
+    }
+    else if (dir_minor == RIGHT) {
+        x2 = x+1;
+    }
+    else if (dir_minor == UP) {
+        y2 = y-1;
+    }
+    else {
+        y2 = y+1;
+    }
+
+    if (mode == SWITCH_MODE_STRAIGHT) {
+        if (dir_major == LEFT || dir_major == RIGHT) {
+            w_puts_mv(switch_window, "─", x, y);
+        }
+        else {
+            w_puts_mv(switch_window, "│", x, y);
+        }
+        w_puts_mv(switch_window, c, x2, y2);
+    }
+    else {
+        if (dir_major == LEFT || dir_major == RIGHT) {
+            w_puts_mv(switch_window, "│", x2, y2);
+        }
+        else {
+            w_puts_mv(switch_window, "─", x2, y2);
+        }
+        w_puts_mv(switch_window, c, x, y);
+    }
+}
+
+void
+renderTrackWinSwitchesTask()
+{
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
+    Delay(clock_server, 60);
+
+    Window track_win = win_init(2, 41, 120, 37);
+
+    SwitchMode* initial = SwitchQueryAll(switch_server);
+    for (u32 i = 0; i < 18; i++) {
+        draw_switch(&track_win, i+1, initial[i]);
+        w_flush(&track_win);
+    }
+    for (u32 i = 18; i < 22; i++) {
+        draw_switch(&track_win, i-18+153, initial[i]);
+        w_flush(&track_win);
+    }
+
+    for (;;) {
+        WaitForSwitchResult res = WaitForSwitch(switch_server, -1);
+        isize switch_id = res.first;
+        SwitchMode mode = res.second;
+        draw_switch(&track_win, switch_id, mode);
+        w_flush(&track_win);
+    }
+}
+
+void
 renderTrackWinTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
@@ -539,6 +648,7 @@ uiTask()
     Create(5, &renderTrainStateWinTask, "Render Train State Window");
     Create(5, &renderZoneWinTask, "Render Zone Window");
     Create(5, &renderTrackWinTask, "Track Window");
+    Create(6, &renderTrackWinSwitchesTask, "Track Window Switches");
 
     WaitTid(prompt_tid);
 

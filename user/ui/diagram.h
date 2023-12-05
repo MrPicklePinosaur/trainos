@@ -70,10 +70,10 @@ const char* TRACK_DIAGRAM_TALL[] = {
 const char* TRACK_DIAGRAM_TALL_SPACE[] = {
 "╭         ╭─────╮    12      11           ╭─────╮                                         ╭─────╮ ╭─────╮",
 "├─────────┤     ├──── ─────── ────────────┤     ├─────────────────────────────────────────┤     ├─┤     ├────╮",
-"╰         ╰─────╯    │       │            ╰─────╯                                         ╰─────╯ ╰─────╯    │",
+"╰         ╰─────╯                         ╰─────╯                                         ╰─────╯ ╰─────╯    │",
 "                     │       │                                                                               │",
 "╭         ╭─────╮    │       │            ╭─────╮    13   ╭─────╮         ╭─────╮    10   ╭─────╮ ╭─────╮    │",
-"├─────────┤     ├───   04  14  ───────────┤     ├──── ────┤     ├─────────┤     ├──── ────┤     ├─┤     ├───   09",
+"├─────────┤     ├───   04 14   ───────────┤     ├──── ────┤     ├─────────┤     ├──── ────┤     ├─┤     ├───   09",
 "╰         ╰─────╯    │       │            ╰─────╯         ╰─────╯         ╰─────╯         ╰─────╯ ╰─────╯    │",
 "                     │       │                       │                               │                       │",
 "╭         ╭─────╮    │    ╭──┴──╮                 ╭──┴──╮ ╭─────╮ 156/155 ╭─────╮ ╭──┴──╮                    │",
@@ -90,9 +90,9 @@ const char* TRACK_DIAGRAM_TALL_SPACE[] = {
 "                     │       │                                                                               │",
 "╭ ╭─────╮ ╭─────╮    │       │            ╭─────╮    06   ╭─────╮         ╭─────╮    07   ╭─────╮ ╭─────╮    │",
 "├─┤     ├─┤     ├───   02    ╰────────────┤     ├──── ────┤     ├─────────┤     ├──── ────┤     ├─┤     ├────╯",
-"╰ ╰─────╯ ╰─────╯    │                    ╰─────╯    │    ╰─────╯         ╰─────╯    │    ╰─────╯ ╰─────╯",
+"╰ ╰─────╯ ╰─────╯    │                    ╰─────╯         ╰─────╯         ╰─────╯         ╰─────╯ ╰─────╯",
 "                     │                               │                               │",
-"╭ ╭─────╮ ╭─────╮    │                    ╭─────╮    │                               │    ╭─────╮            ╮",
+"╭ ╭─────╮ ╭─────╮    │                    ╭─────╮                                         ╭─────╮            ╮",
 "├─┤     ├─┤     ├──── ────────────────────┤     ├──── ─────────────────────────────── ────┤     ├────────────┤",
 "╰ ╰─────╯ ╰─────╯    03                   ╰─────╯    18                              05   ╰─────╯            ╯",
 0
@@ -114,6 +114,7 @@ typedef struct {
 } DiagramData;
 
 #define DIAGRAM_NODE_COUNT 40
+#define DIAGRAM_SWITCH_COUNT 19
 
 static const DiagramData diagram_data[DIAGRAM_NODE_COUNT] = {
     {0, 1, 0, RIGHT, LEFT},  // A1
@@ -156,6 +157,36 @@ static const DiagramData diagram_data[DIAGRAM_NODE_COUNT] = {
     {74, 11, 5, RIGHT, LEFT},  // E11
     {76, 11, 4, LEFT, RIGHT},  // E13
     {78, 6, 2, UP, RIGHT},  // E15
+};
+
+typedef struct {
+    u32 switch_id;
+    u32 x;
+    u32 y;
+    Direction major;  // Direction of merge
+    Direction minor;  // Direction of branch that is non-parallel to merge
+} DiagramSwitchData;
+
+static const DiagramSwitchData diagram_switch_data[DIAGRAM_SWITCH_COUNT] = {
+    {},  // Dummy
+    {1, 2, 4, DOWN, LEFT},  // 1
+    {2, 2, 5, DOWN, LEFT},  // 2
+    {3, 2, 6, RIGHT, UP},  // 3
+    {4, 2, 1, UP, LEFT},  // 4
+    {5, 10, 6, LEFT, UP},  // 5
+    {6, 6, 5, LEFT, DOWN},  // 6
+    {7, 10, 5, RIGHT, DOWN},  // 7
+    {8, 13, 4, UP, LEFT},  // 8
+    {9, 13, 1, DOWN, LEFT},  // 9
+    {10, 10, 1, RIGHT, DOWN},  // 10
+    {11, 3, 0, RIGHT, DOWN},  // 11
+    {12, 2, 0, RIGHT, DOWN},  // 12
+    {13, 6, 1, LEFT, DOWN},  // 13
+    {14, 3, 1, DOWN, RIGHT},  // 14
+    {15, 3, 4, UP, RIGHT},  // 15
+    {16, 6, 4, LEFT, UP},  // 16
+    {17, 10, 4, RIGHT, UP},  // 17
+    {18, 6, 6, RIGHT, UP},  // 18
 };
 
 #endif // __UI_DIAGRAM_H__
