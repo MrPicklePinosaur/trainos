@@ -422,7 +422,6 @@ renderPromptTask()
 
     const usize PROMPT_ANCHOR_X = 3;
     const usize PROMPT_ANCHOR_Y = 1;
-    const usize PROMPT_MAX_LEN = 56;
     usize prompt_length = 0;
     Window prompt_win = win_init(23, 38, 78, 3);
     win_draw_border(&prompt_win);

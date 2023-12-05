@@ -44,7 +44,7 @@ promptTask()
 
         renderer_prompt(prompt_renderer_server, c);
 
-        if (isalnum(c) || isblank(c) || isprint(c)) {
+        if ((isalnum(c) || isblank(c) || isprint(c)) && cbuf_len(line) < PROMPT_MAX_LEN) {
             cbuf_push_back(line, (void*)c);
         } else if (c == CH_ENTER) {
             // drain the buffer
