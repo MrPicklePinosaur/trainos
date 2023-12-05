@@ -421,6 +421,8 @@ train_leave_cohort(usize train)
     } else {
         ULOG_WARN("train %d not at back of cohort %d, can't remove", train, cohort);
     }
+
+    train_state[train].cohort = train; // set cohort back to self
 }
 
 typedef struct {
@@ -561,10 +563,14 @@ cohortReverseTask()
 
     // disband and reform the original cohort 
     usize old_leader = train;
-    usize new_leader = (usize)cbuf_back(train_state[train].followers); // NOTE safe since we asserted that follower_len > 0
+    usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
+
+    ULOG_DEBUG("[COHORT REVERSE] old leader = %d, new leader = %d", old_leader, new_leader);
 
     for (usize i = 0; i < follower_len; ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[train].followers, follower_len-1-i);
+        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
+
+        ULOG_DEBUG("[COHORT REVERSE] train %d joining cohort %d", follower_train, new_leader);
         
         // leave old cohort
         train_leave_cohort(follower_train);
