@@ -93,6 +93,7 @@ Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train
 
 
 void cohort_set_speed(Tid clock_server, Tid marklin_server, usize leader_train, usize speed);
+void cohort_stop(Tid clock_server, Tid marklin_server, usize leader_train);
 
 // serialize trainstate o binary form for marklin
 u8
@@ -406,6 +407,7 @@ train_leave_cohort(usize train)
 
     if (cohort == train) {
         // already not in cohort
+        ULOG_WARN("train %d not in cohort, failed to leave cohort");
         return;
     }
 
@@ -508,6 +510,7 @@ train_reverse(Tid marklin_server, usize train)
 
 typedef struct {
     usize train; // leader of the cohort to disband and reverse
+    Tid from_tid;
 } CohortReverseMsg;
 
 typedef struct {
@@ -531,11 +534,13 @@ cohortReverseTask()
     Reply(from_tid, (char*)&reply_buf, sizeof(CohortReverseResp));
 
     usize leader_train = msg_buf.train;
+    usize leader_vel = train_data_vel(leader_train, train_state[leader_train].speed);
 
-    cohort_set_speed(clock_server, marklin_server, leader_train, 0);
-    Delay(clock_server, 300); // use all cohorts to determine max wait time before reversing
+    cohort_stop(clock_server, marklin_server, leader_train);
+    Delay(clock_server, 300);
 
     // reverse leader
+    ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[COHORT REVERSE] reversing cohort leader %d", leader_train);
     TrainState temp_state = train_state[leader_train];
     temp_state.speed = 15;
     marklin_train_ctl(marklin_server, leader_train, trainstate_serialize(temp_state));
@@ -543,7 +548,9 @@ cohortReverseTask()
     // reverse all followers
     usize follower_len = cbuf_len(train_state[leader_train].followers);
     for (usize i = 0; i < follower_len; ++i) {
+        Delay(clock_server, 10);
         usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
+        ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[COHORT REVERSE] reversing cohort follower %d", follower_train);
 
         temp_state = train_state[follower_train];
         temp_state.speed = 15;
@@ -564,7 +571,8 @@ cohortReverseTask()
 
     train_join_cohort(old_leader, new_leader);
     
-    // TODO start cohort up at new speed
+    // start cohort up at new speed
+    /* cohort_set_speed(clock_server, marklin_server, new_leader, get_safe_speed(new_leader, leader_vel)); */
 
 #if 0
     usize train = msg_buf.train;
@@ -630,6 +638,17 @@ cohortReverseTask()
     }
 #endif
 #endif
+
+    // unblock the task that called reverse
+    TrainstateResp trainstate_reply_buf = (TrainstateResp) {
+        .type = TRAINSTATE_REVERSE,
+        .data = {
+            .reverse = {
+                .was_already_reversing = false
+            }
+        }
+    };
+    Reply(msg_buf.from_tid, (char*)&trainstate_reply_buf, sizeof(TrainstateResp));
 
     Exit();
 }
@@ -714,9 +733,17 @@ trainPosNotifierTask()
 typedef PAIR(Tid, isize) Pair_Tid_isize;
 
 void
-cohort_set_speed(Tid clock_server, Tid marklin_server, usize leader_train, usize speed)
+cohort_set_speed(Tid clock_server, Tid marklin_server, usize train, usize speed)
 {
+
+    usize leader_train = train_state[train].cohort;
+    if (train != leader_train) {
+        ULOG_WARN("train %d is not the leader of cohort %d", leader_train, leader_train);
+    }
+
     // set speed of leader
+    ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", leader_train, speed);
+
     train_state[leader_train].speed = speed;
     marklin_train_ctl(marklin_server, leader_train, trainstate_serialize(train_state[leader_train]));
 
@@ -920,8 +947,6 @@ trainStateServer()
 
                 usize leader_train = train_state[train].cohort;
 
-                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train, speed);
-
                 // if speed zero just set all followers to speed zero
                 if (speed == 0) {
                     cohort_stop(clock_server, marklin_server, leader_train);
@@ -946,18 +971,9 @@ trainStateServer()
             CohortReverseResp resp_buf;
             CohortReverseMsg send_buf = (CohortReverseMsg) {
                 .train = leader_train,
+                .from_tid = from_tid
             };
             int ret = Send(cohort_reverse_task, (const char*)&send_buf, sizeof(CohortReverseMsg), (char*)&resp_buf, sizeof(CohortReverseResp));
-
-            reply_buf = (TrainstateResp) {
-                .type = TRAINSTATE_REVERSE,
-                .data = {
-                    .reverse = {
-                        .was_already_reversing = false
-                    }
-                }
-            };
-            Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
         } else if (msg_buf.type == TRAINSTATE_REVERSE_STATIC) {
 
