@@ -634,6 +634,13 @@ trainPosNotifierTask()
 
 typedef PAIR(Tid, isize) Pair_Tid_isize;
 
+// stop train at offset from 
+void
+trainStopTask()
+{
+
+}
+
 void
 trainStateServer()
 {
@@ -749,7 +756,11 @@ trainStateServer()
                     usize sensor_num = (leader_train_state.pos % 16)+1;
                     ULOG_INFO("projected leader train %d to stop offset %d from sensor %c%d (sensor %d ticks ago)", train, dist_past_sensor, sensor_group, sensor_num, time_since_last_sensor);
 
+                    usize ahead_train = train;
+                    usize follow_distance = 0;
+
                     for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
+
                         usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
 
                         // also kill cohort task
@@ -758,8 +769,15 @@ trainStateServer()
                             train_state[follower_train].cohort_regulate_task = 0;
                         }
 
+                        follow_distance += (TRAIN_LENGTH + cohort_follow_distance(ahead_train, train_state[ahead_train].speed));
+                        isize stop_offset = dist_past_sensor - follow_distance;
+
+                        // TODO spawn task that delays and stops the train
+
                         train_state[follower_train].speed = 0;
                         marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
+
+                        ahead_train = follower_train;
                     }
                     continue;
                 }

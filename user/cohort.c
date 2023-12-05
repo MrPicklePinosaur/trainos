@@ -67,10 +67,10 @@ cohort_follower_regulate()
         TrainState state = TrainstateGet(trainstate_server, ahead_train);
 
         // compute expected time until next trigger
-        u32 ahead_train_vel = train_data_vel(ahead_train, state.speed);
-        u32 follow_distance = ahead_train_vel; // maintain half a second of distance between trains
+        u32 follow_distance = cohort_follow_distance(ahead_train, state.speed); // maintain half a second of distance between trains
         u32 dist_to_next_train = (follow_distance + TRAIN_LENGTH);
 
+        u32 ahead_train_vel = train_data_vel(ahead_train, state.speed);
         if (ahead_train_vel == 0) {
             ULOG_WARN("ahead train is at speed zero");
             Exit();
@@ -120,4 +120,10 @@ cohort_follower_regulate()
     }
     Exit();
 
+}
+
+u32
+cohort_follow_distance(usize ahead_train, usize ahead_train_speed)
+{
+    return train_data_vel(ahead_train, ahead_train_speed);
 }
