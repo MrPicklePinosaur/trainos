@@ -437,10 +437,15 @@ reverseTask()
     usize train = msg_buf.train;
     usize speed = msg_buf.speed;
 
+    // stop train
+    TrainState temp_state = train_state[train];
+    temp_state.speed = 0;
+    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+
     Delay(clock_server, train_data_stop_time(train, speed) / 10 + 100);
 
     // reverse train
-    TrainState temp_state = train_state[train];
+    temp_state = train_state[train];
     temp_state.speed = 15;
     marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
 
@@ -468,9 +473,6 @@ train_reverse(Tid marklin_server, usize train)
         marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
         return 0;
     } else {
-        TrainState temp_state = train_state[train];
-        temp_state.speed = 0;
-        marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
         Tid reverse_task = Create(2, &reverseTask, "Trainstate Reverse Task");
         reverse_tasks[train] = reverse_task;
 
@@ -509,7 +511,6 @@ cohortReverseTask()
     Reply(from_tid, (char*)&reply_buf, sizeof(CohortReverseResp));
 
     usize train = msg_buf.train;
-    usize leader_speed = train_state[train].speed;
 
     CBuf* _reverse_tasks = cbuf_new(12);
 
@@ -556,9 +557,6 @@ cohortReverseTask()
     }
 
     train_join_cohort(old_leader, new_leader);
-
-    // Explicitly tell whole cohort the new speed
-    cohort_set_speed(clock_server, marklin_server, new_leader, leader_speed);
 
     Exit();
 }
