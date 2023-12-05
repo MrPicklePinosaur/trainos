@@ -475,7 +475,8 @@ reverseTask()
     Delay(clock_server, 10); // TODO arbitrary delay
 
     // start train again
-    marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
+    // TODO dont start train yet
+    //marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
     reverse_tasks[train] = 0;
 
     Exit();
@@ -529,6 +530,43 @@ cohortReverseTask()
     reply_buf = (CohortReverseResp){};
     Reply(from_tid, (char*)&reply_buf, sizeof(CohortReverseResp));
 
+    usize leader_train = msg_buf.train;
+
+    cohort_set_speed(clock_server, marklin_server, leader_train, 0);
+    Delay(clock_server, 300); // use all cohorts to determine max wait time before reversing
+
+    // reverse leader
+    TrainState temp_state = train_state[leader_train];
+    temp_state.speed = 15;
+    marklin_train_ctl(marklin_server, leader_train, trainstate_serialize(temp_state));
+
+    // reverse all followers
+    usize follower_len = cbuf_len(train_state[leader_train].followers);
+    for (usize i = 0; i < follower_len; ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
+
+        temp_state = train_state[follower_train];
+        temp_state.speed = 15;
+        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(temp_state));
+    }
+
+    // reconstruct the cohort but in reverse
+    usize old_leader = leader_train;
+    usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
+
+    for (usize i = 0; i < follower_len; ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
+        
+        train_leave_cohort(follower_train);
+
+        train_join_cohort(follower_train, new_leader);
+    }
+
+    train_join_cohort(old_leader, new_leader);
+    
+    // TODO start cohort up at new speed
+
+#if 0
     usize train = msg_buf.train;
 
     CBuf* _reverse_tasks = cbuf_new(12);
@@ -559,7 +597,6 @@ cohortReverseTask()
         Tid reverse_task = (Tid)cbuf_get(_reverse_tasks, i);
         WaitTid(reverse_task);
     }
-    ULOG_DEBUG("All reverse tasks finished");
 
     // disband and reform the original cohort 
     usize old_leader = train;
@@ -569,8 +606,6 @@ cohortReverseTask()
 
     for (usize i = 0; i < follower_len; ++i) {
         usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
-
-        ULOG_DEBUG("[COHORT REVERSE] train %d joining cohort %d", follower_train, new_leader);
         
         // leave old cohort
         train_leave_cohort(follower_train);
@@ -580,6 +615,21 @@ cohortReverseTask()
     }
 
     train_join_cohort(old_leader, new_leader);
+
+#if 0
+    ULOG_DEBUG("old cohort %d =======", old_leader);
+    for (usize i = 0; i < cbuf_len(train_state[old_leader].followers); ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, i);
+        ULOG_DEBUG("old cohort %d, train %d", old_leader, follower_train);
+    }
+
+    ULOG_DEBUG("new cohort %d =======", new_leader);
+    for (usize i = 0; i < cbuf_len(train_state[new_leader].followers); ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[new_leader].followers, i);
+        ULOG_DEBUG("new cohort %d, train %d", new_leader, follower_train);
+    }
+#endif
+#endif
 
     Exit();
 }
