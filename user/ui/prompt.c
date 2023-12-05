@@ -476,6 +476,9 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     break;
                 }
                 case 0: {
+
+                    // TODO due to the set pos appending to zone_fifo, this test is not re-runnable
+
                     const usize SPEED = 8;
 
                     const usize TRAIN1 = 2;
@@ -489,7 +492,6 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "D4", true}, (Path){TRAIN2, SPEED, TRAIN_LENGTH, "A5", true}};
                     Tid cohort1_pather = PlanPathSeq(cohort1_paths, 2);
 
-#if 0
                     const usize TRAIN3 = 54;
                     const usize TRAIN4 = 58;
 
@@ -499,12 +501,11 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
 
                     Path cohort2_paths[] = {(Path){TRAIN3, SPEED, 0, "C11", true}, (Path){TRAIN4, SPEED, TRAIN_LENGTH*2, "C4", true}};
                     Tid cohort2_pather = PlanPathSeq(cohort2_paths, 2);
-#endif
 
                     WaitTid(cohort1_pather);
-                    /* WaitTid(cohort2_pather); */
+                    WaitTid(cohort2_pather);
                     TrainstateReverse(trainstate_server, TRAIN1);
-                    /* TrainstateReverse(trainstate_server, TRAIN3); */
+                    TrainstateReverse(trainstate_server, TRAIN3);
 
 
                     break;

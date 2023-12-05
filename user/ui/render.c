@@ -593,6 +593,11 @@ renderConsoleTask()
     w_puts_mv(&console_win, "[console]", 2, 0);
     w_flush(&console_win);
 
+    cbuf_push_back(console_lines, "Welcome to \033[36mMarklinCTL\033[0m, type 'help' for commands");
+    w_mv(&console_win, CONSOLE_ANCHOR_X, CONSOLE_ANCHOR_Y-cbuf_len(console_lines)+1);
+    w_puts(&console_win, (char*)cbuf_get(console_lines, 0));
+    w_flush(&console_win);
+
     char* msg_buf;
     struct {} reply_buf;
 
