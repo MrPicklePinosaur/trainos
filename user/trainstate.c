@@ -38,6 +38,7 @@ typedef struct {
         struct {
             usize train;
             usize speed;
+            bool force;
         } set_speed;
         struct {
             usize train;
@@ -101,7 +102,7 @@ trainstate_serialize(TrainState train_state)
 }
 
 int
-TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
+_TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed, bool force)
 {
 
     if (!(1 <= train && train <= 100)) {
@@ -119,7 +120,8 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
         .data = {
             .set_speed = {
                 .train = train,
-                .speed = speed
+                .speed = speed,
+                .force = force,
             }
         }
     };
@@ -129,6 +131,19 @@ TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
         return -1;
     }
     return 0;
+}
+
+int
+TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed)
+{
+    return _TrainstateSetSpeed(trainstate_server, train, speed, false);
+}
+
+// set the speed of a single train, ignoring cohorts
+int
+TrainstateSetSpeedForce(Tid trainstate_server, usize train, usize speed)
+{
+    return _TrainstateSetSpeed(trainstate_server, train, speed, true);
 }
 
 int
@@ -833,25 +848,29 @@ trainStateServer()
             };
             Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
 
-            if (train_state[train].cohort == train) {
-                // if leader, also modify speeds of followers
+            if (msg_buf.data.set_speed.force)  {
+
+                // set the speed of a train explicitly
+
+                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed explicitly for follower train %d: %d", train, speed);
+                train_state[train].speed = speed;
+                marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
+
+            } else {
+
+                // set speed of cohort
+
+                usize leader_train = train_state[train].cohort;
 
                 ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train, speed);
 
                 // if speed zero just set all followers to speed zero
                 if (speed == 0) {
-                    cohort_stop(clock_server, marklin_server, train);
+                    cohort_stop(clock_server, marklin_server, leader_train);
                 }
 
-                cohort_set_speed(clock_server, marklin_server, train, speed);
+                cohort_set_speed(clock_server, marklin_server, leader_train, speed);
 
-            } else {
-
-                // if not leader, just set the speed explicitly
-
-                ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed explicitly for follower train %d: %d", train, speed);
-                train_state[train].speed = speed;
-                marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
             }
 
 

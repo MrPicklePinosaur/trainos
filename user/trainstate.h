@@ -36,6 +36,7 @@ Pair_usize_usize TrainstateWaitForSensor(Tid trainstate_server, isize train);
 int TrainstateReverseStatic(Tid trainstate_server, usize train);
 
 int TrainstateSetSpeed(Tid trainstate_server, usize train, usize speed);
+int TrainstateSetSpeedForce(Tid trainstate_server, usize train, usize speed);
 int TrainstateReverse(Tid trainstate_server, usize train);
 int TrainstateSetLights(Tid trainstate_server, usize train, bool lights);
 int TrainstateSetOffset(Tid trainstate_server, usize train, isize offset);

@@ -106,14 +106,14 @@ cohort_follower_regulate()
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
             u8 new_speed = u8_max(u8_sub(follower_state.speed, 1), follower_min_speed);
             ULOG_DEBUG("Bump down follower train %d speed to %d", follower_train, new_speed);
-            TrainstateSetSpeed(trainstate_server, follower_train, new_speed);
+            TrainstateSetSpeedForce(trainstate_server, follower_train, new_speed);
         }
         else if (expected_time <= actual_time && actual_time-expected_time > ACCEL_ADJUST_TOLERANCE) {
             // too slow, bump up one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
             u8 new_speed = u8_min(follower_state.speed+1, follower_max_speed);
             ULOG_DEBUG("Bump up follower train %d speed to %d", follower_train, new_speed);
-            TrainstateSetSpeed(trainstate_server, follower_train, new_speed);
+            TrainstateSetSpeedForce(trainstate_server, follower_train, new_speed);
         }
 
 
