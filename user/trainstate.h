@@ -26,6 +26,7 @@ typedef struct {
     Cohort cohort;
     CBuf* followers; // list of trains that following
     Tid cohort_regulate_task; // task use to regulate speed when in cohort
+    usize last_sensor_time; // timestamp for last sensor hit
 } TrainState;
 
 typedef PAIR(usize, usize) Pair_usize_usize;

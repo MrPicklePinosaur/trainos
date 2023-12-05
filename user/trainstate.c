@@ -558,6 +558,7 @@ cohortReverseTask()
 void
 trainPosNotifierTask()
 {
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid io_server = WhoIs(IO_ADDRESS_MARKLIN);
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
@@ -601,6 +602,9 @@ trainPosNotifierTask()
                         //ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
                         train_state[train].pos = sensor_id; // update train position right away here
 
+                        // update timestamp on sensor trigger
+                        train_state[train].last_sensor_time = Time(clock_server); // TODO this call can really slow things down
+
                         // notify server that train position changed
                         TrainstateMsg send_buf = (TrainstateMsg) {
                             .type = TRAINSTATE_POSITION_UPDATE,
@@ -640,6 +644,7 @@ trainStateServer()
     Tid sensor_server = WhoIs(SENSOR_ADDRESS);
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
 
+    usize init_time = Time(clock_server);
     for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
         usize train_id = TRAIN_DATA_TRAINS[i];
 
@@ -651,7 +656,8 @@ trainStateServer()
             .offset = 0,
             .cohort = i,
             .followers = cbuf_new(12),
-            .cohort_regulate_task = 0
+            .cohort_regulate_task = 0,
+            .last_sensor_time = init_time,
         };
     }
     for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
@@ -722,11 +728,27 @@ trainStateServer()
                 // if leader, also modify speeds of followers
 
                 ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train, speed);
+
+                usize leader_prev_speed = train_state[train].speed;
+
                 train_state[train].speed = speed;
                 marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
 
                 // if speed zero just set all followers to speed zero
                 if (speed == 0) {
+
+                    // TODO stop all followers at ideal distance
+
+                    // TODO last sensor triggeer breaks if train didnt hit sensor after starting from rest
+                    TrainState leader_train_state = train_state[train];
+                    usize time_since_last_sensor = (Time(clock_server)-leader_train_state.last_sensor_time);
+                    isize dist_past_sensor = time_since_last_sensor*train_data_vel(train, leader_prev_speed/100); // in ticks
+                    dist_past_sensor += train_data_stop_dist(train, leader_prev_speed);
+                    
+                    usize sensor_group = (leader_train_state.pos / 16)+'A';
+                    usize sensor_num = (leader_train_state.pos % 16)+1;
+                    ULOG_INFO("projected leader train %d to stop offset %d from sensor %c%d (sensor %d ticks ago)", train, dist_past_sensor, sensor_group, sensor_num, time_since_last_sensor);
+
                     for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
                         usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
 

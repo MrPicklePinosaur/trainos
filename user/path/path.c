@@ -268,7 +268,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 void
 patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* path, usize train, usize train_speed, isize offset, Arena* arena)
 {
-    // no work to do
+    // no work to dopath.c
     if (cbuf_len(path) == 0) return;
 
     // break path into simple paths (no reversals)
