@@ -90,7 +90,7 @@ typedef struct {
 
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
-
+CBuf* zone_fifo[TRACK_A_ZONE_COUNT] = {0};
 
 void cohort_set_speed(Tid clock_server, Tid marklin_server, usize leader_train, usize speed);
 void cohort_stop(Tid clock_server, Tid marklin_server, usize leader_train);
@@ -491,21 +491,24 @@ cohortReverseTask()
     }
 
     // reconstruct the cohort but in reverse
-    usize old_leader = leader_train;
-    usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
+    if (follower_len > 0) {
+        usize old_leader = leader_train;
+        usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
 
-    for (usize i = 0; i < follower_len; ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
-        
-        train_leave_cohort(follower_train);
+        for (usize i = 0; i < follower_len; ++i) {
+            usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
+            
+            train_leave_cohort(follower_train);
 
-        train_join_cohort(follower_train, new_leader);
+            train_join_cohort(follower_train, new_leader);
+        }
+
+        train_join_cohort(old_leader, new_leader);
     }
-
-    train_join_cohort(old_leader, new_leader);
     
     // start cohort up at new speed
-    cohort_set_speed(clock_server, marklin_server, new_leader, get_safe_speed(new_leader, leader_vel));
+    // TODO pather should set this themselves
+    /* cohort_set_speed(clock_server, marklin_server, new_leader, get_safe_speed(new_leader, leader_vel)); */
 
     // unblock the task that called reverse
     TrainstateResp trainstate_reply_buf = (TrainstateResp) {
@@ -540,8 +543,57 @@ trainPosNotifierTask()
         for (; *sensor_ids != -1; ++sensor_ids) {
             usize sensor_id = *sensor_ids;
 
-            //ULOG_DEBUG("got sensor id %d", sensor_id);
+            // find the zone the sensor is in
+            TrackNode* sensor_node = track_node_by_sensor_id(track, sensor_id);
+            ZoneId sensor_zone = sensor_node->zone;
+            if (sensor_zone == -1) {
+                ULOG_WARN("[ATTRIBUTION] sensor zone is -1");
+                continue;
+            }
 
+            ULOG_DEBUG("got sensor id %d in zone %d", sensor_id, sensor_zone);
+
+            if (cbuf_len(zone_fifo[sensor_zone]) > 0) {
+                usize train = (usize)cbuf_pop_front(zone_fifo[sensor_zone]);
+
+                // train position not calibrated
+                if (train_state[train].pos == TRAIN_POS_NULL) {
+                    PANIC("train %d has null position, could not attribute sensor", train);
+                }
+
+                ZoneId next_sensor_zone = sensor_node->reverse->zone;
+                ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, next_sensor_zone);
+                train_state[train].pos = sensor_id; // update train position right away here
+
+                // push train to next zones fifo
+                if (next_sensor_zone == -1) {
+                    // if next sensor zone is not valid, just push back into old zone
+                    ULOG_WARN("[ATTRIBUTION] next sensor zone for train is -1");
+                    cbuf_push_back(zone_fifo[sensor_zone], (void*)train);
+                } else {
+                    cbuf_push_back(zone_fifo[next_sensor_zone], (void*)train);
+                }
+
+                // update timestamp on sensor trigger
+                train_state[train].last_sensor_time = Time(clock_server); // TODO this call can really slow things down
+
+                // notify server that train position changed
+                TrainstateMsg send_buf = (TrainstateMsg) {
+                    .type = TRAINSTATE_POSITION_UPDATE,
+                    .data = {
+                        .position_update = {
+                            .train = train,
+                            .new_pos = sensor_id
+                        }
+                    }
+                };
+                TrainstateResp resp_buf;
+                Send(trainstate_server, (const char*)&send_buf, sizeof(TrainstateMsg), (char*)&resp_buf, sizeof(TrainstateResp));
+                goto loop_break;
+
+            }
+            
+#if 0
             // ====== zone impl (checks to see if sensor is in zone of train)
             for (usize i = 0; i < TRAIN_DATA_TRAIN_COUNT; ++i) {
 
@@ -565,7 +617,7 @@ trainPosNotifierTask()
                     if (zone_sensor == 0) break;
                     if (sensor_id == zone_sensor->num) {
 
-                        //ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
+                        ULOG_INFO("[ATTRIBUTION] train %d @ sensor %s, current zone %d", train, track->nodes[sensor_id].name, train_zone);
                         train_state[train].pos = sensor_id; // update train position right away here
 
                         // update timestamp on sensor trigger
@@ -589,6 +641,7 @@ trainPosNotifierTask()
                 }
 
             }
+#endif
 
             ULOG_WARN("[TRAINSTATE NOTIF] superious sensor %s", track_node_by_sensor_id(track, sensor_id)->name);
             loop_break: {}
@@ -665,8 +718,10 @@ cohort_set_speed(Tid clock_server, Tid marklin_server, usize train, usize speed)
 
 // set entire cohort's speed to zero
 void
-cohort_stop(Tid clock_server, Tid marklin_server, usize leader_train)
+cohort_stop(Tid clock_server, Tid marklin_server, usize train)
 {
+    usize leader_train = train_state[train].cohort;
+
     usize leader_prev_speed = train_state[leader_train].speed;
 
     // stop leader right away
@@ -740,6 +795,11 @@ trainStateServer()
     for (usize i = 0; i < NUMBER_OF_TRAINS; ++i) {
         reverse_tasks[i] = 0;
     }
+    for (usize i = 0; i < TRACK_A_ZONE_COUNT; ++i) {
+        zone_fifo[i] = cbuf_new(TRAIN_DATA_TRAIN_COUNT);
+    }
+
+    Track* track = get_track();
 
     // temp disabling calibration
 #if 0
@@ -818,6 +878,7 @@ trainStateServer()
                 // if speed zero just set all followers to speed zero
                 if (speed == 0) {
                     cohort_stop(clock_server, marklin_server, leader_train);
+                    continue;
                 }
 
                 cohort_set_speed(clock_server, marklin_server, leader_train, speed);
@@ -916,10 +977,16 @@ trainStateServer()
         } else if (msg_buf.type == TRAINSTATE_SET_POS) {
 
             usize train = msg_buf.data.set_pos.train;
+            usize pos = msg_buf.data.set_pos.pos;
 
-            train_state[train].pos = msg_buf.data.set_pos.pos;
+            train_state[train].pos = pos;
 
-            ULOG_INFO("Explicitly setting pos for train %d: %s", train, get_track()->nodes[train_state[train].pos].name);
+            TrackNode* node = track_node_by_sensor_id(track, pos);
+            ZoneId zone = node->reverse->zone;
+            cbuf_push_back(zone_fifo[zone], (void*)train);
+
+            ULOG_INFO("Explicitly setting pos = %s, zone = %d for train %d", get_track()->nodes[train_state[train].pos].name, zone, train);
+
 
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_SET_POS,

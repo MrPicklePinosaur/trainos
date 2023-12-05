@@ -3,11 +3,6 @@
 #include "track_data.h"
 #include "user/switch.h"
 
-#define SENSORS_ON_TRACK 80
-
-#define TRACK_A_ZONE_COUNT 30
-#define TRACK_B_ZONE_COUNT 30
-
 typedef struct {
     char* sensors[ZONE_MAX_SENSORS];  
     usize switches[ZONE_MAX_SWITCHES];
