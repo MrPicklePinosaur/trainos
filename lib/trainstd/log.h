@@ -17,24 +17,27 @@ typedef enum {
 
 typedef u32 LogMask;
 typedef enum {
-    LOG_MASK_ALL     = 0,
-    LOG_MASK_USER    = 1,
-    LOG_MASK_KERN    = 2,
+    LOG_MASK_ALL        = 0,
+    LOG_MASK_USER       = 1 << 0,
+    LOG_MASK_KERN       = 1 << 1,
+    LOG_MASK_SYSCALL    = 1 << 2,
 
-    LOG_MASK_SYSCALL = 4,
-    LOG_MASK_ISR     = 8,
-    LOG_MASK_MSG     = 16,
-    LOG_MASK_SCHED   = 32,
+    LOG_MASK_ISR        = 1 << 3,
+    LOG_MASK_MSG        = 1 << 4,
+    LOG_MASK_SCHED      = 1 << 5,
+    LOG_MASK_IO         = 1 << 6,
 
-    LOG_MASK_IO      = 64,
-    LOG_MASK_NS      = 128,
-    LOG_MASK_CLOCK   = 256,
-    LOG_MASK_PARSER  = 512,
-    LOG_MASK_TRAINSTATE = 1024,
-    LOG_MASK_PATH    = 2048,
-    LOG_MASK_SENSOR  = 4096,
-    LOG_MASK_SWITCH  = 8192,
-    LOG_MASK_RESERVE = 16384,
+    LOG_MASK_NS         = 1 << 7,
+    LOG_MASK_CLOCK      = 1 << 8,
+    LOG_MASK_PARSER     = 1 << 9,
+    LOG_MASK_TRAINSTATE = 1 << 10,
+
+    LOG_MASK_PATH       = 1 << 11,
+    LOG_MASK_SENSOR     = 1 << 12,
+    LOG_MASK_SWITCH     = 1 << 13,
+    LOG_MASK_RESERVE    = 1 << 14,
+
+    LOG_MASK_COHORT     = 1 << 15,
 } LogMaskBits;
 
 typedef enum {

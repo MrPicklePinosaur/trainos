@@ -476,8 +476,8 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                 case 0: {
 
                     { // cohort 1
-                        const usize TRAIN1 = 1;
-                        const usize TRAIN2 = 2;
+                        const usize TRAIN1 = 2;
+                        const usize TRAIN2 = 47;
                         const usize SPEED = 8;
 
                         TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "A5"));
@@ -489,7 +489,6 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                         Path train1_paths[] = {(Path){TRAIN1, SPEED, 0, "E8", true}, (Path){TRAIN1, SPEED, 0, "A5", true}};
                         Tid train1_pather = PlanPathSeq(train1_paths, 2);
                     }
-
 
 #if 0
                     { // cohort 2

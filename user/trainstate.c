@@ -452,6 +452,8 @@ reverseTask()
     usize train = msg_buf.train;
     usize speed = msg_buf.speed;
 
+    ULOG_INFO_M(LOG_MASK_TRAINSTATE, "reverse task for train %d", train);
+
     // stop train
     TrainState temp_state = train_state[train];
     temp_state.speed = 0;
@@ -879,36 +881,18 @@ trainStateServer()
             usize train = msg_buf.data.reverse.train;
             usize speed = train_state[train].speed;
 
-            if (reverse_tasks[train] != 0) {
+            // always reverse the entire cohort
+            usize leader_train = train_state[train].cohort;
 
-                reply_buf = (TrainstateResp) {
-                    .type = TRAINSTATE_REVERSE,
-                    .data = {
-                        .reverse = {
-                            .was_already_reversing = true
-                        }
-                    }
-                };
-                Reply(from_tid, (char*)&reply_buf, sizeof(TrainstateResp));
-                continue;
-            }
+            ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE] reversing cohort %d", leader_train);
+            Tid cohort_reverse_task = Create(5, &cohortReverseTask, "Cohort reverse task"); 
 
-            // TODO reverse all trains in cohort
+            CohortReverseResp resp_buf;
+            CohortReverseMsg send_buf = (CohortReverseMsg) {
+                .train = leader_train,
+            };
+            int ret = Send(cohort_reverse_task, (const char*)&send_buf, sizeof(CohortReverseMsg), (char*)&resp_buf, sizeof(CohortReverseResp));
 
-            // disband cohort and reverse trains
-            usize follower_len = cbuf_len(train_state[train].followers);
-            if (follower_len == 0) {
-                train_reverse(marklin_server, train);
-            } else {
-                Tid cohort_reverse_task = Create(5, &cohortReverseTask, "Cohort reverse task"); 
-
-                CohortReverseResp resp_buf;
-                CohortReverseMsg send_buf = (CohortReverseMsg) {
-                    .train = train,
-                };
-                int ret = Send(cohort_reverse_task, (const char*)&send_buf, sizeof(CohortReverseMsg), (char*)&resp_buf, sizeof(CohortReverseResp));
-
-            }
             reply_buf = (TrainstateResp) {
                 .type = TRAINSTATE_REVERSE,
                 .data = {

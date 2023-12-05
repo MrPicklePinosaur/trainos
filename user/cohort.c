@@ -60,7 +60,7 @@ cohort_follower_regulate()
         Exit();
     }
 
-    ULOG_INFO("train %d downstep = %d (%d) upstep = %d (%d)", follower_train, follower_min_speed, train_data_vel(follower_train, follower_min_speed), follower_max_speed, train_data_vel(follower_train, follower_max_speed));
+    ULOG_INFO_M(LOG_MASK_COHORT, "train %d downstep = %d (%d) upstep = %d (%d)", follower_train, follower_min_speed, train_data_vel(follower_train, follower_min_speed), follower_max_speed, train_data_vel(follower_train, follower_max_speed));
 
     for (;;) {
 
@@ -96,7 +96,7 @@ cohort_follower_regulate()
         //ULOG_DEBUG("hit sensor for follower");
         actual_time = Time(clock_server) - actual_time;
 
-        ULOG_DEBUG("[train %d] Took %d time between sensors, expected %d", follower_train, actual_time, expected_time);
+        ULOG_DEBUG_M(LOG_MASK_COHORT, "[train %d] Took %d time between sensors, expected %d", follower_train, actual_time, expected_time);
 
         // TODO scale speed based on deviation between real and expected?
 
@@ -105,14 +105,14 @@ cohort_follower_regulate()
             // too fast, bump down one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
             u8 new_speed = u8_max(u8_sub(follower_state.speed, 1), follower_min_speed);
-            ULOG_DEBUG("Bump down follower train %d speed to %d", follower_train, new_speed);
+            ULOG_DEBUG_M(LOG_MASK_COHORT, "Bump down follower train %d speed to %d", follower_train, new_speed);
             TrainstateSetSpeedForce(trainstate_server, follower_train, new_speed);
         }
         else if (expected_time <= actual_time && actual_time-expected_time > ACCEL_ADJUST_TOLERANCE) {
             // too slow, bump up one speed
             TrainState follower_state = TrainstateGet(trainstate_server, follower_train);
             u8 new_speed = u8_min(follower_state.speed+1, follower_max_speed);
-            ULOG_DEBUG("Bump up follower train %d speed to %d", follower_train, new_speed);
+            ULOG_DEBUG_M(LOG_MASK_COHORT, "Bump up follower train %d speed to %d", follower_train, new_speed);
             TrainstateSetSpeedForce(trainstate_server, follower_train, new_speed);
         }
 
