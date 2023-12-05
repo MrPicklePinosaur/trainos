@@ -491,18 +491,20 @@ cohortReverseTask()
     }
 
     // reconstruct the cohort but in reverse
-    usize old_leader = leader_train;
-    usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
+    if (follower_len > 0) {
+        usize old_leader = leader_train;
+        usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
 
-    for (usize i = 0; i < follower_len; ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
-        
-        train_leave_cohort(follower_train);
+        for (usize i = 0; i < follower_len; ++i) {
+            usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
+            
+            train_leave_cohort(follower_train);
 
-        train_join_cohort(follower_train, new_leader);
+            train_join_cohort(follower_train, new_leader);
+        }
+
+        train_join_cohort(old_leader, new_leader);
     }
-
-    train_join_cohort(old_leader, new_leader);
     
     // start cohort up at new speed
     // TODO pather should set this themselves
