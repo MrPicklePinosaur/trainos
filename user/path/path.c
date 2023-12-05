@@ -289,7 +289,7 @@ patherComplexPath(Tid trainstate_server, Tid clock_server, Track* track, CBuf* p
                 patherSimplePath(track, simple_path, train, train_speed, reverse_offset, arena);
             }
             ULOG_INFO_M(LOG_MASK_PATH, "Reversing train %d...", train);
-            TrainstateReverseStatic(trainstate_server, train);
+            TrainstateReverse(trainstate_server, train);
             cbuf_clear(simple_path);
         }
     }
@@ -490,7 +490,7 @@ pathRandomizer()
         Path train_paths[] = {(Path){train_num, train_speed, 0, dest, true}, (Path){train_num, train_speed, 0, start, true}};
         Tid train_pather = PlanPathSeq(train_paths, 2);
         WaitTid(train_pather);
-        TrainstateReverseStatic(trainstate_server, train_num);
+        TrainstateReverseStatic(trainstate_server, train_num); // TODO dont use reverse static
         Delay(clock_server, 10);
     }
 }

@@ -90,6 +90,9 @@ typedef struct {
 TrainState train_state[NUMBER_OF_TRAINS] = {0};
 Tid reverse_tasks[NUMBER_OF_TRAINS] = {0};  // IMPORTANT: 0 means that the train is not currently reversing
 
+
+void cohort_set_speed(Tid clock_server, Tid marklin_server, usize leader_train, usize speed);
+
 // serialize trainstate o binary form for marklin
 u8
 trainstate_serialize(TrainState train_state)
@@ -491,6 +494,7 @@ typedef struct {
 void
 cohortReverseTask()
 {
+    Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
 
     int from_tid;
@@ -505,6 +509,7 @@ cohortReverseTask()
     Reply(from_tid, (char*)&reply_buf, sizeof(CohortReverseResp));
 
     usize train = msg_buf.train;
+    usize leader_speed = train_state[train].speed;
 
     CBuf* _reverse_tasks = cbuf_new(12);
 
@@ -551,6 +556,9 @@ cohortReverseTask()
     }
 
     train_join_cohort(old_leader, new_leader);
+
+    // Explicitly tell whole cohort the new speed
+    cohort_set_speed(clock_server, marklin_server, new_leader, leader_speed);
 
     Exit();
 }
@@ -634,10 +642,106 @@ trainPosNotifierTask()
 
 typedef PAIR(Tid, isize) Pair_Tid_isize;
 
-// stop train at offset from 
 void
-trainStopTask()
+cohort_set_speed(Tid clock_server, Tid marklin_server, usize leader_train, usize speed)
 {
+    // set speed of leader
+    train_state[leader_train].speed = speed;
+    marklin_train_ctl(marklin_server, leader_train, trainstate_serialize(train_state[leader_train]));
+
+    usize next_train_vel = train_data_vel(leader_train, speed); // speed of the train thats ahead
+
+    Cohort cohort = leader_train;
+    usize next_train = leader_train;
+
+    // pair is (Tid of sending task , train that updated)
+    for (usize i = 0; i < cbuf_len(train_state[leader_train].followers); ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
+
+        // Give train ahead time proportional to target velocity to accelerte
+        usize wait_time = next_train_vel/10;
+        Delay(clock_server, wait_time/2); // TODO arbritrary propogation delay
+
+        // search for the speed that is lower than the train ahead
+        u32 follower_speed = get_safe_speed(follower_train, next_train_vel);
+        if (follower_speed == 0) {
+            ULOG_WARN("NO VALID SPEED FOUND");
+        }
+
+        ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, follower_speed);
+
+        next_train_vel = train_data_vel(follower_train, follower_speed);
+
+        train_state[follower_train].speed = follower_speed;
+        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
+
+        // kill old regulate task
+        if (train_state[follower_train].cohort_regulate_task != 0) {
+            Kill(train_state[follower_train].cohort_regulate_task);
+            train_state[follower_train].cohort_regulate_task = 0;
+        }
+
+        // now spawn a task that will monitor train to adjust speed of train based on train in front
+        CohortFollowerRegulate send_buf = (CohortFollowerRegulate) {
+            .ahead_train = next_train,
+            .follower_train = follower_train,
+        };
+        struct {} resp_buf;
+
+        Tid follower_regulate_task = Create(2, &cohort_follower_regulate, "Cohort follower regulate");
+        train_state[follower_train].cohort_regulate_task = follower_regulate_task;
+        
+        Send(follower_regulate_task, (const char*)&send_buf, sizeof(CohortFollowerRegulate), (char*)&resp_buf, 0);
+
+        next_train = follower_train;
+    }
+}
+
+// set entire cohort's speed to zero
+void
+cohort_stop(Tid clock_server, Tid marklin_server, usize leader_train)
+{
+    usize leader_prev_speed = train_state[leader_train].speed;
+
+    // stop leader right away
+    train_state[leader_train].speed = 0;
+    marklin_train_ctl(marklin_server, leader_train, trainstate_serialize(train_state[leader_train]));
+
+    // TODO stop all followers at ideal distance
+
+    // TODO last sensor triggeer breaks if train didnt hit sensor after starting from rest
+    TrainState leader_train_state = train_state[leader_train];
+    usize time_since_last_sensor = (Time(clock_server)-leader_train_state.last_sensor_time);
+    isize dist_past_sensor = time_since_last_sensor*train_data_vel(leader_train, leader_prev_speed/100); // in ticks
+    dist_past_sensor += train_data_stop_dist(leader_train, leader_prev_speed);
+    
+    usize sensor_group = (leader_train_state.pos / 16)+'A';
+    usize sensor_num = (leader_train_state.pos % 16)+1;
+    ULOG_INFO("projected leader train %d to stop offset %d from sensor %c%d (sensor %d ticks ago)", leader_train, dist_past_sensor, sensor_group, sensor_num, time_since_last_sensor);
+
+    usize ahead_train = leader_train;
+    usize follow_distance = 0;
+
+    for (usize i = 0; i < cbuf_len(train_state[leader_train].followers); ++i) {
+
+        usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
+
+        // also kill cohort task
+        if (train_state[follower_train].cohort_regulate_task != 0) {
+            Kill(train_state[follower_train].cohort_regulate_task);
+            train_state[follower_train].cohort_regulate_task = 0;
+        }
+
+        follow_distance += (TRAIN_LENGTH + cohort_follow_distance(ahead_train, train_state[ahead_train].speed));
+        isize stop_offset = dist_past_sensor - follow_distance;
+
+        // TODO spawn task that delays and stops the train
+
+        train_state[follower_train].speed = 0;
+        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
+
+        ahead_train = follower_train;
+    }
 
 }
 
@@ -736,99 +840,13 @@ trainStateServer()
 
                 ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for cohort leader train %d: %d", train, speed);
 
-                usize leader_prev_speed = train_state[train].speed;
-
-                train_state[train].speed = speed;
-                marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
-
                 // if speed zero just set all followers to speed zero
                 if (speed == 0) {
-
-                    // TODO stop all followers at ideal distance
-
-                    // TODO last sensor triggeer breaks if train didnt hit sensor after starting from rest
-                    TrainState leader_train_state = train_state[train];
-                    usize time_since_last_sensor = (Time(clock_server)-leader_train_state.last_sensor_time);
-                    isize dist_past_sensor = time_since_last_sensor*train_data_vel(train, leader_prev_speed/100); // in ticks
-                    dist_past_sensor += train_data_stop_dist(train, leader_prev_speed);
-                    
-                    usize sensor_group = (leader_train_state.pos / 16)+'A';
-                    usize sensor_num = (leader_train_state.pos % 16)+1;
-                    ULOG_INFO("projected leader train %d to stop offset %d from sensor %c%d (sensor %d ticks ago)", train, dist_past_sensor, sensor_group, sensor_num, time_since_last_sensor);
-
-                    usize ahead_train = train;
-                    usize follow_distance = 0;
-
-                    for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
-
-                        usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
-
-                        // also kill cohort task
-                        if (train_state[follower_train].cohort_regulate_task != 0) {
-                            Kill(train_state[follower_train].cohort_regulate_task);
-                            train_state[follower_train].cohort_regulate_task = 0;
-                        }
-
-                        follow_distance += (TRAIN_LENGTH + cohort_follow_distance(ahead_train, train_state[ahead_train].speed));
-                        isize stop_offset = dist_past_sensor - follow_distance;
-
-                        // TODO spawn task that delays and stops the train
-
-                        train_state[follower_train].speed = 0;
-                        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
-
-                        ahead_train = follower_train;
-                    }
-                    continue;
+                    cohort_stop(clock_server, marklin_server, train);
                 }
 
-                usize next_train_vel = train_data_vel(train, speed); // speed of the train thats ahead
+                cohort_set_speed(clock_server, marklin_server, train, speed);
 
-                Cohort cohort = train;
-                usize next_train = train;
-
-                // pair is (Tid of sending task , train that updated)
-                for (usize i = 0; i < cbuf_len(train_state[train].followers); ++i) {
-                    usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
-
-                    // Give train ahead time proportional to target velocity to accelerte
-                    usize wait_time = next_train_vel/10;
-                    Delay(clock_server, wait_time/2); // TODO arbritrary propogation delay
-
-                    // search for the speed that is lower than the train ahead
-                    u32 follower_speed = get_safe_speed(follower_train, next_train_vel);
-                    if (follower_speed == 0) {
-                        ULOG_WARN("NO VALID SPEED FOUND");
-                    }
-
-                    ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[TRAINSTATE SERVER] Setting speed for train %d in cohort %d: %d", follower_train, cohort, follower_speed);
-
-                    next_train_vel = train_data_vel(follower_train, follower_speed);
-
-                    train_state[follower_train].speed = follower_speed;
-                    marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(train_state[follower_train]));
-
-                    // kill old regulate task
-                    if (train_state[follower_train].cohort_regulate_task != 0) {
-                        Kill(train_state[follower_train].cohort_regulate_task);
-                        train_state[follower_train].cohort_regulate_task = 0;
-                    }
-
-                    // now spawn a task that will monitor train to adjust speed of train based on train in front
-                    CohortFollowerRegulate send_buf = (CohortFollowerRegulate) {
-                        .ahead_train = next_train,
-                        .follower_train = follower_train,
-                    };
-                    struct {} resp_buf;
-
-                    Tid follower_regulate_task = Create(2, &cohort_follower_regulate, "Cohort follower regulate");
-                    train_state[follower_train].cohort_regulate_task = follower_regulate_task;
-                    
-                    Send(follower_regulate_task, (const char*)&send_buf, sizeof(CohortFollowerRegulate), (char*)&resp_buf, 0);
-
-                    next_train = follower_train;
-
-                }
             } else {
 
                 // if not leader, just set the speed explicitly
