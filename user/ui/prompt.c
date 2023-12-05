@@ -353,8 +353,6 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                 case 5: {
                     renderer_append_console(console_renderer_server, "Running benchmark 5: long cohort");
 
-                    const usize SPEED = 8;
-
                     const usize TRAIN1 = 2;
                     const usize TRAIN2 = 47;
                     const usize TRAIN3 = 54;
@@ -368,15 +366,20 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     break;
                 }
                 case 6: {
-                    renderer_append_console(console_renderer_server, "Running benchmark 6: move to exit and back out");
+                    renderer_append_console(console_renderer_server, "Running benchmark 6: longer cohort");
 
-                    usize SPEED = 5;
-                    usize TRAIN = 2;
+                    const usize TRAIN1 = 2;
+                    const usize TRAIN2 = 47;
+                    const usize TRAIN3 = 54;
+                    const usize TRAIN4 = 58;
 
-                    TrackNode* node = track_node_by_name(track, "E8");
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN, node);
-                    Path train1_paths[] = {(Path){TRAIN, SPEED, 0, "A14"}, (Path){TRAIN, SPEED, 0, "E8", true}};
-                    Tid train1_pather = PlanPathSeq(train1_paths, 2);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "E9"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "E14"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "D14"));
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN4, track_node_by_name(track, "B1"));
+                    TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
+                    TrainstateSetCohort(trainstate_server, TRAIN3, TRAIN1);
+                    TrainstateSetCohort(trainstate_server, TRAIN4, TRAIN1);
 
                     break;
                 }
