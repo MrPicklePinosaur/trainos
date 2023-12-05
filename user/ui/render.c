@@ -178,7 +178,7 @@ renderTrackWinSwitchesTask()
     Tid switch_server = WhoIs(SWITCH_ADDRESS);
     Delay(clock_server, 60);
 
-    Window track_win = win_init(2, 41, 120, 37);
+    Window track_win = win_init(2, 44, 120, 37);
 
     SwitchMode* initial = SwitchQueryAll(switch_server);
     for (u32 i = 0; i < 18; i++) {
@@ -206,7 +206,7 @@ renderTrackWinTask()
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Delay(clock_server, 50);
 
-    Window track_win = win_init(2, 41, 120, 37);
+    Window track_win = win_init(2, 44, 120, 37);
     win_draw_border(&track_win);
     w_puts_mv(&track_win, "[track]", 2, 0);
     w_flush(&track_win);
@@ -265,7 +265,7 @@ renderZoneWinTask()
     const usize ZONE_ANCHOR_X = 6;
     const usize ZONE_ANCHOR_Y = 1;
     const usize ZONE_COL_SPACING = 9;
-    Window zone_win = win_init(102, 24, 20, 17);
+    Window zone_win = win_init(102, 27, 20, 17);
     win_draw_border(&zone_win);
     w_puts_mv(&zone_win, "[zones]", 2, 0);
     w_puts_mv(&zone_win, "[00]     [15]     ", 1, 1);
@@ -330,7 +330,7 @@ renderTrainStateWinTask()
 
     Track* track = get_track();
 
-    Window train_state_win = win_init(102, 7, 20, 17);
+    Window train_state_win = win_init(102, 10, 20, 17);
     win_draw_border(&train_state_win);
     w_puts_mv(&train_state_win, "[trains]", 2, 0);
 
@@ -372,7 +372,7 @@ renderSensorWinTask()
     const usize SENSOR_LIST_ANCHOR_Y = 2;
     const usize MAX_SENSORS = 14;
     CBuf* triggered_sensors = cbuf_new(MAX_SENSORS);
-    Window sensor_win = win_init(2, 11, 20, 17);
+    Window sensor_win = win_init(2, 14, 20, 17);
     win_draw_border(&sensor_win);
     w_puts_mv(&sensor_win, "[sensors]", 2, 0);
 
@@ -431,7 +431,7 @@ renderSwitchWinTask()
 
     const usize SWITCH_ANCHOR_X = 1;
     const usize SWITCH_ANCHOR_Y = 1;
-    Window switch_win = win_init(2, 28, 20, 13);
+    Window switch_win = win_init(2, 31, 20, 13);
     win_draw_border(&switch_win);
     w_puts_mv(&switch_win, "[switches]", 2, 0);
     w_puts_mv(&switch_win, "01 .     12 .", SWITCH_ANCHOR_X, SWITCH_ANCHOR_Y+0);
@@ -487,7 +487,7 @@ renderDiagnosticWinTask()
 
     const usize DIAGNOSTIC_ANCHOR_X = 1;
     const usize DIAGNOSTIC_ANCHOR_Y = 1;
-    Window diagnostic_win = win_init(2, 7, 20, 4);
+    Window diagnostic_win = win_init(2, 10, 20, 4);
     win_draw_border(&diagnostic_win);
     w_puts_mv(&diagnostic_win, "[diagnostics]", 2, 0);
 
@@ -531,7 +531,7 @@ renderPromptTask()
     const usize PROMPT_ANCHOR_X = 3;
     const usize PROMPT_ANCHOR_Y = 1;
     usize prompt_length = 0;
-    Window prompt_win = win_init(23, 38, 78, 3);
+    Window prompt_win = win_init(23, 41, 78, 3);
     win_draw_border(&prompt_win);
     w_putc_mv(&prompt_win, '>', 1, 1);
 
@@ -588,7 +588,7 @@ renderConsoleTask()
     // currently can only hold 4 times the size of the console, should free old strings when we scroll past
     Arena console_arena = arena_new(CONSOLE_MAX_LINES*4*(CONSOLE_INNER_WIDTH+1));
     CBuf* console_lines = cbuf_new(CONSOLE_MAX_LINES);
-    Window console_win = win_init(23, 7, 78, 31);
+    Window console_win = win_init(23, 10, 78, 31);
     win_draw_border(&console_win);
     w_puts_mv(&console_win, "[console]", 2, 0);
     w_flush(&console_win);
@@ -627,12 +627,19 @@ renderConsoleTask()
 void
 drawBanner()
 {
-
     Window banner_win = win_init(1, 1, 80, 5);
-    w_puts_mv(&banner_win, "     ~~~~ ____   |~~~~~~~~~~~~~|   |~~~~~~~~~~~~~|   |~~~~~~~~~~~~~|", 1, 1);
-    w_puts_mv(&banner_win, "    Y_,___|[]|   |   TrainOS   |   | Marklin CTL |   |  CS452 F23  |", 1, 2);
-    w_puts_mv(&banner_win, "   {|_|_|_|PU|_,_|_____________|-,-|_____________|-,-|_____________|", 1, 3);
-    w_puts_mv(&banner_win, "  //oo---OO=OO     OOO     OOO       000     000       000     000  ", 1, 4);
+
+    static const u32 x = 22;
+    w_puts(&banner_win, "\x1b[1m");
+    w_puts_mv(&banner_win, ".___________..______          ___       __  .__   __.   ______        _______.", x, 1);
+    w_puts_mv(&banner_win, "|           ||   _  \\        /   \\     |  | |  \\ |  |  /  __  \\      /       |", x, 2);
+    w_puts_mv(&banner_win, "`---|  |----`|  |_)  |      /  ^  \\    |  | |   \\|  | |  |  |  |    |   (----`", x, 3);
+    w_puts_mv(&banner_win, "    |  |     |      /      /  /_\\  \\   |  | |  . `  | |  |  |  |     \\   \\    ", x, 4);
+    w_flush(&banner_win);
+    w_puts_mv(&banner_win, "    |  |     |  |\\  \\----./  _____  \\  |  | |  |\\   | |  `--'  | .----)   |   ", x, 5);
+    w_puts_mv(&banner_win, "    |__|     | _| `._____/__/     \\__\\ |__| |__| \\__|  \\______/  |_______/    ", x, 6);
+    w_attr_reset(&banner_win);
+    w_puts_mv(&banner_win, "   CS 452 F'23       Build v6.27 '5:39AM Blues'      Daniel Liu & Joey Zhou", x, 7);
     w_flush(&banner_win);
 }
 
