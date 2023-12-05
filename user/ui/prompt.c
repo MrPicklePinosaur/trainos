@@ -91,7 +91,9 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
 
             char* msg = cstr_format(tmp, "Reversing train %s%d%s", ANSI_CYAN, train, ANSI_CYAN);
             renderer_append_console(console_renderer_server, msg);
+            TrainState state = TrainstateGet(trainstate_server, train);
             TrainstateReverse(trainstate_server, train);
+            TrainstateSetSpeed(trainstate_server, train, state.speed);
 
 			break;
 		}
@@ -479,26 +481,22 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     const usize TRAIN1 = 2;
                     const usize TRAIN2 = 47;
 
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "A5"));
-                    Delay(clock_server, 50);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "C7"));
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "A5"));
-                    Delay(clock_server, 50);
                     TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
 
                     // need to offset since we switched the cohort leader on reverse
-                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "E8", true}, (Path){TRAIN1, SPEED, TRAIN_LENGTH*2, "A5", true}};
+                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "E8", true}, (Path){TRAIN2, SPEED, TRAIN_LENGTH*2, "A5", true}};
                     Tid cohort1_pather = PlanPathSeq(cohort1_paths, 2);
 
                     const usize TRAIN3 = 54;
                     const usize TRAIN4 = 58;
 
-                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "C4"));
-                    Delay(clock_server, 50);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "C6"));
                     TrainstateSetPos(trainstate_server, reserve_server, TRAIN4, track_node_by_name(track, "C4"));
-                    Delay(clock_server, 50);
                     TrainstateSetCohort(trainstate_server, TRAIN4, TRAIN3);
 
-                    Path cohort2_paths[] = {(Path){TRAIN3, SPEED, 0, "A3", true}, (Path){TRAIN3, SPEED, 0, "C4", true}};
+                    Path cohort2_paths[] = {(Path){TRAIN3, SPEED, 0, "C11", true}, (Path){TRAIN4, SPEED, TRAIN_LENGTH*2, "C4", true}};
                     Tid cohort2_pather = PlanPathSeq(cohort2_paths, 2);
 
                     WaitTid(cohort1_pather);

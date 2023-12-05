@@ -7,6 +7,11 @@
 // length of train in mm
 #define TRAIN_LENGTH 200
 
+#define SENSORS_ON_TRACK 80
+
+#define TRACK_A_ZONE_COUNT 30
+#define TRACK_B_ZONE_COUNT 30
+
 typedef enum {
   NODE_NONE,
   NODE_SENSOR,
