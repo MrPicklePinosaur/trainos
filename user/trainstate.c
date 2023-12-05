@@ -399,6 +399,16 @@ train_join_cohort(usize train, Cohort cohort)
     }
 }
 
+void
+train_reverse(Tid clock_server, Tid marklin_server, usize train)
+{
+    TrainState temp_state = train_state[train];
+    temp_state.speed = 15;
+    train_state[train].reversed = !train_state[train].reversed;
+    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
+    Delay(clock_server, 10); // TODO we need this here for some reason (marklin can't handle reverse fastness)
+}
+
 // make a train leave cohort
 void
 train_leave_cohort(usize train)
@@ -425,87 +435,6 @@ train_leave_cohort(usize train)
     }
 
     train_state[train].cohort = train; // set cohort back to self
-}
-
-typedef struct {
-    usize train;
-    usize speed;
-} ReverseMsg;
-
-typedef struct {
-
-} ReverseResp;
-
-void
-reverseTask()
-{
-    Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    Tid marklin_server = WhoIs(IO_ADDRESS_MARKLIN);
-
-    int from_tid;
-    ReverseMsg msg_buf;
-    ReverseResp reply_buf;
-    int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(ReverseMsg));
-    if (msg_len < 0) {
-        ULOG_WARN("[REVERSE] Error when receiving");
-        Exit();
-    }
-    reply_buf = (ReverseResp){};
-    Reply(from_tid, (char*)&reply_buf, sizeof(ReverseResp));
-
-    usize train = msg_buf.train;
-    usize speed = msg_buf.speed;
-
-    ULOG_INFO_M(LOG_MASK_TRAINSTATE, "reverse task for train %d", train);
-
-    // stop train
-    TrainState temp_state = train_state[train];
-    temp_state.speed = 0;
-    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-
-    Delay(clock_server, train_data_stop_time(train, speed) / 10 + 100);
-
-    // reverse train
-    temp_state = train_state[train];
-    temp_state.speed = 15;
-    marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-
-    // set the train state to reversed
-    Track* track = get_track(); // TODO really ugly how this is here
-    train_state[train].reversed = !train_state[train].reversed;
-
-    Delay(clock_server, 10); // TODO arbitrary delay
-
-    // start train again
-    // TODO dont start train yet
-    //marklin_train_ctl(marklin_server, train, trainstate_serialize(train_state[train]));
-    reverse_tasks[train] = 0;
-
-    Exit();
-}
-
-Tid
-train_reverse(Tid marklin_server, usize train)
-{
-    usize speed = train_state[train].speed;
-
-    if (speed == 0) {
-        TrainState temp_state = train_state[train];
-        temp_state.speed = 15;
-        marklin_train_ctl(marklin_server, train, trainstate_serialize(temp_state));
-        return 0;
-    } else {
-        Tid reverse_task = Create(2, &reverseTask, "Trainstate Reverse Task");
-        reverse_tasks[train] = reverse_task;
-
-        ReverseResp resp_buf;
-        ReverseMsg send_buf = (ReverseMsg) {
-            .train = train,
-            .speed = speed
-        };
-        int ret = Send(reverse_task, (const char*)&send_buf, sizeof(ReverseMsg), (char*)&resp_buf, sizeof(ReverseResp));
-        return reverse_task;
-    }
 }
 
 typedef struct {
@@ -541,20 +470,15 @@ cohortReverseTask()
 
     // reverse leader
     ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[COHORT REVERSE] reversing cohort leader %d", leader_train);
-    TrainState temp_state = train_state[leader_train];
-    temp_state.speed = 15;
-    marklin_train_ctl(marklin_server, leader_train, trainstate_serialize(temp_state));
+    train_reverse(clock_server, marklin_server, leader_train);
 
     // reverse all followers
     usize follower_len = cbuf_len(train_state[leader_train].followers);
     for (usize i = 0; i < follower_len; ++i) {
-        Delay(clock_server, 10);
         usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
         ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[COHORT REVERSE] reversing cohort follower %d", follower_train);
 
-        temp_state = train_state[follower_train];
-        temp_state.speed = 15;
-        marklin_train_ctl(marklin_server, follower_train, trainstate_serialize(temp_state));
+        train_reverse(clock_server, marklin_server, follower_train);
     }
 
     // reconstruct the cohort but in reverse
@@ -573,71 +497,6 @@ cohortReverseTask()
     
     // start cohort up at new speed
     /* cohort_set_speed(clock_server, marklin_server, new_leader, get_safe_speed(new_leader, leader_vel)); */
-
-#if 0
-    usize train = msg_buf.train;
-
-    CBuf* _reverse_tasks = cbuf_new(12);
-
-    Tid leader_reverse_task = train_reverse(marklin_server, train);
-    if (leader_reverse_task != 0) {
-        cbuf_push_back(_reverse_tasks, (void*)leader_reverse_task);
-    }
-
-    // TODO this should be safe since cohort leave only removes from back of cbuf
-    usize follower_len = cbuf_len(train_state[train].followers);
-    if (follower_len == 0) {
-        PANIC("followers len is zero");
-    }
-
-    for (usize i = 0; i < follower_len; ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[train].followers, i);
-        Tid reverse_task = train_reverse(marklin_server, follower_train);
-        if (reverse_task != 0) {
-            cbuf_push_back(_reverse_tasks, (void*)reverse_task);
-        }
-    }
-
-    // spawn task that blocks until all trains are done reversing, then disbands and reforms cohort in reverse
-
-    // block until all reverse tasks complete
-    for (usize i = 0; i < cbuf_len(_reverse_tasks); ++i) {
-        Tid reverse_task = (Tid)cbuf_get(_reverse_tasks, i);
-        WaitTid(reverse_task);
-    }
-
-    // disband and reform the original cohort 
-    usize old_leader = train;
-    usize new_leader = (usize)cbuf_back(train_state[old_leader].followers); // NOTE safe since we asserted that follower_len > 0
-
-    ULOG_DEBUG("[COHORT REVERSE] old leader = %d, new leader = %d", old_leader, new_leader);
-
-    for (usize i = 0; i < follower_len; ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, follower_len-1-i);
-        
-        // leave old cohort
-        train_leave_cohort(follower_train);
-
-        // join new cohort
-        train_join_cohort(follower_train, new_leader);
-    }
-
-    train_join_cohort(old_leader, new_leader);
-
-#if 0
-    ULOG_DEBUG("old cohort %d =======", old_leader);
-    for (usize i = 0; i < cbuf_len(train_state[old_leader].followers); ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[old_leader].followers, i);
-        ULOG_DEBUG("old cohort %d, train %d", old_leader, follower_train);
-    }
-
-    ULOG_DEBUG("new cohort %d =======", new_leader);
-    for (usize i = 0; i < cbuf_len(train_state[new_leader].followers); ++i) {
-        usize follower_train = (usize)cbuf_get(train_state[new_leader].followers, i);
-        ULOG_DEBUG("new cohort %d, train %d", new_leader, follower_train);
-    }
-#endif
-#endif
 
     // unblock the task that called reverse
     TrainstateResp trainstate_reply_buf = (TrainstateResp) {
