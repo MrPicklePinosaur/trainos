@@ -982,7 +982,7 @@ trainStateServer()
             train_state[train].pos = pos;
 
             TrackNode* node = track_node_by_sensor_id(track, pos);
-            ZoneId zone = node->reverse->zone;
+            ZoneId zone = node->zone;
             cbuf_push_back(zone_fifo[zone], (void*)train);
 
             ULOG_INFO("Explicitly setting pos = %s, zone = %d for train %d", get_track()->nodes[train_state[train].pos].name, zone, train);
