@@ -144,6 +144,13 @@ draw_switch(Window* switch_window, isize switch_id, SwitchMode mode)
     }
 
     if (mode == SWITCH_MODE_STRAIGHT) {
+        w_attr(switch_window, ATTR_CYAN);
+    }
+    else {
+        w_attr(switch_window, ATTR_YELLOW);
+    }
+
+    if (mode == SWITCH_MODE_STRAIGHT) {
         if (dir_major == LEFT || dir_major == RIGHT) {
             w_puts_mv(switch_window, "─", x, y);
         }
@@ -161,6 +168,7 @@ draw_switch(Window* switch_window, isize switch_id, SwitchMode mode)
         }
         w_puts_mv(switch_window, c, x, y);
     }
+    w_attr_reset(switch_window);
 }
 
 void
