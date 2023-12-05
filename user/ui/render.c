@@ -222,8 +222,9 @@ renderTrainStateWinTask()
     w_puts_mv(&train_state_win, "2                 ", 1, 4);
     w_puts_mv(&train_state_win, "24                ", 1, 5);
     w_puts_mv(&train_state_win, "47                ", 1, 6);
-    w_puts_mv(&train_state_win, "58                ", 1, 7);
-    w_puts_mv(&train_state_win, "77                ", 1, 8);
+    w_puts_mv(&train_state_win, "54                ", 1, 7);
+    w_puts_mv(&train_state_win, "58                ", 1, 8);
+    w_puts_mv(&train_state_win, "77                ", 1, 9);
 
     w_flush(&train_state_win);
 

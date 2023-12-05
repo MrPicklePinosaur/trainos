@@ -474,34 +474,37 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     break;
                 }
                 case 0: {
+                    const usize SPEED = 8;
 
-                    { // cohort 1
-                        const usize TRAIN1 = 2;
-                        const usize TRAIN2 = 47;
-                        const usize SPEED = 8;
+                    const usize TRAIN1 = 2;
+                    const usize TRAIN2 = 47;
 
-                        TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "A5"));
-                        Delay(clock_server, 50);
-                        TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "A5"));
-                        Delay(clock_server, 50);
-                        TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "A5"));
+                    Delay(clock_server, 50);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "A5"));
+                    Delay(clock_server, 50);
+                    TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
 
-                        Path train1_paths[] = {(Path){TRAIN1, SPEED, 0, "E8", true}, (Path){TRAIN1, SPEED, 0, "A5", true}};
-                        Tid train1_pather = PlanPathSeq(train1_paths, 2);
-                    }
+                    // need to offset since we switched the cohort leader on reverse
+                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "E8", true}, (Path){TRAIN1, SPEED, TRAIN_LENGTH*2, "A5", true}};
+                    Tid cohort1_pather = PlanPathSeq(cohort1_paths, 2);
 
-#if 0
-                    { // cohort 2
-                        const usize TRAIN1 = 47;
-                        const usize TRAIN2 = 58;
+                    const usize TRAIN3 = 54;
+                    const usize TRAIN4 = 58;
 
-                        TrainstateSetPos(trainstate_server, reserve_server, TRAIN1, track_node_by_name(track, "C4"));
-                        Delay(clock_server, 50);
-                        TrainstateSetPos(trainstate_server, reserve_server, TRAIN2, track_node_by_name(track, "C4"));
-                        Delay(clock_server, 50);
-                        TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
-                    }
-#endif
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN3, track_node_by_name(track, "C4"));
+                    Delay(clock_server, 50);
+                    TrainstateSetPos(trainstate_server, reserve_server, TRAIN4, track_node_by_name(track, "C4"));
+                    Delay(clock_server, 50);
+                    TrainstateSetCohort(trainstate_server, TRAIN4, TRAIN3);
+
+                    Path cohort2_paths[] = {(Path){TRAIN3, SPEED, 0, "A3", true}, (Path){TRAIN3, SPEED, 0, "C4", true}};
+                    Tid cohort2_pather = PlanPathSeq(cohort2_paths, 2);
+
+                    WaitTid(cohort1_pather);
+                    WaitTid(cohort2_pather);
+                    TrainstateReverse(trainstate_server, TRAIN1);
+                    TrainstateReverse(trainstate_server, TRAIN3);
 
 
                     break;

@@ -465,15 +465,24 @@ cohortReverseTask()
     usize leader_train = msg_buf.train;
     usize leader_vel = train_data_vel(leader_train, train_state[leader_train].speed);
 
+    usize follower_len = cbuf_len(train_state[leader_train].followers);
+
     cohort_stop(clock_server, marklin_server, leader_train);
-    Delay(clock_server, 300);
+
+    // delay for time required by slowest stopping train
+    u32 max_stop_time = train_data_stop_time(leader_train, train_state[leader_train].speed) / 10 + 100;
+    for (usize i = 0; i < follower_len; ++i) {
+        usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
+        u32 follower_stop_time = train_data_stop_time(follower_train, train_state[follower_train].speed) / 10 + 100;
+        max_stop_time = u32_max(max_stop_time, follower_stop_time);
+    }
+    Delay(clock_server, max_stop_time);
 
     // reverse leader
     ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[COHORT REVERSE] reversing cohort leader %d", leader_train);
     train_reverse(clock_server, marklin_server, leader_train);
 
     // reverse all followers
-    usize follower_len = cbuf_len(train_state[leader_train].followers);
     for (usize i = 0; i < follower_len; ++i) {
         usize follower_train = (usize)cbuf_get(train_state[leader_train].followers, i);
         ULOG_INFO_M(LOG_MASK_TRAINSTATE, "[COHORT REVERSE] reversing cohort follower %d", follower_train);
@@ -496,7 +505,7 @@ cohortReverseTask()
     train_join_cohort(old_leader, new_leader);
     
     // start cohort up at new speed
-    /* cohort_set_speed(clock_server, marklin_server, new_leader, get_safe_speed(new_leader, leader_vel)); */
+    cohort_set_speed(clock_server, marklin_server, new_leader, get_safe_speed(new_leader, leader_vel));
 
     // unblock the task that called reverse
     TrainstateResp trainstate_reply_buf = (TrainstateResp) {
