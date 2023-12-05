@@ -217,7 +217,7 @@ renderTrainStateWinTask()
     win_draw_border(&train_state_win);
     w_puts_mv(&train_state_win, "[trains]", 2, 0);
 
-    w_puts_mv(&train_state_win, "train  speed cohrt", 1, 2);
+    w_puts_mv(&train_state_win, "train  pos spd cht", 1, 2);
     w_puts_mv(&train_state_win, "1                 ", 1, 3);
     w_puts_mv(&train_state_win, "2                 ", 1, 4);
     w_puts_mv(&train_state_win, "24                ", 1, 5);
@@ -235,10 +235,12 @@ renderTrainStateWinTask()
         Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, -1);
         usize train = res.first;
         TrainState state = TrainstateGet(trainstate_server, train);
+        char* name = track_node_by_sensor_id(track, state.pos)->name;
 
         w_puts_mv(&train_state_win, "          ", TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
-        w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", state.speed), TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
-        w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", state.cohort), TRAIN_STATE_TABLE_CURR_X+6, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, name, TRAIN_STATE_TABLE_CURR_X, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", state.speed), TRAIN_STATE_TABLE_CURR_X+4, TRAIN_STATE_TABLE_Y+get_train_index(train));
+        w_puts_mv(&train_state_win, cstr_format(&tmp, "%d", state.cohort), TRAIN_STATE_TABLE_CURR_X+8, TRAIN_STATE_TABLE_Y+get_train_index(train));
         w_flush(&train_state_win);
     }
     Exit();
