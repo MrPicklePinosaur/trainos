@@ -189,6 +189,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
 
         // start at index one since we skip the starting node (assume no short move)
         ZoneId prev_zone = -1;
+        usize last_reserved_zone = 0;
         for (usize i = 1; i < cbuf_len(path); ++i) {
             TrackEdge* edge = (TrackEdge*)cbuf_get(path, i);
 
@@ -217,10 +218,35 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 /* ULOG_INFO_M(LOG_MASK_PATH, "at sensor %s in zone %d, next zone is %d", node->name, node->zone, next_zone); */
                 setSwitchesInZone(switch_server, track, next_zone, desired_switch_modes);
 
-                // can release previous zone now
+                // release all zones behind the last train in the cohort
                 if (node->zone != -1) {
                     /* ULOG_INFO_M(LOG_MASK_PATH, "train %d release zone %d", train, node->zone); */
-                    zone_unreserve(reserve_server, train, node->zone);
+                    ULOG_INFO("ZONE RELEASE");
+                    usize last_train;
+                    if (cbuf_len(state.followers) == 0) {
+                        last_train = train;
+                    }
+                    else {
+                        last_train = cbuf_back(state.followers);
+                    }
+
+                    TrainState last_train_state = TrainstateGet(trainstate_server, last_train);
+                    // Find the index of the node that the last train is currently at
+                    for (usize j = last_reserved_zone; j <= i; j++) {
+                        TrackEdge* search_zone = (TrackEdge*)cbuf_get(path, j);
+                        if (track_node_index(track, search_zone->dest) == last_train_state.pos) {
+                            // Free all nodes from the last reserved zone up to the zone the last train is currently at
+                            for (usize k = last_reserved_zone; k <= j; k++) {
+                                TrackEdge* zone_to_release = (TrackEdge*)cbuf_get(path, k);
+                                if (zone_to_release->dest->type == NODE_SENSOR) {
+                                    ULOG_INFO("  UNRESERVE %d", zone_to_release->dest->zone);
+                                    zone_unreserve(reserve_server, train, zone_to_release->dest->zone);
+                                }
+                            }
+                            last_reserved_zone = j+1;
+                            break;
+                        }
+                    }
                 }
                 /*
                 if (prev_zone != -1) {
