@@ -294,7 +294,7 @@ TrainstateSetPos(Tid trainstate_server, Tid reserve_server, usize train, TrackNo
     if (node->zone != -1 && !zone_reserve(reserve_server, train, node->zone)) {
         ULOG_WARN("Failed to reserve zone %d when setting position", node->zone);
         // TODO not sure if should break here if not allowed
-        return -1;
+        /* return -1; */
     }
 
     TrainstateResp resp_buf;

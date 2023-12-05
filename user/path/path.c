@@ -64,7 +64,11 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
     Tid reserve_server = WhoIs(RESERVE_ADDRESS);
 
-    TrainState state = TrainstateGet(trainstate_server, train);
+    // always use the leader train as front train
+    TrainState _state = TrainstateGet(trainstate_server, train);
+    usize leader_train = _state.cohort;
+
+    TrainState state = TrainstateGet(trainstate_server, leader_train);
 
     i32 distance_to_dest = offset - state.offset;
     for (usize i = 0; i < cbuf_len(path); ++i) {
@@ -91,8 +95,8 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         train_speed = STOPPING_DISTANCES[speed_i];
         if (train_speed > original_train_speed) continue;
 
-        stopping_distance = train_data_stop_dist(train, train_speed)-offset;
-        train_vel = train_data_vel(train, train_speed);
+        stopping_distance = train_data_stop_dist(leader_train, train_speed)-offset;
+        train_vel = train_data_vel(leader_train, train_speed);
 
         waiting_sensor = 0;
         distance_to_waiting_sensor = distance_to_dest-offset;
@@ -110,7 +114,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         if (!(
             waiting_sensor == 0
             || ((TrackEdge*)cbuf_front(path))->src == waiting_sensor
-            || distance_to_waiting_sensor < train_data_acceleration_dist(train, train_speed)
+            || distance_to_waiting_sensor < train_data_acceleration_dist(leader_train, train_speed)
         )) {
             is_short_move = false;
             break;
@@ -174,18 +178,18 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     if (is_short_move) {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing short move...");
 
-        TrainstateSetSpeed(trainstate_server, train, TRAIN_DATA_SHORT_MOVE_SPEED);
-        Delay(clock_server, train_data_short_move_time(train, distance_to_dest) / 10);
+        TrainstateSetSpeed(trainstate_server, leader_train, TRAIN_DATA_SHORT_MOVE_SPEED);
+        Delay(clock_server, train_data_short_move_time(leader_train, distance_to_dest) / 10);
 
-        TrainstateSetSpeed(trainstate_server, train, 0);
+        TrainstateSetSpeed(trainstate_server, leader_train, 0);
         /* ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait short move"); */
-        Delay(clock_server, train_data_stop_time(train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
+        Delay(clock_server, train_data_stop_time(leader_train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
         /* ULOG_INFO_M(LOG_MASK_PATH, "After stop wait short move"); */
 
     } else {
         ULOG_INFO_M(LOG_MASK_PATH, "Executing regular move sensor: %s, %d, distance: %d", waiting_sensor->name, waiting_sensor->num, distance_from_sensor);
 
-        TrainstateSetSpeed(trainstate_server, train, train_speed);
+        TrainstateSetSpeed(trainstate_server, leader_train, train_speed);
 
         // start at index one since we skip the starting node (assume no short move)
         ZoneId prev_zone = -1;
@@ -199,7 +203,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                 // first is train, second is pos
                 usize new_pos = 0;
                 for (;;) {
-                    Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, train);
+                    Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, leader_train);
                     new_pos = res.second;
                     if (new_pos == edge->src->num) {
                         break;
@@ -224,7 +228,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                     ULOG_INFO("ZONE RELEASE");
                     usize last_train;
                     if (cbuf_len(state.followers) == 0) {
-                        last_train = train;
+                        last_train = leader_train;
                     }
                     else {
                         last_train = cbuf_back(state.followers);
@@ -240,7 +244,7 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
                                 TrackEdge* zone_to_release = (TrackEdge*)cbuf_get(path, k);
                                 if (zone_to_release->dest->type == NODE_SENSOR) {
                                     ULOG_INFO("  UNRESERVE %d", zone_to_release->dest->zone);
-                                    zone_unreserve(reserve_server, train, zone_to_release->dest->zone);
+                                    zone_unreserve(reserve_server, leader_train, zone_to_release->dest->zone);
                                 }
                             }
                             last_reserved_zone = j+1;
@@ -267,9 +271,9 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
         /* ULOG_INFO_M(LOG_MASK_PATH, "Waiting to stop train (delay for %d)...", delay_ticks); */
         Delay(clock_server, delay_ticks);
 
-        TrainstateSetSpeed(trainstate_server, train, 0);
+        TrainstateSetSpeed(trainstate_server, leader_train, 0);
         /* ULOG_INFO_M(LOG_MASK_PATH, "Before stop wait regular move"); */
-        Delay(clock_server, train_data_stop_time(train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
+        Delay(clock_server, train_data_stop_time(leader_train, TRAIN_DATA_SHORT_MOVE_SPEED) / 10 + 100);
         /* ULOG_INFO_M(LOG_MASK_PATH, "After stop wait regular move"); */
         
         /* TrainstateSetOffset(trainstate_server, train, offset); */
@@ -278,15 +282,15 @@ patherSimplePath(Track* track, CBuf* path, usize train, usize train_speed, isize
     // free the path we took
     /* ZoneId prev_zone = ((TrackEdge*)cbuf_back(path))->dest->zone; */
     /* zone_unreserve(reserve_server, train, prev_zone); */
-    zone_unreserve_all(reserve_server, train);
+    zone_unreserve_all(reserve_server, leader_train);
 
     // Set train position, which also reserves the zone it stopped at.
     // TODO What happens if the train goes somewhere else due to a switch error?
     TrackNode* dest = ((TrackEdge*)cbuf_back(path))->dest;
-    TrainstateSetPos(trainstate_server, reserve_server, train, dest);
+    TrainstateSetPos(trainstate_server, reserve_server, leader_train, dest);
     /* ULOG_INFO_M(LOG_MASK_PATH, "train stopped in zone %d", dest_zone); */
 
-    TrainstateSetOffset(trainstate_server, train, offset);
+    TrainstateSetOffset(trainstate_server, leader_train, offset);
 
 }
 

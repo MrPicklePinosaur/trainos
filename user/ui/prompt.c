@@ -486,7 +486,7 @@ executeCommand(Arena* tmp, Tid marklin_server, Tid clock_server, Tid console_ren
                     TrainstateSetCohort(trainstate_server, TRAIN2, TRAIN1);
 
                     // need to offset since we switched the cohort leader on reverse
-                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "E8", true}, (Path){TRAIN2, SPEED, TRAIN_LENGTH*2, "A5", true}};
+                    Path cohort1_paths[] = {(Path){TRAIN1, SPEED, 0, "D4", true}, (Path){TRAIN2, SPEED, TRAIN_LENGTH, "A5", true}};
                     Tid cohort1_pather = PlanPathSeq(cohort1_paths, 2);
 
 #if 0
