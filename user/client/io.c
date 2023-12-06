@@ -1,46 +1,62 @@
 #include <trainstd.h>
 #include <traintasks.h>
 #include "io.h"
-
-#include "kern/dev/uart.h"
-
-typedef enum {
-    CLIENT_MSG_SENSOR = 1,
-} ClientMsgType;
+#include "msg.h"
+#include "user/trainstate.h"
 
 typedef struct {
-    usize train;
-    usize speed;
-} ClientMsg;
+    ClientMsgType type;
+    union {
+        SensorClientMsg sensor;       
+    } data;
+} ClientIOMsg;
 
 void
-client_send_msg()
+clientIoSensorNotifierTask()
 {
+    Tid client_io_server = MyParentTid();
+    Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
 
+    for (;;) {
+        Pair_usize_usize res = TrainstateWaitForSensor(trainstate_server, -1); 
+
+        struct {} resp_buf;
+        ClientIOMsg send_buf = (ClientIOMsg) {
+            .type = CLIENT_MSG_SENSOR,
+            .data = {
+                .sensor = (SensorClientMsg) {
+                    .train = res.first,
+                    .sensor_id = res.second
+                }
+            }
+        };
+        Send(client_io_server, (const char*)&send_buf, sizeof(ClientIOMsg), (char*)&resp_buf, sizeof(resp_buf));
+    }
 }
 
 void
 clientIoTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
-    usize i = 0;
-    for (;;++i) {
-        Delay(clock_server, 100);
 
-        ClientMsg msg = (ClientMsg) {
-            .train = 2,
-            .speed = i
-        };
+    Create(5, &clientIoSensorNotifierTask, "client io sensor notifier");
 
-        const char MSG_START[2] = {0x69, 0x69};
-        const u32 msg_len = sizeof(msg);
-        const u32 msg_type = CLIENT_MSG_SENSOR; // assume enum is u32
+    ClientIOMsg msg_buf;
+    struct {} reply_buf;
+    int from_tid;
+    for (;;) {
+        int msg_len = Receive(&from_tid, (char*)&msg_buf, sizeof(ClientIOMsg));
+        if (msg_len < 0) {
+            ULOG_WARN("[CLIENT IO SERVER] Error when receiving");
+            continue;
+        }
 
-        uart_put_size(CONSOLE, (const char*)&MSG_START, sizeof(MSG_START));
-        uart_put_size(CONSOLE, (const char*)&msg_len, sizeof(msg_len));
-        uart_put_size(CONSOLE, (const char*)&msg_type, sizeof(msg_type));
-        uart_put_size(CONSOLE, (const char*)&msg, sizeof(msg));
+        if (msg_buf.type == CLIENT_MSG_SENSOR) {
+            SensorClientMsg msg = msg_buf.data.sensor;
+            client_send_msg(msg_buf.type, (const char*)&msg, sizeof(msg));
+        }
 
+        Reply(from_tid, (char*)&reply_buf, sizeof(reply_buf));
     }
     Exit();
 }

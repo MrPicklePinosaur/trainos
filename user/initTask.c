@@ -95,6 +95,10 @@ initTask()
 
     Tid client_task = Create(5, &clientIoTask, "Client IO Task");
 
+
+    Track* track = get_track();
+    TrainstateSetPos(trainstate_server, reserve_server, 2, track_node_by_name(track, "A1"));
+
     /* Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL"); */
     /* WaitTid(marklinctl_task); */
 
