@@ -48,34 +48,25 @@ void
 initTask()
 {
 
-    // dummy vars for synchronization using Send/Recv
-    char dummy;
-    Tid from_tid;
-
-    TaskMenuEntry* task_menu[] = {
-        // &(TaskMenuEntry){ "K1", &firstUserTask },
-        // &(TaskMenuEntry){ "K2", &RPSTask },
-        // &(TaskMenuEntry){ "K2Perf", &K2Perf },
-        // &(TaskMenuEntry){ "K3", &K3 },
-        // &(TaskMenuEntry){ "K4", &uiTask },
-        &(TaskMenuEntry){ "MarklinCTL", &uiTask },
-        &(TaskMenuEntry){ "test", &testHarness },
-        0
-    };
-
     // spawn init tasks
     initNameserverTask();
     Tid clock_server = Create(1, &clockTask, "Clock Server");
 
+#if defined( NATIVE )
     println("Initializing IO servers...");
+#endif
     Tid io_server_marklin = Create(2, &marklinIO, "Marklin IO Server");
     Tid io_server_console = Create(2, &consoleIO, "Console IO Server");
 
+#if defined( NATIVE )
     println("Initalizing track...");
+#endif
     marklin_init(io_server_marklin);
     track_init();
 
+#if defined( NATIVE )
     println("Initializing sensors and switches...");
+#endif
     Tid sensor_server = Create(2, &sensorServerTask, "Sensor Server");
     Tid switch_server = Create(2, &switchServerTask, "Switch Server");
 
@@ -87,20 +78,36 @@ initTask()
 
     SwitchInit(switch_server);
 
+#if defined( NATIVE )
     println("Initializing trains...");
+#endif
     Tid trainstate_server = Create(5, &trainStateServer, "Train State Server");
     Tid reserve_server = Create(5, &reservationTask, "Reservation Server");
 
+#if defined( NATIVE )
     println("Initalizing UI...");
+#endif
     Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");
 
     Delay(clock_server, 100);
 
-    Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL");
-    WaitTid(marklinctl_task);
+    /* Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL"); */
+    /* WaitTid(marklinctl_task); */
 
     /* Tid tester = Create(5, &testHarness, "test harness"); */
     /* WaitTid(tester); */
+
+#if 0
+    TaskMenuEntry* task_menu[] = {
+        // &(TaskMenuEntry){ "K1", &firstUserTask },
+        // &(TaskMenuEntry){ "K2", &RPSTask },
+        // &(TaskMenuEntry){ "K2Perf", &K2Perf },
+        // &(TaskMenuEntry){ "K3", &K3 },
+        // &(TaskMenuEntry){ "K4", &uiTask },
+        &(TaskMenuEntry){ "MarklinCTL", &uiTask },
+        &(TaskMenuEntry){ "test", &testHarness },
+        0
+    };
 
     for (;;) {
         println("================= SELECT TASK TO RUN =================");
@@ -120,8 +127,12 @@ initTask()
         WaitTid(task_menu_task);
         set_log_mode(LOG_MODE_STANDARD);
     }
+#endif
 
 
+    // dummy vars for synchronization using Send/Recv
+    char dummy;
+    Tid from_tid;
     Receive(&from_tid, &dummy, sizeof(char));
 
     println("attempting to exit init task");

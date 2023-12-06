@@ -14,6 +14,8 @@ int kmain() {
 
     kern_init();
 
+#if defined ( NATIVE )
+
     set_log_level(LOG_LEVEL_DEBUG);
     /* set_log_mask(LOG_MASK_KERN|LOG_MASK_USER|LOG_MASK_COHORT); */
     set_log_mask(LOG_MASK_KERN);
@@ -33,6 +35,10 @@ int kmain() {
 
     // PRINT("kernel stack in kmain %x", asm_sp_el1());
     PRINT("Running at debug level %d with log mask 0x%x", get_log_level(), get_log_mask());
+#else
+    set_log_level(LOG_LEVEL_DEBUG);
+    set_log_mask(0); // disable all logging
+#endif
 
     // need to create first task using kernel primitives since we are in kernel mode right here
     Tid init_tid = handle_svc_create(14, &initTask, "Init Task"); // temp making starting task very low priority
