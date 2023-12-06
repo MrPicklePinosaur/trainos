@@ -48,3 +48,9 @@ void uart_printf( size_t line, char *fmt, ... ) {
 	uart_format_print( line, fmt, va );
 	va_end(va);
 }
+
+void uart_put_size(size_t line, const char* buf, size_t len) {
+    for (size_t i = 0; i < len; ++i) {
+        uart_putc(line, buf[i]);
+    }
+}

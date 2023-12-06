@@ -14,6 +14,8 @@
 #include "user/path/train_data.h"
 #include "user/path/reserve.h"
 
+#include "user/client/io.h"
+
 
 typedef struct {
     char* name;
@@ -90,6 +92,8 @@ initTask()
     Tid trainterm_server = Create(3, &traintermTask, "Train Term Server");
 
     Delay(clock_server, 100);
+
+    Tid client_task = Create(5, &clientIoTask, "Client IO Task");
 
     /* Tid marklinctl_task = Create(5, &uiTask, "MarklinCTL"); */
     /* WaitTid(marklinctl_task); */
