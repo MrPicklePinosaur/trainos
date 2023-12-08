@@ -3,6 +3,7 @@
 #include "io.h"
 #include "msg.h"
 #include "user/trainstate.h"
+#include "user/switch.h"
 #include "kern/dev/uart.h"
 
 typedef struct {
@@ -11,6 +12,7 @@ typedef struct {
         SensorSendClientMsg send_sensor;
         
         TrainSpeedRecvClientMsg recv_train_speed;  
+        SwitchRecvClientMsg recv_switch;
     } data;
 } ClientIOMsg;
 
@@ -77,6 +79,11 @@ clientIoReceiveTask()
                 PRINT("sending train speed: train = %d, speed = %d", send_buf.data.recv_train_speed.train, send_buf.data.recv_train_speed.speed);
                 Send(client_io_server, (const char*)&send_buf, sizeof(ClientIOMsg), (char*)&resp_buf, sizeof(resp_buf));
                 break;
+            case CLIENT_MSG_RECV_SWITCH:
+                memcpy(&send_buf.data.recv_switch, copied, sizeof(SwitchRecvClientMsg));
+                PRINT("setting switch %d to state %d", send_buf.data.recv_switch.switch_id, send_buf.data.recv_switch.state);
+                Send(client_io_server, (const char*)&send_buf, sizeof(ClientIOMsg), (char*)&resp_buf, sizeof(resp_buf));
+                break;
             default: {}
         }
 
@@ -116,6 +123,7 @@ clientIoTask()
 {
     Tid clock_server = WhoIs(CLOCK_ADDRESS);
     Tid trainstate_server = WhoIs(TRAINSTATE_ADDRESS);
+    Tid switch_server = WhoIs(SWITCH_ADDRESS);
 
     Create(5, &clientIoReceiveTask, "client io recieve task");
     Create(5, &clientIoSensorNotifierTask, "client io sensor notifier");
@@ -136,6 +144,10 @@ clientIoTask()
         } else if (msg_buf.type == CLIENT_MSG_RECV_TRAIN_SPEED) {
             PRINT("got message to set train %d to speed %d", msg_buf.data.recv_train_speed.train, msg_buf.data.recv_train_speed.speed);
             TrainstateSetSpeed(trainstate_server, msg_buf.data.recv_train_speed.train, msg_buf.data.recv_train_speed.speed);
+        } else if (msg_buf.type == CLIENT_MSG_RECV_SWITCH) {
+            PRINT("got message to set switch %d to %d", msg_buf.data.recv_switch.switch_id, msg_buf.data.recv_switch.state);
+            SwitchMode switch_mode = (msg_buf.data.recv_switch.state) ? SWITCH_MODE_CURVED : SWITCH_MODE_STRAIGHT;
+            SwitchChange(switch_server, msg_buf.data.recv_switch.switch_id, switch_mode);
         }
 
         Reply(from_tid, (char*)&reply_buf, sizeof(reply_buf));
