@@ -27,7 +27,7 @@ typedef struct {
 
 typedef struct {
     usize switch_id;
-    bool state;
+    u8 state;
 } SwitchRecvClientMsg;
 
 void client_send_msg(ClientMsgType type, const char* msg, u32 size);
