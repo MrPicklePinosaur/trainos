@@ -4,6 +4,7 @@
 #include "msg.h"
 #include "user/trainstate.h"
 #include "user/switch.h"
+#include "user/path/train_data.h"
 #include "kern/dev/uart.h"
 
 typedef struct {
@@ -33,13 +34,13 @@ clientIoReceiveTask()
         
         u8 c = Getc(io_server);
 
-        PRINT("got char %d", c);
+        /* PRINT("got char %d", c); */
 
         cbuf_push_back(input_buf, (void*)c);
 
         usize input_len = cbuf_len(input_buf);
         if (input_len < START_MSG_BYTES + LENGTH_BYTES + TYPE_BYTES) {
-            PRINT("not full length yet");
+            /* PRINT("not full length yet"); */
             continue;
         }
 
@@ -49,12 +50,11 @@ clientIoReceiveTask()
         }
 
         // TODO this may be incorrect
-        PRINT("before shift");
         u32 msg_len = ((u8)cbuf_get(input_buf, 5) << 24)|((u8)cbuf_get(input_buf, 4) << 16)|((u8)cbuf_get(input_buf, 3) << 8)|((u8)cbuf_get(input_buf, 2) << 0);
 
         u32 msg_type = ((u8)cbuf_get(input_buf, 9) << 24)|((u8)cbuf_get(input_buf, 8) << 16)|((u8)cbuf_get(input_buf, 7) << 8)|((u8)cbuf_get(input_buf, 6) << 0);
 
-        PRINT("msg_len = %d, msg_type = %d", msg_len, msg_type);
+        /* PRINT("msg_len = %d, msg_type = %d", msg_len, msg_type); */
 
         if (input_len < START_MSG_BYTES + LENGTH_BYTES + TYPE_BYTES + msg_len) {
             continue;
@@ -69,19 +69,19 @@ clientIoReceiveTask()
         char copied[256] = {0};
         for (usize i = START_MSG_BYTES+LENGTH_BYTES+TYPE_BYTES; i < input_len; ++i) {
             copied[i-(START_MSG_BYTES+LENGTH_BYTES+TYPE_BYTES)] = (char)cbuf_get(input_buf, i);
-            PRINT("byte %d: %d", i, copied[i]);
+            /* PRINT("byte %d: %d", i, copied[i]); */
         }
 
         switch (msg_type) {
             case CLIENT_MSG_RECV_TRAIN_SPEED:
                 memcpy(&send_buf.data.recv_train_speed, copied, sizeof(TrainSpeedRecvClientMsg));
                 /* send_buf.data.recv_train_speed = *(TrainSpeedRecvClientMsg*)copied; */
-                PRINT("sending train speed: train = %d, speed = %d", send_buf.data.recv_train_speed.train, send_buf.data.recv_train_speed.speed);
+                /* PRINT("sending train speed: train = %d, speed = %d", send_buf.data.recv_train_speed.train, send_buf.data.recv_train_speed.speed); */
                 Send(client_io_server, (const char*)&send_buf, sizeof(ClientIOMsg), (char*)&resp_buf, sizeof(resp_buf));
                 break;
             case CLIENT_MSG_RECV_SWITCH:
                 memcpy(&send_buf.data.recv_switch, copied, sizeof(SwitchRecvClientMsg));
-                PRINT("setting switch %d to state %d", send_buf.data.recv_switch.switch_id, send_buf.data.recv_switch.state);
+                /* PRINT("setting switch %d to state %d", send_buf.data.recv_switch.switch_id, send_buf.data.recv_switch.state); */
                 Send(client_io_server, (const char*)&send_buf, sizeof(ClientIOMsg), (char*)&resp_buf, sizeof(resp_buf));
                 break;
             default: {}
@@ -142,10 +142,14 @@ clientIoTask()
             SensorSendClientMsg msg = msg_buf.data.send_sensor;
             client_send_msg(msg_buf.type, (const char*)&msg, sizeof(msg));
         } else if (msg_buf.type == CLIENT_MSG_RECV_TRAIN_SPEED) {
-            PRINT("got message to set train %d to speed %d", msg_buf.data.recv_train_speed.train, msg_buf.data.recv_train_speed.speed);
-            TrainstateSetSpeed(trainstate_server, msg_buf.data.recv_train_speed.train, msg_buf.data.recv_train_speed.speed);
+            usize train = msg_buf.data.recv_train_speed.train;
+            usize speed = msg_buf.data.recv_train_speed.speed;
+            /* PRINT("got message to set train %d to speed %d", train, speed); */
+            if (train_is_supported(train)) {
+                TrainstateSetSpeed(trainstate_server, train, speed);
+            }
         } else if (msg_buf.type == CLIENT_MSG_RECV_SWITCH) {
-            PRINT("got message to set switch %d to %d", msg_buf.data.recv_switch.switch_id, msg_buf.data.recv_switch.state);
+            /* PRINT("got message to set switch %d to %d", msg_buf.data.recv_switch.switch_id, msg_buf.data.recv_switch.state); */
             SwitchMode switch_mode = (msg_buf.data.recv_switch.state) ? SWITCH_MODE_CURVED : SWITCH_MODE_STRAIGHT;
             SwitchChange(switch_server, msg_buf.data.recv_switch.switch_id, switch_mode);
         }

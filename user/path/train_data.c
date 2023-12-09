@@ -13,6 +13,17 @@ get_train_index(u32 train)
     PANIC("Invalid train for train data %u", train);
 }
 
+bool
+train_is_supported(usize train)
+{
+    for (u32 i = 0; i < TRAIN_DATA_TRAIN_COUNT; i++) {
+        if (TRAIN_DATA_TRAINS[i] == train) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 _speed_bounds_check(u32 speed)
 {
